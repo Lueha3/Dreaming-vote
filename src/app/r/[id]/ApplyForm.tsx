@@ -4,11 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { safeJson } from "@/lib/http";
+import { setSavedContact } from "@/lib/contactStorage";
 
 type Props = {
   recruitmentId: string;
   initialAppliedCount?: number;
   onAppliedCountChange?: (newCount: number) => void;
+  onSuccess?: () => void;
 };
 
 // 409 Conflict 에러 코드에 대한 사용자 친화적 메시지 매핑
@@ -31,6 +33,7 @@ export function ApplyForm({
   recruitmentId,
   initialAppliedCount,
   onAppliedCountChange,
+  onSuccess,
 }: Props) {
   const router = useRouter();
   const [contact, setContact] = useState("");
@@ -92,9 +95,19 @@ export function ApplyForm({
       // 성공 (200 OK)
       setStatus("success");
       
+      // Contact 저장 (정규화된 값 사용)
+      if (data?.application?.contact) {
+        setSavedContact(data.application.contact);
+      }
+      
       // Optimistic update: appliedCount + 1
       if (initialAppliedCount !== undefined && onAppliedCountChange) {
         onAppliedCountChange(initialAppliedCount + 1);
+      }
+      
+      // 성공 콜백 호출 (myApplication 다시 로드)
+      if (onSuccess) {
+        onSuccess();
       }
       
       // 페이지 새로고침하여 서버 상태 동기화 (백그라운드)

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { fetchJson } from "@/lib/http";
+import { setSavedContact } from "@/lib/contactStorage";
 
 type ApplicationItem = {
   id: string;
@@ -43,10 +44,18 @@ export default function MyApplicationsPage() {
     setHasSearched(true);
 
     try {
+      const contactTrimmed = contact.trim();
       const data = await fetchJson<MyApplicationsResponse>(
-        `/api/my-applications?contact=${encodeURIComponent(contact.trim())}`,
+        `/api/my-applications?contact=${encodeURIComponent(contactTrimmed)}`,
       );
       setItems(data.items ?? []);
+      
+      // Contact 저장 (정규화: 클라이언트에서 간단히 처리)
+      // 이메일인 경우 소문자, 전화번호인 경우 숫자만
+      const normalized = contactTrimmed.includes("@")
+        ? contactTrimmed.toLowerCase()
+        : contactTrimmed.replace(/\D/g, "");
+      setSavedContact(normalized);
     } catch (e: any) {
       console.error("Failed to load applications:", e);
       setError(e?.message ?? "신청 내역을 불러오는데 실패했습니다.");

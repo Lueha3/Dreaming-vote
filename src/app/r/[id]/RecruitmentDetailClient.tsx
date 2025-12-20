@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { fetchJson } from "@/lib/http";
+import { getSavedContact } from "@/lib/contactStorage";
 
 import { ApplyForm } from "./ApplyForm";
+import { MyApplicationCard } from "./MyApplicationCard";
 
 type Recruitment = {
   id: string;
@@ -15,18 +17,84 @@ type Recruitment = {
   status: string;
 };
 
+type ApplicationItem = {
+  id: string;
+  recruitmentId: string;
+  contact: string;
+  name: string | null;
+  message: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 type Props = {
   initialRecruitment: Recruitment;
 };
 
 export function RecruitmentDetailClient({ initialRecruitment }: Props) {
   const [recruitment, setRecruitment] = useState(initialRecruitment);
+  const [myApplication, setMyApplication] = useState<ApplicationItem | null>(null);
+  const [isLoadingApplication, setIsLoadingApplication] = useState(false);
+
+  // 페이지 로드 시 저장된 contact로 신청 내역 확인
+  useEffect(() => {
+    async function loadMyApplication() {
+      const savedContact = getSavedContact();
+      if (!savedContact) {
+        return;
+      }
+
+      setIsLoadingApplication(true);
+      try {
+        const data = await fetchJson<{ ok: true; item: ApplicationItem | null }>(
+          `/api/my-application?recruitmentId=${encodeURIComponent(recruitment.id)}&contact=${encodeURIComponent(savedContact)}`,
+        );
+        if (data.item) {
+          setMyApplication(data.item);
+        }
+      } catch (e) {
+        // 에러는 무시 (신청 내역이 없는 경우일 수 있음)
+      } finally {
+        setIsLoadingApplication(false);
+      }
+    }
+
+    loadMyApplication();
+  }, [recruitment.id]);
 
   function handleAppliedCountChange(newCount: number) {
     setRecruitment((prev) => ({
       ...prev,
       appliedCount: newCount,
     }));
+  }
+
+  function handleApplicationRemoved() {
+    setMyApplication(null);
+  }
+
+  async function reloadMyApplication() {
+    const savedContact = getSavedContact();
+    if (!savedContact) {
+      return;
+    }
+
+    setIsLoadingApplication(true);
+    try {
+      const data = await fetchJson<{ ok: true; item: ApplicationItem | null }>(
+        `/api/my-application?recruitmentId=${encodeURIComponent(recruitment.id)}&contact=${encodeURIComponent(savedContact)}`,
+      );
+      if (data.item) {
+        setMyApplication(data.item);
+      } else {
+        setMyApplication(null);
+      }
+    } catch (e) {
+      // 에러는 무시
+      setMyApplication(null);
+    } finally {
+      setIsLoadingApplication(false);
+    }
   }
 
   return (
@@ -54,11 +122,25 @@ export function RecruitmentDetailClient({ initialRecruitment }: Props) {
       </article>
 
       {recruitment.status === "open" ? (
-        <ApplyForm
-          recruitmentId={recruitment.id}
-          initialAppliedCount={recruitment.appliedCount}
-          onAppliedCountChange={handleAppliedCountChange}
-        />
+        isLoadingApplication ? (
+          <div className="mt-6 rounded-lg border bg-white px-4 py-4 text-sm text-zinc-600">
+            로딩 중...
+          </div>
+        ) : myApplication ? (
+          <MyApplicationCard
+            application={myApplication}
+            initialAppliedCount={recruitment.appliedCount}
+            onAppliedCountChange={handleAppliedCountChange}
+            onApplicationRemoved={handleApplicationRemoved}
+          />
+        ) : (
+          <ApplyForm
+            recruitmentId={recruitment.id}
+            initialAppliedCount={recruitment.appliedCount}
+            onAppliedCountChange={handleAppliedCountChange}
+            onSuccess={reloadMyApplication}
+          />
+        )
       ) : (
         <p className="mt-6 text-sm text-red-600">이미 마감된 모집입니다.</p>
       )}
