@@ -4,9 +4,10 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  url       = env("DATABASE_URL")   // pooler 6543
+  directUrl = env("DIRECT_URL")     // direct 5432
 }
+
 
 model User {
   id         String   @id @default(cuid())
@@ -35,15 +36,17 @@ model Recruitment {
 }
 
 model Application {
-  id            String      @id @default(cuid())
-  recruitmentId String
-  contact       String
-  name          String?
-  message       String?
-  createdAt     DateTime    @default(now())
-  recruitment   Recruitment @relation(fields: [recruitmentId], references: [id], onDelete: Cascade)
+  id                String      @id @default(cuid())
+  recruitmentId     String
+  contact           String
+  contactNormalized String      @default("") @map("contact_normalized")
+  name              String?
+  message           String?
+  createdAt         DateTime    @default(now())
+  recruitment       Recruitment @relation(fields: [recruitmentId], references: [id], onDelete: Cascade)
 
-  @@unique([recruitmentId, contact])
-  @@index([recruitmentId])
-  @@index([contact])
+  @@unique([recruitmentId, contactNormalized])
+  @@index([recruitmentId, createdAt])
+  @@index([contactNormalized])
+  @@map("Application")
 }

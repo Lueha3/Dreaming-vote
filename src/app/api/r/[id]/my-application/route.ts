@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
+import { SESSION_COOKIE_NAME } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,99 +12,10 @@ export const dynamic = "force-dynamic";
  */
 function normalizeContact(contact: string): string {
   const trimmed = contact.trim();
-
-  // 이메일 형식인지 확인
   if (trimmed.includes("@")) {
     return trimmed.toLowerCase();
   }
-
-  // 전화번호: 모든 숫자가 아닌 문자 제거 (공백, 하이픈, 괄호 등)
   return trimmed.replace(/\D/g, "");
-}
-
-// GET /api/my-application/[id]?contact=...
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> } | { params: { id: string } },
-) {
-  try {
-    const resolvedParams = await context.params;
-    const applicationId = resolvedParams?.id;
-
-    if (!applicationId) {
-      return NextResponse.json(
-        { ok: false, error: "applicationId가 필요합니다." },
-        { status: 400 },
-      );
-    }
-
-    const searchParams = req.nextUrl.searchParams;
-    const contact = searchParams.get("contact");
-
-    if (!contact) {
-      return NextResponse.json(
-        { ok: false, error: "contact 파라미터가 필요합니다." },
-        { status: 400 },
-      );
-    }
-
-    const contactNormalized = normalizeContact(contact);
-
-    // 신청 내역 조회 (recruitment 포함)
-    const application = await prisma.application.findUnique({
-      where: { id: applicationId },
-      include: {
-        recruitment: {
-          select: {
-            id: true,
-            title: true,
-            status: true,
-            content: true,
-          },
-        },
-      },
-    });
-
-    if (!application) {
-      return NextResponse.json(
-        { ok: false, error: "신청 내역을 찾을 수 없습니다." },
-        { status: 404 },
-      );
-    }
-
-    // Contact 일치 확인
-    if (application.contactNormalized !== contactNormalized) {
-      return NextResponse.json(
-        { ok: false, error: "FORBIDDEN" },
-        { status: 403 },
-      );
-    }
-
-    return NextResponse.json({
-      ok: true,
-      item: {
-        id: application.id,
-        recruitmentId: application.recruitmentId,
-        contact: application.contact,
-        contactNormalized: application.contactNormalized,
-        name: application.name,
-        message: application.message,
-        createdAt: application.createdAt,
-        recruitment: {
-          id: application.recruitment.id,
-          title: application.recruitment.title,
-          status: application.recruitment.status,
-          content: application.recruitment.content,
-        },
-      },
-    });
-  } catch (e: any) {
-    console.error("GET /api/my-application/[id] failed:", e?.message ?? "Unknown error");
-    return NextResponse.json(
-      { ok: false, error: "서버 오류가 발생했습니다." },
-      { status: 500 },
-    );
-  }
 }
 
 const patchSchema = z.object({
@@ -112,29 +24,129 @@ const patchSchema = z.object({
   message: z.string().optional(),
 });
 
-const deleteSchema = z.object({
-  contact: z.string().min(1, "contact는 필수입니다."),
-});
+// GET /api/r/[id]/my-application
+// 현재 사용자의 신청 내역 조회 (recruitment_id + user_id + contact)
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> } | { params: { id: string } },
+) {
+  try {
+    console.log("GET /api/r/[id]/my-application");
 
-// PATCH /api/my-application/[id]
+    const resolvedParams = await context.params;
+    const recruitmentId = resolvedParams?.id;
+
+    if (!recruitmentId) {
+      return NextResponse.json(
+        { ok: false, error: "recruitmentId가 필요합니다." },
+        { status: 400 },
+      );
+    }
+
+    // 1. 사용자 인증 확인
+    const userId = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+
+    if (!userId) {
+      return NextResponse.json(
+        { ok: false, error: "로그인이 필요합니다." },
+        { status: 401 },
+      );
+    }
+
+    // 2. User 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { ok: false, error: "유효하지 않은 세션입니다." },
+        { status: 401 },
+      );
+    }
+
+    // 3. contact 파라미터 확인 (클라이언트에서 전달)
+    const searchParams = req.nextUrl.searchParams;
+    const contact = searchParams.get("contact");
+
+    if (!contact) {
+      return NextResponse.json({
+        ok: true,
+        item: null,
+      });
+    }
+
+    // 4. contact 정규화
+    const contactNormalized = normalizeContact(contact);
+
+    // 5. Application 조회
+    const application = await prisma.application.findUnique({
+      where: {
+        recruitmentId_contactNormalized: {
+          recruitmentId,
+          contactNormalized,
+        },
+      },
+    });
+
+    if (!application) {
+      return NextResponse.json({
+        ok: true,
+        item: null,
+      });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      item: {
+        id: application.id,
+        recruitmentId: application.recruitmentId,
+        contact: application.contactNormalized,
+        name: application.name,
+        message: application.message,
+        createdAt: application.createdAt,
+        updatedAt: application.createdAt,
+      },
+    });
+  } catch (e: any) {
+    console.error("GET /api/r/[id]/my-application failed:", e?.message ?? "Unknown error");
+    return NextResponse.json(
+      { ok: false, error: e?.message ?? "Server error" },
+      { status: 500 },
+    );
+  }
+}
+
+// PATCH /api/r/[id]/my-application
+// 현재 사용자의 신청 내역 수정
 export async function PATCH(
   req: NextRequest,
   context: { params: Promise<{ id: string }> } | { params: { id: string } },
 ) {
   try {
-    console.log("PATCH /api/my-application/[id]");
+    console.log("PATCH /api/r/[id]/my-application");
 
     const resolvedParams = await context.params;
-    const applicationId = resolvedParams?.id;
+    const recruitmentId = resolvedParams?.id;
 
-    if (!applicationId) {
+    if (!recruitmentId) {
       return NextResponse.json(
-        { ok: false, error: "applicationId가 필요합니다." },
+        { ok: false, error: "recruitmentId가 필요합니다." },
         { status: 400 },
       );
     }
 
-    // 1. 입력값 검증
+    // 1. 사용자 인증 확인
+    const userId = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+
+    if (!userId) {
+      return NextResponse.json(
+        { ok: false, error: "로그인이 필요합니다." },
+        { status: 401 },
+      );
+    }
+
+    // 2. 입력값 검증
     let body: unknown;
     try {
       body = await req.json();
@@ -160,12 +172,29 @@ export async function PATCH(
 
     const { contact, name, message } = parsed.data;
 
-    // 2. Contact 정규화
+    // 3. User 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { ok: false, error: "유효하지 않은 세션입니다." },
+        { status: 401 },
+      );
+    }
+
+    // 4. contact 정규화
     const contactNormalized = normalizeContact(contact);
 
-    // 3. 신청 내역 조회 및 권한 확인
+    // 5. Application 조회 및 권한 확인
     const application = await prisma.application.findUnique({
-      where: { id: applicationId },
+      where: {
+        recruitmentId_contactNormalized: {
+          recruitmentId,
+          contactNormalized,
+        },
+      },
     });
 
     if (!application) {
@@ -175,17 +204,9 @@ export async function PATCH(
       );
     }
 
-    // 4. Contact 일치 확인 (contactNormalized 사용)
-    if (application.contactNormalized !== contactNormalized) {
-      return NextResponse.json(
-        { ok: false, error: "FORBIDDEN" },
-        { status: 403 },
-      );
-    }
-
-    // 5. 업데이트 (name, message만)
+    // 6. 업데이트 (name, message만)
     const updated = await prisma.application.update({
-      where: { id: applicationId },
+      where: { id: application.id },
       data: {
         name: name !== undefined ? (name.trim() || null) : undefined,
         message: message !== undefined ? (message.trim() || null) : undefined,
@@ -205,8 +226,7 @@ export async function PATCH(
       },
     });
   } catch (e: any) {
-    // Log error message only (no PII)
-    console.error("PATCH /api/my-application/[id] failed:", e?.message ?? "Unknown error");
+    console.error("PATCH /api/r/[id]/my-application failed:", e?.message ?? "Unknown error");
     return NextResponse.json(
       { ok: false, error: e?.message ?? "Server error" },
       { status: 500 },
@@ -214,25 +234,40 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/my-application/[id]
+const deleteSchema = z.object({
+  contact: z.string().min(1, "contact는 필수입니다."),
+});
+
+// DELETE /api/r/[id]/my-application
+// 현재 사용자의 신청 내역 삭제
 export async function DELETE(
   req: NextRequest,
   context: { params: Promise<{ id: string }> } | { params: { id: string } },
 ) {
   try {
-    console.log("DELETE /api/my-application/[id]");
+    console.log("DELETE /api/r/[id]/my-application");
 
     const resolvedParams = await context.params;
-    const applicationId = resolvedParams?.id;
+    const recruitmentId = resolvedParams?.id;
 
-    if (!applicationId) {
+    if (!recruitmentId) {
       return NextResponse.json(
-        { ok: false, error: "applicationId가 필요합니다." },
+        { ok: false, error: "recruitmentId가 필요합니다." },
         { status: 400 },
       );
     }
 
-    // 1. 입력값 검증
+    // 1. 사용자 인증 확인
+    const userId = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+
+    if (!userId) {
+      return NextResponse.json(
+        { ok: false, error: "로그인이 필요합니다." },
+        { status: 401 },
+      );
+    }
+
+    // 2. 입력값 검증
     let body: unknown;
     try {
       body = await req.json();
@@ -258,14 +293,31 @@ export async function DELETE(
 
     const { contact } = parsed.data;
 
-    // 2. Contact 정규화
+    // 3. User 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { ok: false, error: "유효하지 않은 세션입니다." },
+        { status: 401 },
+      );
+    }
+
+    // 4. contact 정규화
     const contactNormalized = normalizeContact(contact);
 
-    // 3. 트랜잭션으로 삭제 및 appliedCount 감소
+    // 5. 트랜잭션으로 삭제 및 appliedCount 감소
     await prisma.$transaction(async (tx) => {
-      // 3-1. 신청 내역 조회 및 권한 확인
+      // 5-1. Application 조회 및 권한 확인
       const application = await tx.application.findUnique({
-        where: { id: applicationId },
+        where: {
+          recruitmentId_contactNormalized: {
+            recruitmentId,
+            contactNormalized,
+          },
+        },
         include: {
           recruitment: true,
         },
@@ -275,23 +327,18 @@ export async function DELETE(
         throw new Error("NOT_FOUND");
       }
 
-      // 3-2. Contact 일치 확인 (contactNormalized 사용)
-      if (application.contactNormalized !== contactNormalized) {
-        throw new Error("FORBIDDEN");
-      }
-
-      // 3-3. 신청 내역 삭제
+      // 5-2. 신청 내역 삭제
       await tx.application.delete({
-        where: { id: applicationId },
+        where: { id: application.id },
       });
 
-      // 3-4. appliedCount 감소 (0 이하로 내려가지 않도록)
+      // 5-3. appliedCount 감소 (0 이하로 내려가지 않도록)
       const currentCount = await tx.application.count({
-        where: { recruitmentId: application.recruitmentId },
+        where: { recruitmentId },
       });
 
       await tx.recruitment.update({
-        where: { id: application.recruitmentId },
+        where: { id: recruitmentId },
         data: {
           appliedCount: Math.max(0, currentCount),
         },
@@ -303,24 +350,17 @@ export async function DELETE(
     });
   } catch (e: unknown) {
     if (e instanceof Error) {
-      // 커스텀 에러 처리
       switch (e.message) {
         case "NOT_FOUND":
           return NextResponse.json(
             { ok: false, error: "신청 내역을 찾을 수 없습니다." },
             { status: 404 },
           );
-        case "FORBIDDEN":
-          return NextResponse.json(
-            { ok: false, error: "FORBIDDEN" },
-            { status: 403 },
-          );
       }
     }
 
-    // Log error message only (no PII)
     const errorMsg = e instanceof Error ? e.message : String(e);
-    console.error("DELETE /api/my-application/[id] failed:", errorMsg);
+    console.error("DELETE /api/r/[id]/my-application failed:", errorMsg);
     return NextResponse.json(
       { ok: false, error: "Server error" },
       { status: 500 },

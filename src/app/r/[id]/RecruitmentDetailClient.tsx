@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { fetchJson } from "@/lib/http";
 import { getSavedContact } from "@/lib/contactStorage";
@@ -32,28 +33,33 @@ type Props = {
 };
 
 export function RecruitmentDetailClient({ initialRecruitment }: Props) {
+  const router = useRouter();
   const [recruitment, setRecruitment] = useState(initialRecruitment);
   const [myApplication, setMyApplication] = useState<ApplicationItem | null>(null);
-  const [isLoadingApplication, setIsLoadingApplication] = useState(false);
+  const [isLoadingApplication, setIsLoadingApplication] = useState(true);
 
-  // 페이지 로드 시 저장된 contact로 신청 내역 확인
+  // 페이지 로드 시 저장된 contact로 신청 내역 확인 (MVP: 로그인 불필요)
   useEffect(() => {
     async function loadMyApplication() {
       const savedContact = getSavedContact();
       if (!savedContact) {
+        // 저장된 contact 없음 - 신규 사용자
+        setIsLoadingApplication(false);
         return;
       }
 
-      setIsLoadingApplication(true);
       try {
         const data = await fetchJson<{ ok: true; item: ApplicationItem | null }>(
-          `/api/my-application?recruitmentId=${encodeURIComponent(recruitment.id)}&contact=${encodeURIComponent(savedContact)}`,
+          `/api/r/${recruitment.id}/my-application?contact=${encodeURIComponent(savedContact)}`,
         );
         if (data.item) {
           setMyApplication(data.item);
+        } else {
+          setMyApplication(null);
         }
       } catch (e) {
         // 에러는 무시 (신청 내역이 없는 경우일 수 있음)
+        setMyApplication(null);
       } finally {
         setIsLoadingApplication(false);
       }
@@ -71,6 +77,9 @@ export function RecruitmentDetailClient({ initialRecruitment }: Props) {
 
   function handleApplicationRemoved() {
     setMyApplication(null);
+    startTransition(() => {
+      router.refresh();
+    });
   }
 
   async function reloadMyApplication() {
@@ -82,7 +91,7 @@ export function RecruitmentDetailClient({ initialRecruitment }: Props) {
     setIsLoadingApplication(true);
     try {
       const data = await fetchJson<{ ok: true; item: ApplicationItem | null }>(
-        `/api/my-application?recruitmentId=${encodeURIComponent(recruitment.id)}&contact=${encodeURIComponent(savedContact)}`,
+        `/api/r/${recruitment.id}/my-application?contact=${encodeURIComponent(savedContact)}`,
       );
       if (data.item) {
         setMyApplication(data.item);
@@ -129,6 +138,7 @@ export function RecruitmentDetailClient({ initialRecruitment }: Props) {
         ) : myApplication ? (
           <MyApplicationCard
             application={myApplication}
+            recruitmentId={recruitment.id}
             initialAppliedCount={recruitment.appliedCount}
             onAppliedCountChange={handleAppliedCountChange}
             onApplicationRemoved={handleApplicationRemoved}

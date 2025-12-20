@@ -31,15 +31,20 @@ export async function fetchJson<T>(
   init?: RequestInit,
 ): Promise<T> {
   const res = await fetch(input, { cache: "no-store", ...init });
-  const data = await safeJson<any>(res);
+  
+  let data: any;
+  try {
+    data = await safeJson<any>(res);
+  } catch (parseError) {
+    // JSON 파싱 실패 시 친화적 에러
+    console.debug("API parse error:", { input: String(input), status: res.status });
+    throw new Error("서버 응답 오류. 잠시 후 다시 시도해주세요.");
+  }
   
   if (!res.ok || data?.ok === false) {
-    const msg = data?.error ?? `HTTP ${res.status}`;
-    console.error("API ERROR:", {
-      input: String(input),
-      status: res.status,
-      data,
-    });
+    // 서버가 반환한 에러 메시지 사용, 없으면 기본 메시지
+    const msg = data?.error || "요청 실패. 잠시 후 다시 시도해주세요.";
+    console.debug("API error:", { input: String(input), status: res.status, error: msg });
     throw new Error(msg);
   }
   

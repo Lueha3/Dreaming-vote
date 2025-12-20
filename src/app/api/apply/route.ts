@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
@@ -41,10 +42,77 @@ function isValidContact(contact: string): boolean {
   return normalized.length >= 10;
 }
 
+/**
+ * Rate limit: IP 기반 인메모리 Map
+ * 5초에 5회 이상 요청 시 429 반환
+ */
+const rateLimitMap = new Map<string, number[]>();
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const windowMs = 5000; // 5초
+  const maxRequests = 5;
+
+  // 오래된 타임스탬프 제거
+  const timestamps = rateLimitMap.get(ip) || [];
+  const recentTimestamps = timestamps.filter((ts) => now - ts < windowMs);
+
+  // 제한 초과 확인
+  if (recentTimestamps.length >= maxRequests) {
+    return false;
+  }
+
+  // 새 타임스탬프 추가
+  recentTimestamps.push(now);
+  rateLimitMap.set(ip, recentTimestamps);
+
+  // 주기적으로 오래된 IP 제거 (메모리 누수 방지)
+  if (rateLimitMap.size > 1000) {
+    for (const [key, timestamps] of rateLimitMap.entries()) {
+      const hasRecent = timestamps.some((ts) => now - ts < windowMs * 2);
+      if (!hasRecent) {
+        rateLimitMap.delete(key);
+      }
+    }
+  }
+
+  return true;
+}
+
+function getClientIp(req: NextRequest): string {
+  // X-Forwarded-For 헤더 확인 (프록시 환경)
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) {
+    return forwarded.split(",")[0].trim();
+  }
+
+  // X-Real-IP 헤더 확인
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp) {
+    return realIp;
+  }
+
+  // 기본값 (로컬 개발 환경)
+  return "unknown";
+}
+
 // 항상 JSON 응답을 반환하여 클라이언트가 안전하게 파싱할 수 있도록 합니다.
 export async function POST(req: NextRequest) {
   try {
     console.log("POST /api/apply");
+
+    // Rate limit 확인
+    const clientIp = getClientIp(req);
+    if (!checkRateLimit(clientIp)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: "RATE_LIMIT_EXCEEDED",
+          error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
+        },
+        { status: 429 },
+      );
+    }
 
     // 1. 입력값 검증
     let body: unknown;
@@ -102,44 +170,29 @@ export async function POST(req: NextRequest) {
           throw new Error("RECRUITMENT_CLOSED");
         }
 
-        // 3-2. 중복 신청 확인
-        const existingApplication = await tx.application.findUnique({
-          where: {
-            recruitmentId_contact: {
-              recruitmentId,
-              contact: contactNormalized,
-            },
-          },
-        });
-
-        if (existingApplication) {
-          throw new Error("ALREADY_APPLIED");
-        }
-
-        // 3-3. 정원 확인 (실제 신청 수로 계산)
-        const applicationCount = await tx.application.count({
-          where: { recruitmentId },
-        });
-
-        if (applicationCount >= recruitment.capacity) {
+        // 3-2. 정원 확인 (appliedCount 사용)
+        if (recruitment.appliedCount >= recruitment.capacity) {
           throw new Error("CAPACITY_FULL");
         }
 
-        // 3-4. 신청 레코드 생성
+        // 3-3. 신청 레코드 생성 (unique constraint가 중복 방지)
         const application = await tx.application.create({
           data: {
             recruitmentId,
-            contact: contactNormalized,
+            contact: contact.trim(), // 원본 저장
+            contactNormalized, // 정규화된 값 저장 (unique constraint용)
             name: name?.trim() || null,
             message: message?.trim() || null,
           },
         });
 
-        // 3-5. appliedCount 업데이트 (실제 카운트로 재계산)
+        // 3-4. appliedCount 증가 (트랜잭션 내에서 안전하게)
         const updatedRecruitment = await tx.recruitment.update({
           where: { id: recruitmentId },
           data: {
-            appliedCount: applicationCount + 1,
+            appliedCount: {
+              increment: 1,
+            },
           },
         });
 
@@ -152,12 +205,28 @@ export async function POST(req: NextRequest) {
           application: {
             id: result.application.id,
             recruitmentId,
-            contact: result.application.contact,
+            contact: result.application.contactNormalized,
           },
         },
         { status: 200 },
       );
     } catch (error: unknown) {
+      // Prisma unique constraint 실패 처리 (P2002)
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        // unique constraint 위반 = 이미 신청함
+        return NextResponse.json(
+          {
+            ok: false,
+            code: "ALREADY_APPLIED",
+            error: "이미 신청했습니다.",
+          },
+          { status: 409 },
+        );
+      }
+
       if (error instanceof Error) {
         // 트랜잭션 내에서 던진 커스텀 에러코드 처리
         switch (error.message) {
@@ -185,15 +254,6 @@ export async function POST(req: NextRequest) {
                 ok: false,
                 code: "CAPACITY_FULL",
                 error: "정원이 꽉 찼습니다.",
-              },
-              { status: 409 },
-            );
-          case "ALREADY_APPLIED":
-            return NextResponse.json(
-              {
-                ok: false,
-                code: "ALREADY_APPLIED",
-                error: "이미 신청했습니다.",
               },
               { status: 409 },
             );

@@ -24,24 +24,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // #region agent log
-  if (typeof window === 'undefined') {
-    fetch('http://127.0.0.1:7243/ingest/9e68326c-1d35-469f-95ce-dd5d2da86c08',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'layout.tsx:27',message:'Server render: html lang="en"',data:{lang:'en',isServer:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  }
-  // #endregion agent log
-  
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* #region agent log */}
-        {typeof window !== 'undefined' && (() => {
-          const htmlEl = document.documentElement;
-          fetch('http://127.0.0.1:7243/ingest/9e68326c-1d35-469f-95ce-dd5d2da86c08',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'layout.tsx:35',message:'Client hydration: html attributes',data:{lang:htmlEl.getAttribute('lang'),className:htmlEl.className,isClient:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-          return null;
-        })()}
-        {/* #endregion agent log */}
         <Header />
         {children}
       </body>

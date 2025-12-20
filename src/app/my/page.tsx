@@ -57,8 +57,9 @@ export default function MyApplicationsPage() {
         : contactTrimmed.replace(/\D/g, "");
       setSavedContact(normalized);
     } catch (e: any) {
-      console.error("Failed to load applications:", e);
-      setError(e?.message ?? "신청 내역을 불러오는데 실패했습니다.");
+      // Dev에서만 상세 로그, 사용자에겐 친화적 메시지
+      console.debug("Failed to load applications:", e?.message);
+      setError("조회 실패. 잠시 후 다시 시도해주세요.");
       setItems([]);
     } finally {
       setLoading(false);
@@ -126,7 +127,7 @@ export default function MyApplicationsPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <Link
-                          href={`/r/${item.recruitment.id}`}
+                          href={`/my/applications/${item.id}`}
                           className="text-base font-medium text-zinc-900 hover:underline"
                         >
                           {item.recruitment.title}

@@ -42,12 +42,12 @@ export async function GET(req: NextRequest) {
 
     const contactNormalized = normalizeContact(contact);
 
-    // 신청 내역 조회 (unique by recruitmentId + contact)
+    // 신청 내역 조회 (unique by recruitmentId + contactNormalized)
     const application = await prisma.application.findUnique({
       where: {
-        recruitmentId_contact: {
+        recruitmentId_contactNormalized: {
           recruitmentId,
-          contact: contactNormalized,
+          contactNormalized,
         },
       },
     });
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
       item: {
         id: application.id,
         recruitmentId: application.recruitmentId,
-        contact: application.contact,
+        contact: application.contactNormalized,
         name: application.name,
         message: application.message,
         createdAt: application.createdAt,

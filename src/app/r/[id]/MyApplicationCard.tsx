@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { startTransition, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { safeJson } from "@/lib/http";
-import { clearSavedContact } from "@/lib/contactStorage";
+import { getSavedContact } from "@/lib/contactStorage";
 
 type ApplicationItem = {
   id: string;
@@ -17,6 +18,7 @@ type ApplicationItem = {
 
 type Props = {
   application: ApplicationItem;
+  recruitmentId: string;
   initialAppliedCount: number;
   onAppliedCountChange: (newCount: number) => void;
   onApplicationRemoved: () => void;
@@ -46,10 +48,12 @@ function formatContact(contact: string): string {
 
 export function MyApplicationCard({
   application,
+  recruitmentId,
   initialAppliedCount,
   onAppliedCountChange,
   onApplicationRemoved,
 }: Props) {
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(application.name || "");
   const [message, setMessage] = useState(application.message || "");
@@ -63,11 +67,21 @@ export function MyApplicationCard({
     setAlert(null);
 
     try {
-      const res = await fetch(`/api/my-application/${application.id}`, {
+      const savedContact = getSavedContact();
+      if (!savedContact) {
+        setAlert({
+          type: "error",
+          message: "연락처 정보를 찾을 수 없습니다.",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      const res = await fetch(`/api/r/${recruitmentId}/my-application`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contact: application.contact,
+          contact: savedContact,
           name: name.trim() || undefined,
           message: message.trim() || undefined,
         }),
@@ -91,8 +105,11 @@ export function MyApplicationCard({
       setIsEditing(false);
       setIsSubmitting(false);
 
-      // 성공 후 잠시 후 알림 제거
+      // 성공 후 잠시 후 알림 제거 및 상태 업데이트
       setTimeout(() => setAlert(null), 3000);
+      startTransition(() => {
+        router.refresh();
+      });
     } catch (e) {
       setAlert({
         type: "error",
@@ -112,11 +129,21 @@ export function MyApplicationCard({
     setAlert(null);
 
     try {
-      const res = await fetch(`/api/my-application/${application.id}`, {
+      const savedContact = getSavedContact();
+      if (!savedContact) {
+        setAlert({
+          type: "error",
+          message: "연락처 정보를 찾을 수 없습니다.",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      const res = await fetch(`/api/r/${recruitmentId}/my-application`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contact: application.contact,
+          contact: savedContact,
         }),
       });
 
