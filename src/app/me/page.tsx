@@ -8,47 +8,20 @@ export default async function MePage() {
   const cookieStore = await cookies();
   const userId = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
-  let userWithApplications:
-    | (Awaited<ReturnType<typeof prisma.user.findUnique>> & {
-        applications: {
-          id: string;
-          createdAt: Date;
-          recruitment: {
-            id: string;
-            title: string;
-            status: string;
-          };
-        }[];
-      })
-    | null = null;
+  let user = null;
 
   if (userId) {
-    const user = await prisma.user.findUnique({
+    user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        applications: {
-          include: {
-            recruitment: {
-              select: {
-                id: true,
-                title: true,
-                status: true,
-              },
-            },
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-        },
+      select: {
+        id: true,
+        churchCode: true,
+        name: true,
+        phoneLast4: true,
+        createdAt: true,
       },
     });
-
-    if (user) {
-      userWithApplications = user as typeof userWithApplications;
-    }
   }
-
-  const hasUser = !!userWithApplications;
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
@@ -68,69 +41,36 @@ export default async function MePage() {
       <main className="mx-auto max-w-3xl px-4 py-8">
         <h1 className="mb-4 text-2xl font-bold">내 신청내역</h1>
 
-        {!hasUser && (
+        {!userId ? (
           <div className="rounded-lg border bg-white px-4 py-4 text-sm text-zinc-700">
-            <p>로그인된 세션이 없습니다.</p>
-            <p className="mt-1">
-              모집 상세 페이지에서 신청을 진행하면서 교회코드/이름/휴대폰 뒤 4자리를
-              입력하면 내역이 여기 표시됩니다.
-            </p>
+            <p>로그인이 필요합니다.</p>
           </div>
-        )}
-
-        {hasUser && userWithApplications && (
+        ) : !user ? (
+          <div className="rounded-lg border bg-white px-4 py-4 text-sm text-zinc-700">
+            <p>사용자 정보를 찾을 수 없습니다.</p>
+          </div>
+        ) : (
           <div className="space-y-4">
             <section className="rounded-lg border bg-white px-4 py-4 text-sm">
               <h2 className="mb-2 text-base font-semibold">내 정보</h2>
               <div className="space-y-1 text-sm text-zinc-700">
-                <div>이름: {userWithApplications.name ?? "-"}</div>
-                <div>교회 코드: {userWithApplications.churchCode}</div>
-                <div>휴대폰 뒤 4자리: {userWithApplications.phoneLast4}</div>
+                <div>이름: {user.name ?? "-"}</div>
+                <div>교회 코드: {user.churchCode}</div>
+                <div>휴대폰 뒤 4자리: {user.phoneLast4}</div>
               </div>
             </section>
 
             <section className="rounded-lg border bg-white px-4 py-4 text-sm">
-              <h2 className="mb-2 text-base font-semibold">신청한 모집</h2>
-              {userWithApplications.applications.length === 0 ? (
-                <p className="text-zinc-600">신청한 모집이 없습니다.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {userWithApplications.applications.map((app) => (
-                    <li
-                      key={app.id}
-                      className="flex items-center justify-between rounded-md border px-3 py-2"
-                    >
-                      <div>
-                        <Link
-                          href={`/r/${app.recruitment.id}`}
-                          className="text-sm font-medium text-zinc-900 hover:underline"
-                        >
-                          {app.recruitment.title}
-                        </Link>
-                        <div className="mt-0.5 text-xs text-zinc-500">
-                          신청일:{" "}
-                          {app.createdAt.toLocaleString("ko-KR", {
-                            year: "numeric",
-                            month: "2-digit",
-                            day: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </div>
-                      </div>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          app.recruitment.status === "open"
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-zinc-100 text-zinc-500"
-                        }`}
-                      >
-                        {app.recruitment.status === "open" ? "모집중" : "마감"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <h2 className="mb-2 text-base font-semibold">신청내역</h2>
+              <p className="mt-2 text-sm text-zinc-600">
+                신청내역은 연락처 기반으로 조회합니다.
+              </p>
+              <Link
+                href="/my"
+                className="mt-3 inline-block text-sm text-emerald-600 underline hover:text-emerald-700"
+              >
+                내 신청내역으로 이동
+              </Link>
             </section>
           </div>
         )}

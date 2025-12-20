@@ -21,15 +21,12 @@ export async function GET(req: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        applications: {
-          include: {
-            recruitment: true,
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-        },
+      select: {
+        id: true,
+        churchCode: true,
+        name: true,
+        phoneLast4: true,
+        createdAt: true,
       },
     });
 
@@ -40,20 +37,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 필요 없는 필드 제거/정제해서 내려주고 싶다면 여기서 가공
-    const applications = user.applications.map((app) => ({
-      id: app.id,
-      createdAt: app.createdAt,
-      recruitment: {
-        id: app.recruitment.id,
-        title: app.recruitment.title,
-        status: app.recruitment.status,
-        capacity: app.recruitment.capacity,
-        appliedCount: app.recruitment.appliedCount,
-        createdAt: app.recruitment.createdAt,
-        updatedAt: app.recruitment.updatedAt,
-      },
-    }));
+    // Application은 User와 직접 연결되지 않으므로 빈 배열 반환
+    // (Application 모델에는 userId 필드가 없고 contact 기반으로만 식별됨)
+    const applications: never[] = [];
 
     return NextResponse.json({
       ok: true,

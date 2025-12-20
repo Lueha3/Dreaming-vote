@@ -5,8 +5,6 @@ import { useState } from "react";
 
 import { safeJson } from "@/lib/http";
 
-import { safeJson } from "@/lib/http";
-
 type Props = {
   recruitmentId: string;
 };
@@ -268,5 +266,3 @@ export function ApplyButton({ recruitmentId }: Props) {
     </div>
   );
 }
-
-
