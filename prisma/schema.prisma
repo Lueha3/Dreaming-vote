@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id         String   @id @default(cuid())
+  churchCode String
+  name       String
+  phoneLast4 String
+  createdAt  DateTime @default(now())
+
+  @@unique([churchCode, name, phoneLast4])
+  @@index([churchCode])
+}
+
+model Recruitment {
+  id           String        @id @default(cuid())
+  churchCode   String
+  title        String
+  content      String
+  capacity     Int
+  appliedCount Int           @default(0)
+  status       String        @default("open")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @default(now()) @updatedAt
+  applications Application[]
+
+  @@index([churchCode, status])
+}
+
+model Application {
+  id            String      @id @default(cuid())
+  recruitmentId String
+  contact       String
+  name          String?
+  message       String?
+  createdAt     DateTime    @default(now())
+  recruitment   Recruitment @relation(fields: [recruitmentId], references: [id], onDelete: Cascade)
+
+  @@unique([recruitmentId, contact])
+  @@index([recruitmentId])
+  @@index([contact])
+}

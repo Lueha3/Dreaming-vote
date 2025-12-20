@@ -2,6 +2,18 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+### Environment Setup
+
+1. 프로젝트 루트에 `.env.local` 파일을 생성하세요
+2. 필수 환경 변수를 설정하세요:
+   ```bash
+   ADMIN_SECRET=your-admin-secret-here
+   CHURCH_CODE=your-church-code-here
+   ```
+3. 자세한 환경 변수 설명은 [ENV_EXAMPLE.md](./ENV_EXAMPLE.md)를 참고하세요
+
+### Development
+
 First, run the development server:
 
 ```bash
@@ -15,6 +27,18 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+### Static Assets
+
+Static assets (images, fonts, etc.) should be placed in the `public/` folder at the project root.
+
+**Logo Setup:**
+1. Place the church logo image file at `public/logo.png`
+2. Ensure the filename is exactly `logo.png` (no double extensions)
+3. Restart the dev server after adding the file
+4. Verify the logo is accessible by visiting [http://localhost:3000/logo.png](http://localhost:3000/logo.png) - it should return 200 OK
+
+The logo will appear in the global header on all pages.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
