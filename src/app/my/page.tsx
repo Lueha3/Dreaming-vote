@@ -120,45 +120,44 @@ export default function MyApplicationsPage() {
             ) : (
               <ul className="space-y-3">
                 {items.map((item) => (
-                  <li
-                    key={item.id}
-                    className="rounded-lg border bg-white px-4 py-3 shadow-sm"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <Link
-                          href={`/my/applications/${item.id}`}
-                          className="text-base font-medium text-zinc-900 hover:underline"
-                        >
-                          {item.recruitment.title}
-                        </Link>
-                        {item.name && (
-                          <p className="mt-1 text-sm text-zinc-600">이름: {item.name}</p>
-                        )}
-                        {item.message && (
-                          <p className="mt-1 text-sm text-zinc-600">{item.message}</p>
-                        )}
-                        <div className="mt-2 text-xs text-zinc-500">
-                          신청일:{" "}
-                          {new Date(item.appliedAt).toLocaleString("ko-KR", {
-                            year: "numeric",
-                            month: "2-digit",
-                            day: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                  <li key={item.id}>
+                    <Link
+                      href={`/my/applications/${item.id}`}
+                      className="block rounded-lg border bg-white px-4 py-3 shadow-sm transition-colors hover:border-emerald-300 hover:bg-emerald-50/30 active:bg-emerald-50"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <span className="text-base font-medium text-zinc-900">
+                            {item.recruitment.title}
+                          </span>
+                          {item.name && (
+                            <p className="mt-1 text-sm text-zinc-600">이름: {item.name}</p>
+                          )}
+                          {item.message && (
+                            <p className="mt-1 text-sm text-zinc-600">{item.message}</p>
+                          )}
+                          <div className="mt-2 text-xs text-zinc-500">
+                            신청일:{" "}
+                            {new Date(item.appliedAt).toLocaleString("ko-KR", {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </div>
                         </div>
+                        <span
+                          className={`ml-4 rounded-full px-2 py-0.5 text-xs font-medium ${
+                            item.recruitment.status === "open"
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-zinc-100 text-zinc-500"
+                          }`}
+                        >
+                          {item.recruitment.status === "open" ? "모집중" : "마감"}
+                        </span>
                       </div>
-                      <span
-                        className={`ml-4 rounded-full px-2 py-0.5 text-xs font-medium ${
-                          item.recruitment.status === "open"
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-zinc-100 text-zinc-500"
-                        }`}
-                      >
-                        {item.recruitment.status === "open" ? "모집중" : "마감"}
-                      </span>
-                    </div>
+                    </Link>
                   </li>
                 ))}
               </ul>

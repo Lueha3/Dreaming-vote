@@ -83,7 +83,7 @@ export default function AdminRecruitmentsPage() {
         <h2 className="text-xl font-bold">모집글 목록</h2>
         <Link
           href="/admin/recruitments/new"
-          className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+          className="rounded-md border px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
         >
           새 모집글 생성
         </Link>
@@ -139,7 +139,7 @@ export default function AdminRecruitmentsPage() {
                 <div className="ml-4 flex flex-col gap-2">
                   <Link
                     href={`/admin/recruitments/${item.id}`}
-                    className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                    className="rounded-md border px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
                   >
                     신청자 보기
                   </Link>

@@ -57,33 +57,32 @@ export function RecruitmentList() {
   return (
     <ul className="space-y-3">
       {items.map((item) => (
-        <li
-          key={item.id}
-          className="rounded-lg border bg-white px-4 py-3 shadow-sm"
-        >
-          <div className="flex items-center justify-between">
-            <Link
-              href={`/r/${item.id}`}
-              className="text-base font-medium text-zinc-900 hover:underline"
-            >
-              {item.title ?? "(untitled)"}
-            </Link>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                item.status === "open"
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-zinc-100 text-zinc-500"
-              }`}
-            >
-              {item.status === "open" ? "모집중" : "마감"}
-            </span>
-          </div>
-          <p className="mt-1 text-sm text-zinc-700">
-            {item.description ?? ""}
-          </p>
-          <div className="mt-1 text-xs text-zinc-500">
-            정원 {item.capacity ?? 0}명 / 신청 {item.appliedCount ?? 0}명
-          </div>
+        <li key={item.id}>
+          <Link
+            href={`/r/${item.id}`}
+            className="block rounded-lg border bg-white px-4 py-3 shadow-sm transition-colors hover:border-emerald-300 hover:bg-emerald-50/30 active:bg-emerald-50"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-base font-medium text-zinc-900">
+                {item.title ?? "(untitled)"}
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                  item.status === "open"
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-zinc-100 text-zinc-500"
+                }`}
+              >
+                {item.status === "open" ? "모집중" : "마감"}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-zinc-700">
+              {item.description ?? ""}
+            </p>
+            <div className="mt-1 text-xs text-zinc-500">
+              정원 {item.capacity ?? 0}명 / 신청 {item.appliedCount ?? 0}명
+            </div>
+          </Link>
         </li>
       ))}
     </ul>
