@@ -1,171 +1,251 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
-import { fetchJson } from "@/lib/http";
-import { setSavedContact } from "@/lib/contactStorage";
-
-type ApplicationItem = {
-  id: string;
-  recruitmentId: string;
-  recruitment: {
-    id: string;
-    title: string;
-    status: string;
-  };
-  name: string | null;
-  message: string | null;
-  appliedAt: string;
+type ReportItem = {
+  shareSlug: string;
+  catchphrase: string;
+  coreTraits: string;
+  sourceAi: string;
+  viewCount: number;
+  createdAt: string;
 };
 
-type MyApplicationsResponse = {
-  ok: true;
-  items: ApplicationItem[];
+const SOURCE_LABEL: Record<string, string> = {
+  chatgpt: "ChatGPT",
+  claude: "Claude",
+  gemini: "Gemini",
+  personality: "성격유형",
+  other: "AI",
 };
 
-export default function MyApplicationsPage() {
-  const [contact, setContact] = useState("");
-  const [items, setItems] = useState<ApplicationItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [hasSearched, setHasSearched] = useState(false);
+export default function MyPage() {
+  const [items, setItems] = useState<ReportItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [nickname, setNickname] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [notLoggedIn, setNotLoggedIn] = useState(false);
 
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
+  useEffect(() => {
+    const supabase = createClient();
 
-    if (!contact.trim()) {
-      setError("이메일 또는 휴대폰을 입력해주세요.");
-      return;
-    }
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        setNotLoggedIn(true);
+        setLoading(false);
+        return;
+      }
 
-    setLoading(true);
-    setError(null);
-    setHasSearched(true);
+      setNickname(user.user_metadata?.full_name ?? null);
+      setAvatarUrl(user.user_metadata?.avatar_url ?? null);
 
-    try {
-      const contactTrimmed = contact.trim();
-      const data = await fetchJson<MyApplicationsResponse>(
-        `/api/my-applications?contact=${encodeURIComponent(contactTrimmed)}`,
-      );
-      setItems(data.items ?? []);
-      
-      // Contact 저장 (정규화: 클라이언트에서 간단히 처리)
-      // 이메일인 경우 소문자, 전화번호인 경우 숫자만
-      const normalized = contactTrimmed.includes("@")
-        ? contactTrimmed.toLowerCase()
-        : contactTrimmed.replace(/\D/g, "");
-      setSavedContact(normalized);
-    } catch (e: any) {
-      // Dev에서만 상세 로그, 사용자에겐 친화적 메시지
-      console.debug("Failed to load applications:", e?.message);
-      setError("조회 실패. 잠시 후 다시 시도해주세요.");
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
+      fetch("/api/reports/me")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.ok) setItems(data.items ?? []);
+          else setNotLoggedIn(true);
+        })
+        .catch(() => setNotLoggedIn(true))
+        .finally(() => setLoading(false));
+    });
+  }, []);
+
+  /* ── 로딩 ─────────────────────────────────────────────────── */
+  if (loading) {
+    return (
+      <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden">
+        <AmbientGlow />
+        <main className="relative mx-auto max-w-2xl px-4 py-14">
+          <SkeletonList />
+        </main>
+      </div>
+    );
   }
 
+  /* ── 비로그인 ─────────────────────────────────────────────── */
+  if (notLoggedIn) {
+    return (
+      <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden flex items-center justify-center">
+        <AmbientGlow />
+        <div className="relative text-center px-6">
+          <div className="mb-6 text-5xl">🔐</div>
+          <h2 className="mb-3 text-2xl font-bold text-white">로그인이 필요합니다</h2>
+          <p className="mb-8 text-sm text-zinc-500 leading-relaxed">
+            내 리포트를 보려면 로그인을 해주세요.
+          </p>
+          <Link
+            href="/login?next=/my"
+            className="inline-block rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
+          >
+            로그인하기
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── 메인 ─────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900">
-      <main className="mx-auto max-w-3xl px-4 py-8">
-        <h1 className="mb-4 text-2xl font-bold">내 신청내역</h1>
+    <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden">
+      <AmbientGlow />
 
-        <form onSubmit={handleSearch} className="mb-6 space-y-4 rounded-lg border bg-white px-4 py-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-zinc-700">
-              이메일 또는 휴대폰
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={contact}
-                onChange={(e) => setContact(e.target.value)}
-                onBlur={(e) => {
-                  const value = e.target.value.trim();
-                  // 전화번호인 경우 (이메일이 아닌 경우) 숫자만 남기기
-                  if (value && !value.includes("@")) {
-                    const cleaned = value.replace(/\D/g, "");
-                    if (cleaned !== value) {
-                      setContact(cleaned);
-                    }
-                  }
-                }}
-                className="flex-1 rounded-md border px-3 py-2 text-sm"
-                placeholder="example@email.com 또는 01012345678"
-                required
-                disabled={loading}
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
-              >
-                {loading ? "조회 중..." : "조회"}
-              </button>
+      <main className="relative mx-auto max-w-2xl px-4 py-14">
+        {/* 프로필 헤더 */}
+        <div className="mb-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarUrl}
+                  alt="프로필"
+                  className="h-10 w-10 rounded-full object-cover ring-2 ring-violet-500/20"
+                />
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-500/20 text-lg ring-2 ring-violet-500/20">
+                  👤
+                </div>
+              )}
+              <div>
+                <p className="font-semibold text-white">{nickname ?? "나"}</p>
+                <p className="text-xs text-zinc-500">리포트 {items.length}개</p>
+              </div>
             </div>
-          </div>
-        </form>
 
-        {error && (
-          <div className="mb-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
+            <Link
+              href="/"
+              className="rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-4 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
+            >
+              + 새 리포트
+            </Link>
           </div>
-        )}
+        </div>
 
-        {hasSearched && !loading && (
-          <>
-            {items.length === 0 ? (
-              <p className="text-zinc-500">신청한 모집이 없습니다.</p>
-            ) : (
-              <ul className="space-y-3">
-                {items.map((item) => (
-                  <li key={item.id}>
-                    <Link
-                      href={`/my/applications/${item.id}`}
-                      className="block rounded-lg border bg-white px-4 py-3 shadow-sm transition-colors hover:border-emerald-300 hover:bg-emerald-50/30 active:bg-emerald-50"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <span className="text-base font-medium text-zinc-900">
-                            {item.recruitment.title}
-                          </span>
-                          {item.name && (
-                            <p className="mt-1 text-sm text-zinc-600">이름: {item.name}</p>
-                          )}
-                          {item.message && (
-                            <p className="mt-1 text-sm text-zinc-600">{item.message}</p>
-                          )}
-                          <div className="mt-2 text-xs text-zinc-500">
-                            신청일:{" "}
-                            {new Date(item.appliedAt).toLocaleString("ko-KR", {
-                              year: "numeric",
-                              month: "2-digit",
-                              day: "2-digit",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </div>
-                        </div>
-                        <span
-                          className={`ml-4 rounded-full px-2 py-0.5 text-xs font-medium ${
-                            item.recruitment.status === "open"
-                              ? "bg-emerald-50 text-emerald-700"
-                              : "bg-zinc-100 text-zinc-500"
-                          }`}
-                        >
-                          {item.recruitment.status === "open" ? "모집중" : "마감"}
-                        </span>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
+        {/* 타이틀 */}
+        <h1 className="mb-6 text-2xl font-bold text-white">내 리포트</h1>
+
+        {/* 리스트 */}
+        {items.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <ul className="space-y-3">
+            {items.map((item) => (
+              <ReportListItem key={item.shareSlug} item={item} />
+            ))}
+          </ul>
         )}
       </main>
     </div>
   );
 }
 
+/* ── 서브 컴포넌트 ─────────────────────────────────────────────── */
+
+function AmbientGlow() {
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
+      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[350px] rounded-full bg-violet-600/8 blur-[120px]" />
+      <div className="absolute top-1/2 -left-24 w-[300px] h-[300px] rounded-full bg-blue-600/6 blur-[100px]" />
+    </div>
+  );
+}
+
+function ReportListItem({ item }: { item: ReportItem }) {
+  const traits = item.coreTraits
+    .split(/[,，、]/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  return (
+    <li>
+      <Link
+        href={`/report/${item.shareSlug}`}
+        className="group block rounded-2xl border border-white/[0.07] bg-[#141418] p-5 transition-all hover:border-violet-500/30 hover:bg-violet-500/[0.04]"
+      >
+        {/* 캐치프레이즈 */}
+        <p className="font-semibold text-white transition-colors group-hover:text-violet-200">
+          &ldquo;
+          <span className="bg-gradient-to-r from-violet-300 to-blue-300 bg-clip-text text-transparent">
+            {item.catchphrase}
+          </span>
+          &rdquo;
+        </p>
+
+        {/* 기질 배지 */}
+        {traits.length > 0 && (
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {traits.map((t, i) => (
+              <span
+                key={i}
+                className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2.5 py-0.5 text-xs text-violet-400"
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* 메타 정보 */}
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-zinc-600">
+          <span className="rounded-full border border-white/8 bg-white/5 px-2.5 py-0.5 text-zinc-500">
+            {SOURCE_LABEL[item.sourceAi] ?? "AI"} 분석
+          </span>
+          <span>👁 {item.viewCount}</span>
+          <span>
+            {new Date(item.createdAt).toLocaleDateString("ko-KR", {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+            })}
+          </span>
+        </div>
+      </Link>
+    </li>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="rounded-2xl border border-white/[0.07] bg-[#141418] px-8 py-14 text-center">
+      <div className="mb-4 text-4xl">✨</div>
+      <p className="mb-2 font-semibold text-zinc-200">아직 리포트가 없어요</p>
+      <p className="mb-7 text-sm leading-relaxed text-zinc-500">
+        AI와 대화하고 나만의 비즈니스 페르소나를
+        <br />
+        만들어보세요.
+      </p>
+      <Link
+        href="/"
+        className="inline-block rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
+      >
+        첫 리포트 만들기 →
+      </Link>
+    </div>
+  );
+}
+
+function SkeletonList() {
+  return (
+    <div className="space-y-3">
+      {[1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className="animate-pulse rounded-2xl border border-white/[0.07] bg-[#141418] p-5"
+        >
+          <div className="mb-3 h-5 w-3/4 rounded bg-white/5" />
+          <div className="mb-3 flex gap-2">
+            <div className="h-5 w-16 rounded-full bg-violet-500/10" />
+            <div className="h-5 w-20 rounded-full bg-violet-500/10" />
+            <div className="h-5 w-14 rounded-full bg-violet-500/10" />
+          </div>
+          <div className="flex gap-3">
+            <div className="h-3 w-20 rounded bg-white/5" />
+            <div className="h-3 w-12 rounded bg-white/5" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
