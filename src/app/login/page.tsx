@@ -53,7 +53,7 @@ function LoginForm() {
       if (error) {
         setError(error.message === "User already registered"
           ? "이미 가입된 이메일입니다."
-          : "회원가입 중 오류가 발생했습니다.");
+          : `오류: ${error.message}`);
       } else {
         router.push(next);
         router.refresh();
