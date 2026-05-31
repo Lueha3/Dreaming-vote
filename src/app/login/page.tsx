@@ -43,16 +43,18 @@ function LoginForm() {
         router.refresh();
       }
     } else {
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) {
-        setError(error.message === "User already registered"
+      // 서버 API 라우트를 통해 처리 (브라우저 fetch 헤더 한글 제한 우회)
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, nickname }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error === "User already registered"
           ? "이미 가입된 이메일입니다."
-          : `오류: ${error.message}`);
-      } else if (data.user) {
-        // 닉네임은 가입 후 별도 업데이트 (한글을 헤더가 아닌 body로 전송)
-        if (nickname) {
-          await supabase.auth.updateUser({ data: { full_name: nickname } });
-        }
+          : `오류: ${data.error}`);
+      } else {
         router.push(next);
         router.refresh();
       }
