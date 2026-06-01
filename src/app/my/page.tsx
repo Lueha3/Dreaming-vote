@@ -11,6 +11,7 @@ type ReportItem = {
   sourceAi: string;
   viewCount: number;
   createdAt: string;
+  isPublic: boolean;
 };
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -157,7 +158,13 @@ export default function MyPage() {
         ) : (
           <ul className="space-y-3">
             {items.map((item) => (
-              <ReportListItem key={item.shareSlug} item={item} />
+              <ReportListItem
+                key={item.shareSlug}
+                item={item}
+                onVisibilityChange={(slug, isPublic) =>
+                  setItems((prev) => prev.map((r) => r.shareSlug === slug ? { ...r, isPublic } : r))
+                }
+              />
             ))}
           </ul>
         )}
@@ -177,18 +184,33 @@ function AmbientGlow() {
   );
 }
 
-function ReportListItem({ item }: { item: ReportItem }) {
-  const traits = item.coreTraits
-    .split(/[,，、]/)
-    .map((t) => t.trim())
-    .filter(Boolean);
+function ReportListItem({
+  item,
+  onVisibilityChange,
+}: {
+  item: ReportItem;
+  onVisibilityChange: (slug: string, isPublic: boolean) => void;
+}) {
+  const [toggling, setToggling] = useState(false);
+  const traits = item.coreTraits.split(/[,，、]/).map((t) => t.trim()).filter(Boolean);
+
+  async function toggleVisibility(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setToggling(true);
+    const next = !item.isPublic;
+    await fetch(`/api/reports/${item.shareSlug}/visibility`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isPublic: next }),
+    });
+    onVisibilityChange(item.shareSlug, next);
+    setToggling(false);
+  }
 
   return (
-    <li>
-      <Link
-        href={`/report/${item.shareSlug}`}
-        className="group block rounded-2xl border border-white/[0.07] bg-[#111111] p-5 transition-all hover:border-violet-500/30 hover:bg-violet-500/[0.04]"
-      >
+    <li className="rounded-2xl border border-white/[0.07] bg-[#111111] transition-all hover:border-violet-500/20">
+      <Link href={`/report/${item.shareSlug}`} className="group block p-5">
         {/* 캐치프레이즈 */}
         <p className="font-semibold text-white transition-colors group-hover:text-violet-200">
           &ldquo;
@@ -197,36 +219,40 @@ function ReportListItem({ item }: { item: ReportItem }) {
           </span>
           &rdquo;
         </p>
-
-        {/* 기질 배지 */}
         {traits.length > 0 && (
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {traits.map((t, i) => (
-              <span
-                key={i}
-                className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2.5 py-0.5 text-xs text-violet-400"
-              >
+              <span key={i} className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2.5 py-0.5 text-xs text-violet-400">
                 {t}
               </span>
             ))}
           </div>
         )}
-
-        {/* 메타 정보 */}
         <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-zinc-600">
-          <span className="rounded-full border border-white/8 bg-white/5 px-2.5 py-0.5 text-zinc-500">
+          <span className="rounded-full border border-white/[0.07] bg-white/[0.04] px-2.5 py-0.5 text-zinc-500">
             {SOURCE_LABEL[item.sourceAi] ?? "AI"} 분석
           </span>
           <span>👁 {item.viewCount}</span>
-          <span>
-            {new Date(item.createdAt).toLocaleDateString("ko-KR", {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-            })}
-          </span>
+          <span>{new Date(item.createdAt).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" })}</span>
         </div>
       </Link>
+
+      {/* 공개/비공개 토글 */}
+      <div className="flex items-center justify-between border-t border-white/[0.05] px-5 py-3">
+        <span className="text-xs text-zinc-600">공개 설정</span>
+        <button
+          onClick={toggleVisibility}
+          disabled={toggling}
+          className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-all disabled:opacity-50 ${
+            item.isPublic
+              ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+              : "border border-white/[0.07] bg-white/[0.04] text-zinc-500 hover:text-zinc-300"
+          }`}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${item.isPublic ? "bg-emerald-400" : "bg-zinc-600"}`} />
+          {item.isPublic ? "공개" : "비공개"}
+        </button>
+      </div>
     </li>
   );
 }

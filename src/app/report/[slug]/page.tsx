@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
+import { getAuthUser } from "@/lib/auth";
 import { ReportCard } from "./ReportCard";
 
 type Props = { params: Promise<{ slug: string }> | { slug: string } };
@@ -32,6 +33,12 @@ export default async function ReportPage({ params }: Props) {
   });
 
   if (!report) notFound();
+
+  // 비공개 리포트는 본인만 열람 가능
+  if (!report.isPublic) {
+    const viewer = await getAuthUser();
+    if (!viewer || viewer.dbUserId !== report.userId) notFound();
+  }
 
   return (
     <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">

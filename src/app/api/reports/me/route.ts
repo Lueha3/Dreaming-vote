@@ -20,6 +20,7 @@ export async function GET() {
       catchphrase: true,
       coreTraits: true,
       sourceAi: true,
+      isPublic: true,
       viewCount: true,
       createdAt: true,
     },

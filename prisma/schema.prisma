@@ -34,6 +34,7 @@ model Report {
   parsingModel     String       // claude-haiku-4-5-20251001
   parsingVersion   String       // v1.0
   shareSlug        String       @unique  // 7자리 nanoid (공유 URL)
+  isPublic         Boolean      @default(true) // 공개 여부 — false면 본인만 조회 가능
   viewCount        Int          @default(0)
   createdAt        DateTime     @default(now())
   user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
