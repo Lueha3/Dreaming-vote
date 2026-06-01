@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -32,10 +33,15 @@ export function Header() {
           {/* 구분자 */}
           <span className="text-sm text-zinc-600">×</span>
 
-          {/* 꿈꾸는교회 */}
-          <span className="flex items-center gap-1.5">
-            <DreamingChurchIcon />
-            <span className="text-sm font-bold text-amber-400">꿈꾸는교회</span>
+          {/* 꿈꾸는교회 원본 로고 */}
+          <span className="flex items-center overflow-hidden rounded-md bg-white px-2 py-0.5">
+            <Image
+              src="/dreaming-church.png"
+              alt="꿈꾸는교회"
+              height={26}
+              width={84}
+              className="object-contain"
+            />
           </span>
         </Link>
 
@@ -49,10 +55,7 @@ export function Header() {
             <>
               {nickname ? (
                 <>
-                  <Link
-                    href="/my"
-                    className="hover:text-zinc-200 transition-colors duration-150"
-                  >
+                  <Link href="/my" className="hover:text-zinc-200 transition-colors duration-150">
                     내 리포트
                   </Link>
                   <span className="text-zinc-700">|</span>
@@ -78,36 +81,5 @@ export function Header() {
         </nav>
       </div>
     </header>
-  );
-}
-
-/**
- * 꿈꾸는교회 로고를 단순화한 SVG 아이콘
- * 원본: 금색 교회 건물 + 십자가 + 꼭대기 별
- */
-function DreamingChurchIcon() {
-  const gold = "#D97706";
-  const dark = "#09090b";
-
-  return (
-    <svg width="16" height="22" viewBox="0 0 16 22" fill="none" aria-hidden>
-      {/* 꼭대기 별 (4각) */}
-      <path
-        d="M8 0L8.9 2.6H11.7L9.4 4.2L10.3 6.8L8 5.2L5.7 6.8L6.6 4.2L4.3 2.6H7.1L8 0Z"
-        fill={gold}
-      />
-      {/* 십자가 세로 */}
-      <rect x="7" y="5.5" width="2" height="7" rx="0.3" fill={gold} />
-      {/* 십자가 가로 */}
-      <rect x="4" y="8" width="8" height="2" rx="0.3" fill={gold} />
-      {/* 교회 건물 */}
-      <rect x="1.5" y="13" width="13" height="9" rx="1" fill={gold} />
-      {/* 출입문 */}
-      <rect x="6" y="17" width="4" height="5" rx="0.5" fill={dark} />
-      {/* 창문 왼쪽 */}
-      <rect x="2.5" y="14.5" width="3" height="2.5" rx="0.5" fill={dark} opacity="0.45" />
-      {/* 창문 오른쪽 */}
-      <rect x="10.5" y="14.5" width="3" height="2.5" rx="0.5" fill={dark} opacity="0.45" />
-    </svg>
   );
 }
