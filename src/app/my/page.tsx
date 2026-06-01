@@ -92,8 +92,8 @@ export default function MyPage() {
       <AmbientGlow />
 
       <main className="relative mx-auto max-w-2xl px-4 py-14">
-        {/* 닉네임 미설정 배너 */}
-        {nickname && !/^(러비아|유디코)-\d{2}-.+$/.test(nickname) && (
+        {/* 닉네임 미설정 배너 — nickname이 null이거나 형식 불일치 시 표시 */}
+        {(!nickname || !/^(러비아|유디코)-\d{2}-.+$/.test(nickname)) && (
           <Link
             href="/my/profile"
             className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/[0.08] px-4 py-3.5 transition-all hover:border-amber-500/50"

@@ -68,6 +68,17 @@ export function Header() {
                   <Link href="/my/clubs" className="whitespace-nowrap hover:text-zinc-200 transition-colors duration-150">
                     내 동아리
                   </Link>
+                  {/* 닉네임 — 클릭하면 프로필 설정 */}
+                  <Link
+                    href="/my/profile"
+                    className={`hidden sm:block whitespace-nowrap text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                      /^(러비아|유디코)-\d{2}-.+$/.test(nickname ?? "")
+                        ? "border-white/[0.07] bg-white/[0.04] text-zinc-400 hover:text-zinc-200"
+                        : "border-amber-500/40 bg-amber-500/10 text-amber-400 hover:text-amber-300"
+                    }`}
+                  >
+                    {/^(러비아|유디코)-\d{2}-.+$/.test(nickname ?? "") ? nickname : "닉네임 설정 ⚠️"}
+                  </Link>
                   <span className="text-zinc-700">|</span>
                   <button
                     onClick={handleLogout}
