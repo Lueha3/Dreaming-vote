@@ -50,6 +50,9 @@ export function Header() {
           <Link href="/" className="hover:text-zinc-200 transition-colors duration-150">
             홈
           </Link>
+          <Link href="/clubs" className="hover:text-zinc-200 transition-colors duration-150">
+            동아리
+          </Link>
 
           {!loading && (
             <>
@@ -57,6 +60,9 @@ export function Header() {
                 <>
                   <Link href="/my" className="hover:text-zinc-200 transition-colors duration-150">
                     내 리포트
+                  </Link>
+                  <Link href="/my/clubs" className="hover:text-zinc-200 transition-colors duration-150">
+                    내 동아리
                   </Link>
                   <span className="text-zinc-700">|</span>
                   <form action="/api/auth/logout" method="POST">
