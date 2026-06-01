@@ -3,9 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export function Header() {
+  const router = useRouter();
   const [nickname, setNickname] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -17,24 +19,26 @@ export function Header() {
     });
   }, []);
 
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  }
+
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center border-b border-white/[0.06] bg-[#09090b]/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 flex h-14 items-center border-b border-white/[0.06] bg-[#0a0a0a]/80 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-4">
         {/* 로고 */}
         <Link href="/" className="flex items-center gap-2.5">
-          {/* BlueHumanity */}
           <span className="text-lg font-bold tracking-tight">
             <span className="bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
               Blue
             </span>
             <span className="text-white">Humanity</span>
           </span>
-
-          {/* 구분자 */}
           <span className="text-sm text-zinc-600">×</span>
-
-          {/* 꿈꾸는교회 원본 로고 */}
-          <span className="inline-flex items-center overflow-hidden rounded-md bg-white px-2" style={{height: 28}}>
+          <span className="inline-flex items-center overflow-hidden rounded-md bg-white px-2" style={{ height: 28 }}>
             <Image
               src="/dreaming-church.png"
               alt="꿈꾸는교회"
@@ -47,7 +51,6 @@ export function Header() {
 
         {/* 네비게이션 */}
         <nav className="flex items-center gap-3 text-sm text-zinc-500">
-          {/* 홈 — 데스크톱만 */}
           <Link href="/" className="hidden sm:block whitespace-nowrap hover:text-zinc-200 transition-colors duration-150">
             홈
           </Link>
@@ -59,7 +62,6 @@ export function Header() {
             <>
               {nickname ? (
                 <>
-                  {/* 내 리포트 — 데스크톱만 */}
                   <Link href="/my" className="hidden sm:block whitespace-nowrap hover:text-zinc-200 transition-colors duration-150">
                     내 리포트
                   </Link>
@@ -67,14 +69,12 @@ export function Header() {
                     내 동아리
                   </Link>
                   <span className="text-zinc-700">|</span>
-                  <form action="/api/auth/logout" method="POST">
-                    <button
-                      type="submit"
-                      className="whitespace-nowrap text-zinc-500 hover:text-zinc-200 transition-colors duration-150"
-                    >
-                      로그아웃
-                    </button>
-                  </form>
+                  <button
+                    onClick={handleLogout}
+                    className="whitespace-nowrap text-zinc-500 hover:text-zinc-200 transition-colors duration-150"
+                  >
+                    로그아웃
+                  </button>
                 </>
               ) : (
                 <Link
