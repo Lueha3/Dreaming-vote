@@ -2,8 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * 카카오 OAuth 로그인 시작
- * GET /api/auth/login?next=/report/[slug]
+ * Google OAuth 로그인 시작
+ * GET /api/auth/login?next=/path
  * → Supabase OAuth URL로 리다이렉트
  */
 export async function GET(request: NextRequest) {
@@ -12,10 +12,9 @@ export async function GET(request: NextRequest) {
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "kakao",
+    provider: "google",
     options: {
       redirectTo: `${origin}/api/auth/callback?next=${encodeURIComponent(next)}`,
-      scopes: "profile_nickname profile_image",
     },
   });
 
