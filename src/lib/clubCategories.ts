@@ -3,6 +3,7 @@
  * 생성 폼, 목록 필터, 서버 검증, AI 매칭이 모두 이 단일 출처를 공유합니다.
  */
 export const CLUB_CATEGORIES = [
+  "신앙",
   "스터디",
   "취미/여가",
   "운동",
@@ -15,6 +16,7 @@ export const CLUB_CATEGORIES = [
 export type ClubCategory = (typeof CLUB_CATEGORIES)[number];
 
 export const CLUB_CATEGORY_META: Record<string, { emoji: string }> = {
+  신앙: { emoji: "✝️" },
   스터디: { emoji: "📚" },
   "취미/여가": { emoji: "🎮" },
   운동: { emoji: "🏃" },
