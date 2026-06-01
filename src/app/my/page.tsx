@@ -92,6 +92,23 @@ export default function MyPage() {
       <AmbientGlow />
 
       <main className="relative mx-auto max-w-2xl px-4 py-14">
+        {/* 닉네임 미설정 배너 */}
+        {nickname && !/^(러비아|유디코)-\d{2}-.+$/.test(nickname) && (
+          <Link
+            href="/my/profile"
+            className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/[0.08] px-4 py-3.5 transition-all hover:border-amber-500/50"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="text-lg">⚠️</span>
+              <div>
+                <p className="text-sm font-semibold text-amber-300">닉네임을 설정해주세요</p>
+                <p className="text-xs text-amber-400/70">집단-나이-이름 형식 필요 · 동아리 참여 전 필수</p>
+              </div>
+            </div>
+            <span className="shrink-0 text-xs text-amber-400">설정하기 →</span>
+          </Link>
+        )}
+
         {/* 프로필 헤더 */}
         <div className="mb-10">
           <div className="flex items-center justify-between">
@@ -114,12 +131,20 @@ export default function MyPage() {
               </div>
             </div>
 
-            <Link
-              href="/"
-              className="rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-4 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
-            >
-              + 새 리포트
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/my/profile"
+                className="rounded-full border border-white/[0.07] bg-white/[0.04] px-3 py-2 text-xs text-zinc-400 transition-all hover:border-white/20 hover:text-zinc-200"
+              >
+                닉네임 변경
+              </Link>
+              <Link
+                href="/"
+                className="rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-4 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
+              >
+                + 새 리포트
+              </Link>
+            </div>
           </div>
         </div>
 
