@@ -34,12 +34,12 @@ export function Header() {
           <span className="text-sm text-zinc-600">×</span>
 
           {/* 꿈꾸는교회 원본 로고 */}
-          <span className="flex items-center overflow-hidden rounded-md bg-white px-2 py-0.5">
+          <span className="inline-flex items-center overflow-hidden rounded-md bg-white px-2" style={{height: 28}}>
             <Image
               src="/dreaming-church.png"
               alt="꿈꾸는교회"
-              height={26}
-              width={84}
+              height={20}
+              width={66}
               className="object-contain"
             />
           </span>
