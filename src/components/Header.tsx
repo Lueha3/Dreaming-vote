@@ -52,7 +52,7 @@ export function Header() {
             홈
           </Link>
           <Link href="/clubs" className="whitespace-nowrap hover:text-zinc-200 transition-colors duration-150">
-            동아리
+            목록
           </Link>
 
           {!loading && (

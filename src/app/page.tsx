@@ -20,7 +20,7 @@ export default function Home() {
 
         {/* Hero */}
         <div className="mb-10 text-center">
-          <h1 className="mb-3 text-4xl font-bold tracking-tight leading-tight">
+          <h1 className="mb-3 text-3xl sm:text-4xl font-bold tracking-tight leading-tight">
             AI가 본{" "}
             <span className="bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
               진짜 나

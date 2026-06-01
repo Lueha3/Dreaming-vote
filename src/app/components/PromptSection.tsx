@@ -151,13 +151,13 @@ export function PromptSection() {
     <div className="w-full">
       {/* 진행 인디케이터 (결과 화면에선 숨김) */}
       {step < 3 && (
-        <div className="mb-6 flex items-center justify-center gap-2">
+        <div className="mb-6 flex items-center justify-center gap-1.5">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="flex items-center gap-2">
+            <div key={i} className="flex items-center gap-1.5">
               <div
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all duration-300 ${
                   i < step
-                    ? "bg-emerald-600 text-white"
+                    ? "bg-violet-600 text-white"
                     : i === step
                       ? "bg-gradient-to-br from-violet-600 to-blue-600 text-white shadow-lg shadow-violet-500/30"
                       : "border border-white/10 bg-white/5 text-zinc-600"
@@ -167,8 +167,8 @@ export function PromptSection() {
               </div>
               {i < 2 && (
                 <div
-                  className={`h-px w-10 transition-colors duration-500 ${
-                    i < step ? "bg-emerald-600/40" : "bg-white/10"
+                  className={`h-px w-6 sm:w-10 transition-colors duration-500 ${
+                    i < step ? "bg-violet-600/40" : "bg-white/10"
                   }`}
                 />
               )}

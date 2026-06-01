@@ -72,7 +72,7 @@ export default function ClubsPage() {
             >
               ← 홈
             </Link>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-white">동아리 둘러보기</h1>
+            <h1 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-white">동아리 둘러보기</h1>
             <p className="mt-1.5 text-sm text-zinc-500">
               관심사가 맞는 사람들과 함께할 동아리를 찾아보세요.
             </p>
