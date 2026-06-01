@@ -46,11 +46,12 @@ export function Header() {
         </Link>
 
         {/* 네비게이션 */}
-        <nav className="flex items-center gap-4 text-sm text-zinc-500">
-          <Link href="/" className="hover:text-zinc-200 transition-colors duration-150">
+        <nav className="flex items-center gap-3 text-sm text-zinc-500">
+          {/* 홈 — 데스크톱만 */}
+          <Link href="/" className="hidden sm:block whitespace-nowrap hover:text-zinc-200 transition-colors duration-150">
             홈
           </Link>
-          <Link href="/clubs" className="hover:text-zinc-200 transition-colors duration-150">
+          <Link href="/clubs" className="whitespace-nowrap hover:text-zinc-200 transition-colors duration-150">
             동아리
           </Link>
 
@@ -58,17 +59,18 @@ export function Header() {
             <>
               {nickname ? (
                 <>
-                  <Link href="/my" className="hover:text-zinc-200 transition-colors duration-150">
+                  {/* 내 리포트 — 데스크톱만 */}
+                  <Link href="/my" className="hidden sm:block whitespace-nowrap hover:text-zinc-200 transition-colors duration-150">
                     내 리포트
                   </Link>
-                  <Link href="/my/clubs" className="hover:text-zinc-200 transition-colors duration-150">
+                  <Link href="/my/clubs" className="whitespace-nowrap hover:text-zinc-200 transition-colors duration-150">
                     내 동아리
                   </Link>
                   <span className="text-zinc-700">|</span>
                   <form action="/api/auth/logout" method="POST">
                     <button
                       type="submit"
-                      className="text-zinc-500 hover:text-zinc-200 transition-colors duration-150"
+                      className="whitespace-nowrap text-zinc-500 hover:text-zinc-200 transition-colors duration-150"
                     >
                       로그아웃
                     </button>
@@ -77,7 +79,7 @@ export function Header() {
               ) : (
                 <Link
                   href="/login"
-                  className="rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-4 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
+                  className="whitespace-nowrap rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-4 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
                 >
                   로그인
                 </Link>
