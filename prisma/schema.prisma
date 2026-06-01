@@ -8,45 +8,144 @@ datasource db {
   directUrl = env("DIRECT_URL")     // direct 5432
 }
 
-
+// 카카오 로그인 유저 — Supabase auth.users와 supabaseId로 연결
 model User {
   id         String   @id @default(cuid())
-  churchCode String
-  name       String
-  phoneLast4 String
+  supabaseId String   @unique
+  nickname   String?
+  avatarUrl  String?
   createdAt  DateTime @default(now())
+  reports    Report[]
 
-  @@unique([churchCode, name, phoneLast4])
-  @@index([churchCode])
+  ownedClubs          Club[]               @relation("OwnedClubs")
+  clubApplications    ClubApplication[]
+  clubRecommendations ClubRecommendation[]
 }
 
-model Recruitment {
-  id           String        @id @default(cuid())
-  churchCode   String
-  title        String
-  content      String
-  capacity     Int
-  appliedCount Int           @default(0)
-  status       String        @default("open")
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @default(now()) @updatedAt
-  applications Application[]
+// AI 대화 파싱 결과 리포트
+model Report {
+  id               String       @id @default(cuid())
+  userId           String
+  catchphrase      String       // "혼돈을 엮는 설계자"
+  coreTraits       String       // "구조집착, 통찰추적, 시스템사고"
+  optimalEcosystem String       // 200% 발휘 환경 설명
+  corePosition     String       // 팀 내 압도적 역할 설명
+  sourceAi         String       // chatgpt | claude | gemini | other
+  parsingModel     String       // claude-haiku-4-5-20251001
+  parsingVersion   String       // v1.0
+  shareSlug        String       @unique  // 7자리 nanoid (공유 URL)
+  viewCount        Int          @default(0)
+  createdAt        DateTime     @default(now())
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shareEvents      ShareEvent[]
+  clubRecommendations ClubRecommendation[]
 
-  @@index([churchCode, status])
+  @@index([userId, createdAt])
+  @@index([shareSlug])
 }
 
-model Application {
-  id                String      @id @default(cuid())
-  recruitmentId     String
-  contact           String
-  contactNormalized String      @default("") @map("contact_normalized")
-  name              String?
-  message           String?
-  createdAt         DateTime    @default(now())
-  recruitment       Recruitment @relation(fields: [recruitmentId], references: [id], onDelete: Cascade)
+// 코어 프롬프트 버전 관리 — 배포 없이 프롬프트 교체 가능
+model PromptVersion {
+  id        String   @id @default(cuid())
+  version   String   @unique  // v1.0, v1.1
+  content   String
+  isActive  Boolean  @default(false)
+  notes     String?           // 변경 이유 메모
+  createdAt DateTime @default(now())
+}
 
-  @@unique([recruitmentId, contactNormalized])
-  @@index([recruitmentId, createdAt])
-  @@index([contactNormalized])
-  @@map("Application")
+// AI 파싱 로그 — 원문 미저장, 글자 수·상태만
+model ParsingLog {
+  id           String   @id @default(cuid())
+  userId       String?
+  status       String   // success | parse_failed | api_error | rate_limited
+  sourceAi     String?
+  inputLength  Int
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  @@index([status, createdAt])
+}
+
+// 공유 이벤트 — 바이럴 KPI 측정
+model ShareEvent {
+  id        String   @id @default(cuid())
+  reportId  String
+  platform  String   // kakao | instagram | link_copy | twitter
+  createdAt DateTime @default(now())
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+}
+
+// 동아리 — 유저가 자유롭게 개설, 관리자 승인 후 노출
+model Club {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  category    String   // 스터디 | 취미/여가 | 운동 | 봉사 | 창업/사이드프로젝트 | 문화/예술 | 친목
+  tags        String   // AI 매칭용 키워드 (쉼표 구분)
+  ownerUserId String
+  maxMembers  Int?     // null이면 인원 제한 없음
+  isApproved  Boolean  @default(false) // 관리자 승인 필요 — 승인 전 비노출
+  isActive    Boolean  @default(true)
+  viewCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  owner           User                 @relation("OwnedClubs", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  applications    ClubApplication[]
+  recommendations ClubRecommendation[]
+  images          ClubImage[]
+
+  @@index([category, isApproved, isActive])
+  @@index([ownerUserId])
+}
+
+// 동아리 카드뉴스 이미지 — 개설 시 등록, 순서 보존
+model ClubImage {
+  id        String   @id @default(cuid())
+  clubId    String
+  url       String
+  caption   String   @default("")
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@index([clubId, order])
+}
+
+// 동아리 가입 신청 — 앱 내 신청
+model ClubApplication {
+  id        String   @id @default(cuid())
+  clubId    String
+  userId    String
+  message   String?  // 신청 메시지 (선택)
+  status    String   @default("pending") // pending | accepted | rejected
+  createdAt DateTime @default(now())
+
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, userId]) // 중복 신청 방지
+  @@index([userId, status])
+  @@index([clubId, status])
+}
+
+// AI 동아리 추천 결과 — 리포트 페르소나 기반
+model ClubRecommendation {
+  id        String   @id @default(cuid())
+  userId    String
+  reportId  String
+  clubId    String
+  score     Float    // 매칭 점수 0~100
+  reason    String   // AI가 생성한 추천 이유
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  club   Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@index([userId, reportId])
+  @@index([clubId])
 }

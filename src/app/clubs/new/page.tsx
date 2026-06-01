@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { CLUB_CATEGORIES, CLUB_CATEGORY_META } from "@/lib/clubCategories";
+import { ClubImageUploader, type ClubImageItem } from "@/components/ClubImageUploader";
 
 export default function NewClubPage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function NewClubPage() {
   const [category, setCategory] = useState<string>("");
   const [tags, setTags] = useState("");
   const [maxMembers, setMaxMembers] = useState("");
+  const [images, setImages] = useState<ClubImageItem[]>([]);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +51,7 @@ export default function NewClubPage() {
           category,
           tags,
           maxMembers: maxMembers.trim() ? Number(maxMembers) : null,
+          images,
         }),
       });
       const data = await res.json();
@@ -232,6 +235,18 @@ export default function NewClubPage() {
                 placeholder="예: 20"
               />
             </div>
+          </div>
+
+          {/* 카드뉴스 이미지 */}
+          <div className="rounded-2xl border border-white/[0.07] bg-[#141418] p-6">
+            <label className="mb-1 block text-xs font-medium text-zinc-400">
+              카드뉴스 이미지{" "}
+              <span className="font-normal text-zinc-600">(선택 · 최대 10장 · 승인 화면에서 검토됩니다)</span>
+            </label>
+            <p className="mb-4 text-xs text-zinc-600">
+              동아리를 소개하는 카드뉴스 이미지를 올려주세요. Canva 등으로 만든 이미지를 추천합니다.
+            </p>
+            <ClubImageUploader onChange={setImages} maxImages={10} />
           </div>
 
           {error && (

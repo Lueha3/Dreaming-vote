@@ -1,5 +1,5 @@
 {
-  "name": "dreaming-vote",
+  "name": "blue-humanity",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,11 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "cleanup:corrupt": "node scripts/cleanup-corrupt.js",
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^5.22.0",
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.49.4",
+    "nanoid": "^5.1.5",
     "next": "16.0.10",
     "react": "19.2.1",
     "react-dom": "19.2.1",
@@ -22,6 +25,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vercel/og": "^0.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.0.10",
     "prisma": "^5.22.0",
