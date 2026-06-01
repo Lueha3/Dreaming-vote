@@ -100,7 +100,7 @@ export default function AdminClubsPage() {
           {[1, 2].map((i) => (
             <div
               key={i}
-              className="animate-pulse rounded-2xl border border-white/[0.07] bg-[#141418] p-5"
+              className="animate-pulse rounded-2xl border border-white/[0.07] bg-[#111111] p-5"
             >
               <div className="mb-3 h-4 w-32 rounded bg-white/5" />
               <div className="mb-2 h-3 w-full rounded bg-white/5" />
@@ -109,7 +109,7 @@ export default function AdminClubsPage() {
           ))}
         </div>
       ) : visible.length === 0 ? (
-        <div className="rounded-2xl border border-white/[0.07] bg-[#141418] px-8 py-14 text-center">
+        <div className="rounded-2xl border border-white/[0.07] bg-[#111111] px-8 py-14 text-center">
           <p className="text-zinc-400">
             {filter === "pending" ? "승인 대기 중인 동아리가 없습니다." : "등록된 동아리가 없습니다."}
           </p>
@@ -119,7 +119,7 @@ export default function AdminClubsPage() {
           {visible.map((club) => (
             <li
               key={club.id}
-              className={`rounded-2xl border bg-[#141418] p-5 transition-all ${
+              className={`rounded-2xl border bg-[#111111] p-5 transition-all ${
                 !club.isApproved
                   ? "border-amber-500/30 bg-amber-500/[0.03]"
                   : club.isActive

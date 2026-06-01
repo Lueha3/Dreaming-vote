@@ -70,11 +70,11 @@ export default function NewClubPage() {
   /* ── 로그인 확인 중 ─────────────────────────────────────────── */
   if (checking) {
     return (
-      <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden">
+      <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
         <AmbientGlow />
         <main className="relative mx-auto max-w-2xl px-4 py-14">
           <div className="h-8 w-48 animate-pulse rounded bg-white/5" />
-          <div className="mt-6 h-72 animate-pulse rounded-2xl border border-white/[0.07] bg-[#141418]" />
+          <div className="mt-6 h-72 animate-pulse rounded-2xl border border-white/[0.07] bg-[#111111]" />
         </main>
       </div>
     );
@@ -83,7 +83,7 @@ export default function NewClubPage() {
   /* ── 비로그인 ─────────────────────────────────────────────── */
   if (notLoggedIn) {
     return (
-      <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden flex items-center justify-center">
+      <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden flex items-center justify-center">
         <AmbientGlow />
         <div className="relative text-center px-6">
           <div className="mb-6 text-5xl">🔐</div>
@@ -105,7 +105,7 @@ export default function NewClubPage() {
   /* ── 개설 완료 ─────────────────────────────────────────────── */
   if (done) {
     return (
-      <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden flex items-center justify-center">
+      <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden flex items-center justify-center">
         <AmbientGlow />
         <div className="relative text-center px-6">
           <div className="mb-6 text-5xl">🎉</div>
@@ -136,7 +136,7 @@ export default function NewClubPage() {
 
   /* ── 개설 폼 ───────────────────────────────────────────────── */
   return (
-    <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden">
+    <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
       <AmbientGlow />
 
       <main className="relative mx-auto max-w-2xl px-4 py-14">
@@ -151,7 +151,7 @@ export default function NewClubPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="rounded-2xl border border-white/[0.07] bg-[#141418] p-6 space-y-5">
+          <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-6 space-y-5">
             {/* 이름 */}
             <div>
               <label className="mb-1.5 block text-xs font-medium text-zinc-400">동아리 이름</label>
@@ -238,7 +238,7 @@ export default function NewClubPage() {
           </div>
 
           {/* 카드뉴스 이미지 */}
-          <div className="rounded-2xl border border-white/[0.07] bg-[#141418] p-6">
+          <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-6">
             <label className="mb-1 block text-xs font-medium text-zinc-400">
               카드뉴스 이미지{" "}
               <span className="font-normal text-zinc-600">(선택 · 최대 10장 · 승인 화면에서 검토됩니다)</span>

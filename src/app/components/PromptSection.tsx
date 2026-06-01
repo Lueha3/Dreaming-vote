@@ -234,7 +234,7 @@ function CardCopy({
   error: string | null;
 }) {
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[#141418] p-6 card-glow">
+    <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-6 card-glow">
       <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-violet-400">
         Step 1
       </p>
@@ -355,7 +355,7 @@ function CardPaste({
   onBack: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[#141418] p-6 card-glow">
+    <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-6 card-glow">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">
@@ -413,7 +413,7 @@ function CardPaste({
 
 function CardLoading() {
   return (
-    <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-white/[0.07] bg-[#141418] p-8 text-center">
+    <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-white/[0.07] bg-[#111111] p-8 text-center">
       {/* 스피너 */}
       <div className="relative mb-6">
         <div className="h-14 w-14 animate-spin rounded-full border-2 border-violet-500/20 border-t-violet-400" />
@@ -446,7 +446,7 @@ function CardResult({
   return (
     <div className="space-y-4">
       {/* 페르소나 결과 카드 */}
-      <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-[#141418] px-6 py-8 text-center">
+      <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-[#111111] px-6 py-8 text-center">
         <div className="pointer-events-none absolute inset-0" aria-hidden>
           <div className="absolute -top-16 left-1/2 -translate-x-1/2 h-36 w-72 rounded-full bg-violet-600/18 blur-[60px]" />
         </div>
@@ -481,7 +481,7 @@ function CardResult({
       </div>
 
       {/* PARAN AI 추천 CTA */}
-      <div className="rounded-2xl border border-white/[0.07] bg-[#141418] px-6 py-7 text-center">
+      <div className="rounded-2xl border border-white/[0.07] bg-[#111111] px-6 py-7 text-center">
         <p className="mb-0.5 text-xs font-semibold uppercase tracking-widest text-violet-400">
           Next Step
         </p>

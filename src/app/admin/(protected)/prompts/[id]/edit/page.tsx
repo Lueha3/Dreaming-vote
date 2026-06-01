@@ -65,7 +65,7 @@ export default function EditPromptPage({ params }: PageProps) {
     return (
       <div className="animate-pulse space-y-5">
         <div className="h-8 w-48 rounded bg-white/5" />
-        <div className="rounded-2xl border border-white/[0.07] bg-[#141418] p-6 space-y-4">
+        <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-6 space-y-4">
           <div className="h-32 rounded bg-white/5" />
           <div className="h-8 rounded bg-white/5" />
         </div>
@@ -83,7 +83,7 @@ export default function EditPromptPage({ params }: PageProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="rounded-2xl border border-white/[0.07] bg-[#141418] p-6 space-y-5">
+        <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-6 space-y-5">
           {/* 프롬프트 내용 */}
           <div>
             <label className="mb-1.5 block text-xs font-medium text-zinc-400">

@@ -59,7 +59,7 @@ export default function ClubsPage() {
   }, [load]);
 
   return (
-    <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden">
+    <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
       <AmbientGlow />
 
       <main className="relative mx-auto max-w-4xl px-4 py-12">
@@ -91,7 +91,7 @@ export default function ClubsPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="이름, 소개, 키워드로 검색..."
-            className="w-full rounded-xl border border-white/[0.07] bg-[#141418] px-4 py-3 text-sm text-zinc-200 placeholder-zinc-600 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
+            className="w-full rounded-xl border border-white/[0.07] bg-[#111111] px-4 py-3 text-sm text-zinc-200 placeholder-zinc-600 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
           />
         </div>
 
@@ -132,7 +132,7 @@ export default function ClubsPage() {
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="animate-pulse rounded-2xl border border-white/[0.07] bg-[#141418] p-5"
+                className="animate-pulse rounded-2xl border border-white/[0.07] bg-[#111111] p-5"
               >
                 <div className="mb-3 h-5 w-32 rounded bg-white/5" />
                 <div className="mb-2 h-3 w-full rounded bg-white/5" />
@@ -141,7 +141,7 @@ export default function ClubsPage() {
             ))}
           </div>
         ) : items.length === 0 ? (
-          <div className="rounded-2xl border border-white/[0.07] bg-[#141418] px-8 py-16 text-center">
+          <div className="rounded-2xl border border-white/[0.07] bg-[#111111] px-8 py-16 text-center">
             <div className="mb-3 text-4xl">🔍</div>
             <p className="mb-1 text-zinc-300">
               {debouncedQuery || category
@@ -164,7 +164,7 @@ export default function ClubsPage() {
                 <li key={club.id}>
                   <Link
                     href={`/clubs/${club.id}`}
-                    className="group block h-full rounded-2xl border border-white/[0.07] bg-[#141418] p-5 transition-all hover:border-violet-500/30 hover:bg-[#17171c] card-glow"
+                    className="group block h-full rounded-2xl border border-white/[0.07] bg-[#111111] p-5 transition-all hover:border-violet-500/30 hover:bg-[#161616] card-glow"
                   >
                     <div className="mb-2 flex items-center gap-2">
                       <span className="text-lg">

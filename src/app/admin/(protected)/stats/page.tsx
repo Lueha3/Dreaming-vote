@@ -38,12 +38,12 @@ export default function AdminStatsPage() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="h-24 animate-pulse rounded-2xl border border-white/[0.07] bg-[#141418]"
+              className="h-24 animate-pulse rounded-2xl border border-white/[0.07] bg-[#111111]"
             />
           ))}
         </div>
       ) : !stats ? (
-        <div className="rounded-2xl border border-white/[0.07] bg-[#141418] px-8 py-14 text-center text-zinc-400">
+        <div className="rounded-2xl border border-white/[0.07] bg-[#111111] px-8 py-14 text-center text-zinc-400">
           지표를 불러오지 못했습니다.
         </div>
       ) : (
@@ -109,7 +109,7 @@ function StatCard({
   accent: "violet" | "blue" | "emerald" | "amber" | "zinc";
 }) {
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[#141418] p-5">
+    <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-5">
       <p className="text-xs text-zinc-500">{label}</p>
       <p className={`mt-1.5 text-3xl font-bold ${ACCENT[accent]}`}>{value.toLocaleString()}</p>
     </div>

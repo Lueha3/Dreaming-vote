@@ -63,7 +63,7 @@ export default function MyClubsPage() {
   /* ── 로딩 ─────────────────────────────────────────────────── */
   if (loading) {
     return (
-      <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden">
+      <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
         <AmbientGlow />
         <main className="relative mx-auto max-w-2xl px-4 py-14">
           <div className="h-8 w-40 animate-pulse rounded bg-white/5" />
@@ -71,7 +71,7 @@ export default function MyClubsPage() {
             {[1, 2].map((i) => (
               <div
                 key={i}
-                className="h-28 animate-pulse rounded-2xl border border-white/[0.07] bg-[#141418]"
+                className="h-28 animate-pulse rounded-2xl border border-white/[0.07] bg-[#111111]"
               />
             ))}
           </div>
@@ -83,7 +83,7 @@ export default function MyClubsPage() {
   /* ── 비로그인 ─────────────────────────────────────────────── */
   if (notLoggedIn) {
     return (
-      <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden flex items-center justify-center">
+      <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden flex items-center justify-center">
         <AmbientGlow />
         <div className="relative text-center px-6">
           <div className="mb-6 text-5xl">🔐</div>
@@ -102,7 +102,7 @@ export default function MyClubsPage() {
 
   /* ── 메인 ─────────────────────────────────────────────────── */
   return (
-    <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden">
+    <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
       <AmbientGlow />
 
       <main className="relative mx-auto max-w-2xl px-4 py-14">
@@ -129,7 +129,7 @@ export default function MyClubsPage() {
             <span className="text-zinc-600">({owned.length})</span>
           </h2>
           {owned.length === 0 ? (
-            <div className="rounded-2xl border border-white/[0.07] bg-[#141418] px-6 py-10 text-center">
+            <div className="rounded-2xl border border-white/[0.07] bg-[#111111] px-6 py-10 text-center">
               <p className="mb-1 text-sm text-zinc-400">아직 개설한 동아리가 없어요.</p>
               <Link
                 href="/clubs/new"
@@ -154,7 +154,7 @@ export default function MyClubsPage() {
             <span className="text-zinc-600">({applied.length})</span>
           </h2>
           {applied.length === 0 ? (
-            <div className="rounded-2xl border border-white/[0.07] bg-[#141418] px-6 py-10 text-center">
+            <div className="rounded-2xl border border-white/[0.07] bg-[#111111] px-6 py-10 text-center">
               <p className="mb-1 text-sm text-zinc-400">아직 신청한 동아리가 없어요.</p>
               <Link
                 href="/clubs"
@@ -248,7 +248,7 @@ function OwnedClubCard({ club, onChanged }: { club: OwnedClub; onChanged: () => 
   );
 
   return (
-    <li className="rounded-2xl border border-white/[0.07] bg-[#141418] p-5">
+    <li className="rounded-2xl border border-white/[0.07] bg-[#111111] p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
@@ -375,7 +375,7 @@ function AppliedRow({ item }: { item: AppliedClub }) {
     );
 
   const inner = (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/[0.07] bg-[#141418] px-4 py-3.5">
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/[0.07] bg-[#111111] px-4 py-3.5">
       <div className="flex min-w-0 items-center gap-2">
         <span className="text-base">{CLUB_CATEGORY_META[item.category]?.emoji ?? "✨"}</span>
         <span className="truncate text-sm font-medium text-zinc-200">{item.clubName}</span>

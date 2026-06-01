@@ -68,7 +68,7 @@ export default function AdminPromptsPage() {
           {[1, 2].map((i) => (
             <div
               key={i}
-              className="animate-pulse rounded-2xl border border-white/[0.07] bg-[#141418] p-5"
+              className="animate-pulse rounded-2xl border border-white/[0.07] bg-[#111111] p-5"
             >
               <div className="mb-3 h-4 w-24 rounded bg-white/5" />
               <div className="mb-2 h-3 w-full rounded bg-white/5" />
@@ -77,7 +77,7 @@ export default function AdminPromptsPage() {
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-2xl border border-white/[0.07] bg-[#141418] px-8 py-14 text-center">
+        <div className="rounded-2xl border border-white/[0.07] bg-[#111111] px-8 py-14 text-center">
           <p className="mb-2 text-zinc-300">등록된 프롬프트 버전이 없습니다.</p>
           <Link
             href="/admin/prompts/new"
@@ -91,7 +91,7 @@ export default function AdminPromptsPage() {
           {items.map((item) => (
             <li
               key={item.id}
-              className={`rounded-2xl border bg-[#141418] p-5 transition-all ${
+              className={`rounded-2xl border bg-[#111111] p-5 transition-all ${
                 item.isActive
                   ? "border-emerald-500/30 bg-emerald-500/[0.03]"
                   : "border-white/[0.07]"

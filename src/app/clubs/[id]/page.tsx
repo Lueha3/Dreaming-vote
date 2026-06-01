@@ -113,11 +113,11 @@ export default function ClubDetailPage({ params }: PageProps) {
   /* ── 로딩 ──────────────────────────────────────────────────── */
   if (loading) {
     return (
-      <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden">
+      <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
         <AmbientGlow />
         <main className="relative mx-auto max-w-2xl px-4 py-14">
           <div className="h-6 w-24 animate-pulse rounded bg-white/5" />
-          <div className="mt-6 h-64 animate-pulse rounded-2xl border border-white/[0.07] bg-[#141418]" />
+          <div className="mt-6 h-64 animate-pulse rounded-2xl border border-white/[0.07] bg-[#111111]" />
         </main>
       </div>
     );
@@ -126,7 +126,7 @@ export default function ClubDetailPage({ params }: PageProps) {
   /* ── 없음 ──────────────────────────────────────────────────── */
   if (notFound || !data) {
     return (
-      <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden flex items-center justify-center">
+      <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden flex items-center justify-center">
         <AmbientGlow />
         <div className="relative text-center px-6">
           <div className="mb-6 text-5xl">🔍</div>
@@ -150,7 +150,7 @@ export default function ClubDetailPage({ params }: PageProps) {
   const pending = !club.isApproved || !club.isActive;
 
   return (
-    <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden">
+    <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
       <AmbientGlow />
 
       <main className="relative mx-auto max-w-2xl px-4 py-12">
@@ -169,7 +169,7 @@ export default function ClubDetailPage({ params }: PageProps) {
         )}
 
         {/* 본문 카드 */}
-        <div className={`${club.images?.length > 0 ? "mt-4" : "mt-5"} rounded-2xl border border-white/[0.07] bg-[#141418] p-6 sm:p-8 card-glow`}>
+        <div className={`${club.images?.length > 0 ? "mt-4" : "mt-5"} rounded-2xl border border-white/[0.07] bg-[#111111] p-6 sm:p-8 card-glow`}>
           {/* 개설자 본인 + 승인 대기 안내 */}
           {isOwner && pending && (
             <div className="mb-5 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
@@ -249,7 +249,7 @@ export default function ClubDetailPage({ params }: PageProps) {
       return (
         <Link
           href="/my/clubs"
-          className="block rounded-2xl border border-white/[0.07] bg-[#141418] px-5 py-4 text-center text-sm font-medium text-zinc-300 transition-all hover:border-white/20 hover:text-white"
+          className="block rounded-2xl border border-white/[0.07] bg-[#111111] px-5 py-4 text-center text-sm font-medium text-zinc-300 transition-all hover:border-white/20 hover:text-white"
         >
           내가 개설한 동아리예요 · 신청 관리하기 →
         </Link>
@@ -259,7 +259,7 @@ export default function ClubDetailPage({ params }: PageProps) {
     // 비로그인
     if (!isLoggedIn) {
       return (
-        <div className="rounded-2xl border border-white/[0.07] bg-[#141418] p-5 text-center">
+        <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-5 text-center">
           <p className="mb-4 text-sm text-zinc-400">가입을 신청하려면 로그인이 필요해요.</p>
           <Link
             href={`/login?next=/clubs/${club.id}`}
@@ -289,7 +289,7 @@ export default function ClubDetailPage({ params }: PageProps) {
 
     // null 또는 rejected → 신청 가능
     return (
-      <div className="rounded-2xl border border-white/[0.07] bg-[#141418] p-5">
+      <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-5">
         {status === "rejected" && (
           <p className="mb-3 text-center text-sm text-zinc-500">
             이전 신청은 반려되었어요. 다시 신청할 수 있습니다.

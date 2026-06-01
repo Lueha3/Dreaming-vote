@@ -30,7 +30,7 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#09090b]">
+    <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">Admin</p>
@@ -39,7 +39,7 @@ export default function AdminLoginPage() {
 
         <form
           onSubmit={handleSubmit}
-          className="space-y-4 rounded-2xl border border-white/[0.07] bg-[#141418] p-6"
+          className="space-y-4 rounded-2xl border border-white/[0.07] bg-[#111111] p-6"
         >
           <div>
             <label className="mb-1.5 block text-xs font-medium text-zinc-400">

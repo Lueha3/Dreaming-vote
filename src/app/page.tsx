@@ -2,7 +2,7 @@ import { PromptSection } from "./components/PromptSection";
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden">
+    <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
       {/* Ambient glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
         <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full bg-violet-600/10 blur-[120px]" />

@@ -1,28 +1,37 @@
 @import "tailwindcss";
 
 :root {
-  --background: #09090b;
-  --surface: #141418;
-  --surface-raised: #1c1c22;
-  --border: rgba(255, 255, 255, 0.07);
-  --foreground: #fafafa;
-  --muted: #a1a1aa;
+  --bg:      #0a0a0a;
+  --surface: #111111;
+  --raised:  #1a1a1a;
+  --border:  rgba(255, 255, 255, 0.07);
+  --fg:      #fafafa;
+  --muted:   #a1a1aa;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--fg);
   font-family: var(--font-geist-sans, Arial, Helvetica, sans-serif);
 }
 
-/* 그라디언트 텍스트 유틸 */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
+
 .gradient-text {
   background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%);
   -webkit-background-clip: text;
@@ -30,32 +39,21 @@ body {
   background-clip: text;
 }
 
-/* 카드 호버 glow */
 .card-glow:hover {
-  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.3), 0 8px 32px rgba(124, 58, 237, 0.12);
+  box-shadow: 0 0 0 1px rgba(139,92,246,0.25), 0 8px 32px rgba(124,58,237,0.10);
 }
 
-/* 버튼 glow */
 .btn-glow {
-  box-shadow: 0 0 20px rgba(124, 58, 237, 0.35);
+  box-shadow: 0 0 18px rgba(124,58,237,0.30);
 }
-
 .btn-glow:hover {
-  box-shadow: 0 0 28px rgba(124, 58, 237, 0.5);
+  box-shadow: 0 0 26px rgba(124,58,237,0.45);
 }
 
-/* 카드 슬라이드 인 애니메이션 */
 @keyframes cardSlideIn {
-  from {
-    transform: translateX(32px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  from { transform: translateX(28px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
 }
-
 .card-slide-in {
-  animation: cardSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: cardSlideIn 0.32s cubic-bezier(0.16,1,0.3,1) forwards;
 }

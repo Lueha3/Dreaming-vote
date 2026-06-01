@@ -41,7 +41,7 @@ export default function NewPromptPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="rounded-2xl border border-white/[0.07] bg-[#141418] p-6 space-y-5">
+        <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-6 space-y-5">
           {/* 버전 이름 */}
           <div>
             <label className="mb-1.5 block text-xs font-medium text-zinc-400">

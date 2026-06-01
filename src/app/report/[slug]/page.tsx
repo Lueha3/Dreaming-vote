@@ -34,8 +34,12 @@ export default async function ReportPage({ params }: Props) {
   if (!report) notFound();
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <main className="mx-auto max-w-2xl px-4 py-10">
+    <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[350px] rounded-full bg-violet-600/8 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-[300px] h-[300px] rounded-full bg-blue-600/5 blur-[100px]" />
+      </div>
+      <main className="relative mx-auto max-w-2xl px-4 py-10">
         <ReportCard report={report} />
       </main>
     </div>

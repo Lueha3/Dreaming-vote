@@ -55,7 +55,7 @@ export default function MyPage() {
   /* ── 로딩 ─────────────────────────────────────────────────── */
   if (loading) {
     return (
-      <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden">
+      <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
         <AmbientGlow />
         <main className="relative mx-auto max-w-2xl px-4 py-14">
           <SkeletonList />
@@ -67,7 +67,7 @@ export default function MyPage() {
   /* ── 비로그인 ─────────────────────────────────────────────── */
   if (notLoggedIn) {
     return (
-      <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden flex items-center justify-center">
+      <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden flex items-center justify-center">
         <AmbientGlow />
         <div className="relative text-center px-6">
           <div className="mb-6 text-5xl">🔐</div>
@@ -88,7 +88,7 @@ export default function MyPage() {
 
   /* ── 메인 ─────────────────────────────────────────────────── */
   return (
-    <div className="relative min-h-screen bg-[#09090b] text-white overflow-hidden">
+    <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
       <AmbientGlow />
 
       <main className="relative mx-auto max-w-2xl px-4 py-14">
@@ -162,7 +162,7 @@ function ReportListItem({ item }: { item: ReportItem }) {
     <li>
       <Link
         href={`/report/${item.shareSlug}`}
-        className="group block rounded-2xl border border-white/[0.07] bg-[#141418] p-5 transition-all hover:border-violet-500/30 hover:bg-violet-500/[0.04]"
+        className="group block rounded-2xl border border-white/[0.07] bg-[#111111] p-5 transition-all hover:border-violet-500/30 hover:bg-violet-500/[0.04]"
       >
         {/* 캐치프레이즈 */}
         <p className="font-semibold text-white transition-colors group-hover:text-violet-200">
@@ -208,7 +208,7 @@ function ReportListItem({ item }: { item: ReportItem }) {
 
 function EmptyState() {
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[#141418] px-8 py-14 text-center">
+    <div className="rounded-2xl border border-white/[0.07] bg-[#111111] px-8 py-14 text-center">
       <div className="mb-4 text-4xl">✨</div>
       <p className="mb-2 font-semibold text-zinc-200">아직 리포트가 없어요</p>
       <p className="mb-7 text-sm leading-relaxed text-zinc-500">
@@ -232,7 +232,7 @@ function SkeletonList() {
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="animate-pulse rounded-2xl border border-white/[0.07] bg-[#141418] p-5"
+          className="animate-pulse rounded-2xl border border-white/[0.07] bg-[#111111] p-5"
         >
           <div className="mb-3 h-5 w-3/4 rounded bg-white/5" />
           <div className="mb-3 flex gap-2">
