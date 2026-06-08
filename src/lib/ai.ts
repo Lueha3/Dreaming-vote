@@ -62,38 +62,43 @@ ${rawText}
 {"catchphrase":"...","coreTraits":"...","optimalEcosystem":"...","corePosition":"..."}
 `;
 
-/**
- * 유저의 AI 결과 텍스트를 4개 항목 JSON으로 파싱
- * - gemini-2.5-flash 사용 (비용 최소화)
- * - 실패 시 1회 재시도
- */
-export async function parseReport(rawText: string): Promise<ParsedReport> {
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
-    systemInstruction: SYSTEM_INSTRUCTION,
-  });
+// 모델 폴백 순서: 2.5-flash 과부하(503) 시 2.0-flash로 자동 전환
+const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"] as const;
 
+/**
+ * 시스템 지시 + 프롬프트로 JSON을 생성하고 파싱해서 반환.
+ * - 시도마다 모델을 폴백(2.5-flash → 2.0-flash)해 과부하/일시 오류에 강함
+ * - 총 3회 시도, 사이에 짧은 대기
+ */
+async function generateJson(systemInstruction: string, prompt: string): Promise<unknown> {
   let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const modelName = MODELS[Math.min(attempt, MODELS.length - 1)];
     try {
-      const result = await model.generateContent(buildPrompt(rawText));
+      const model = genAI.getGenerativeModel({ model: modelName, systemInstruction });
+      const result = await model.generateContent(prompt);
       const text = result.response.text().trim();
 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error("JSON not found in response");
 
-      const parsed = JSON.parse(jsonMatch[0]);
-      return reportSchema.parse(parsed);
+      return JSON.parse(jsonMatch[0]);
     } catch (e) {
       lastError = e instanceof Error ? e : new Error(String(e));
-      if (attempt === 0) {
-        await new Promise((r) => setTimeout(r, 800));
-      }
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 600));
     }
   }
 
-  throw lastError ?? new Error("Parsing failed after 2 attempts");
+  throw lastError ?? new Error("AI generation failed after retries");
+}
+
+/**
+ * 유저의 AI 결과 텍스트를 4개 항목 JSON으로 파싱 (모델 폴백 적용)
+ */
+export async function parseReport(rawText: string): Promise<ParsedReport> {
+  const parsed = await generateJson(SYSTEM_INSTRUCTION, buildPrompt(rawText));
+  return reportSchema.parse(parsed);
 }
 
 // ── 성격 유형 기반 파싱 ──────────────────────────────────────────────────────
@@ -111,35 +116,11 @@ ${type}
 `;
 
 /**
- * 성격 유형(예: INTJ)을 기반으로 비즈니스 페르소나 리포트 생성
+ * 성격 유형(예: INTJ)을 기반으로 비즈니스 페르소나 리포트 생성 (모델 폴백 적용)
  */
 export async function parsePersonalityReport(personalityType: string): Promise<ParsedReport> {
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
-    systemInstruction: SYSTEM_INSTRUCTION,
-  });
-
-  let lastError: Error | null = null;
-
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const result = await model.generateContent(buildPersonalityPrompt(personalityType));
-      const text = result.response.text().trim();
-
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("JSON not found in response");
-
-      const parsed = JSON.parse(jsonMatch[0]);
-      return reportSchema.parse(parsed);
-    } catch (e) {
-      lastError = e instanceof Error ? e : new Error(String(e));
-      if (attempt === 0) {
-        await new Promise((r) => setTimeout(r, 800));
-      }
-    }
-  }
-
-  throw lastError ?? new Error("Parsing failed after 2 attempts");
+  const parsed = await generateJson(SYSTEM_INSTRUCTION, buildPersonalityPrompt(personalityType));
+  return reportSchema.parse(parsed);
 }
 
 // ── 동아리 매칭 추천 ──────────────────────────────────────────────────────────
@@ -204,9 +185,7 @@ ${JSON.stringify(
 `;
 
 /**
- * 페르소나 리포트 기반으로 후보 동아리 중 매칭 추천
- * - gemini-2.5-flash 사용
- * - 실패 시 1회 재시도
+ * 페르소나 리포트 기반으로 후보 동아리 중 매칭 추천 (모델 폴백 적용)
  * - 후보 목록에 없는 clubId(환각)는 호출부에서 필터링할 것
  */
 export async function recommendClubs(
@@ -215,31 +194,6 @@ export async function recommendClubs(
   topN = 5,
 ): Promise<ClubMatch[]> {
   if (candidates.length === 0) return [];
-
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
-    systemInstruction: MATCH_SYSTEM_INSTRUCTION,
-  });
-
-  let lastError: Error | null = null;
-
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const result = await model.generateContent(buildMatchPrompt(persona, candidates, topN));
-      const text = result.response.text().trim();
-
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("JSON not found in response");
-
-      const parsed = JSON.parse(jsonMatch[0]);
-      return clubMatchSchema.parse(parsed).recommendations;
-    } catch (e) {
-      lastError = e instanceof Error ? e : new Error(String(e));
-      if (attempt === 0) {
-        await new Promise((r) => setTimeout(r, 800));
-      }
-    }
-  }
-
-  throw lastError ?? new Error("Club matching failed after 2 attempts");
+  const parsed = await generateJson(MATCH_SYSTEM_INSTRUCTION, buildMatchPrompt(persona, candidates, topN));
+  return clubMatchSchema.parse(parsed).recommendations;
 }
