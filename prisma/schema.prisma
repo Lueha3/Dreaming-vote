@@ -20,6 +20,8 @@ model User {
   ownedClubs          Club[]               @relation("OwnedClubs")
   clubApplications    ClubApplication[]
   clubRecommendations ClubRecommendation[]
+  prayers             Prayer[]
+  prayerIntercessions PrayerIntercession[]
 }
 
 // AI 대화 파싱 결과 리포트
@@ -97,9 +99,46 @@ model Club {
   applications    ClubApplication[]
   recommendations ClubRecommendation[]
   images          ClubImage[]
+  prayers         Prayer[]
 
   @@index([category, isApproved, isActive])
   @@index([ownerUserId])
+}
+
+// 기도제목 — 전체 광장 또는 집단(러비아/유디코)·동아리 단위. 응답되면 함께 기뻐함.
+model Prayer {
+  id           String    @id @default(cuid())
+  userId       String
+  content      String
+  scope        String    @default("ALL") // ALL | 러비아 | 유디코 (clubId 있으면 동아리 기도)
+  clubId       String?   // null이면 광장/집단 기도, 값 있으면 동아리 기도 코너 (Phase 2)
+  isAnonymous  Boolean   @default(false) // 익명으로 올리기 (민감한 기도제목 보호)
+  isAnswered   Boolean   @default(false)
+  answeredNote String?   // 응답 간증 한 줄 (선택)
+  answeredAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  club          Club?                @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  intercessions PrayerIntercession[]
+
+  @@index([scope, createdAt])
+  @@index([userId])
+  @@index([clubId])
+}
+
+// "기도했어요" — 한 사람이 한 기도제목에 한 번만
+model PrayerIntercession {
+  id        String   @id @default(cuid())
+  prayerId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  prayer Prayer @relation(fields: [prayerId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([prayerId, userId])
+  @@index([prayerId])
 }
 
 // 동아리 카드뉴스 이미지 — 개설 시 등록, 순서 보존

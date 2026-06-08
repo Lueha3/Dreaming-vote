@@ -67,6 +67,7 @@ export function Header() {
         {/* 데스크톱 네비 */}
         <nav className="hidden sm:flex items-center gap-3 text-sm text-zinc-500">
           <Link href="/" className="whitespace-nowrap hover:text-zinc-200 transition-colors">홈</Link>
+          <Link href="/prayer" className="whitespace-nowrap hover:text-zinc-200 transition-colors">기도</Link>
           <Link href="/clubs" className="whitespace-nowrap hover:text-zinc-200 transition-colors">목록</Link>
           {!loading && nickname && (
             <>
@@ -122,6 +123,7 @@ export function Header() {
           {menuOpen && (
             <div className="absolute right-4 top-[3.75rem] w-56 rounded-2xl border border-white/[0.08] bg-[#111111] py-2 shadow-2xl shadow-black/50">
               <MobileNavLink href="/" onClick={() => setMenuOpen(false)}>홈</MobileNavLink>
+              <MobileNavLink href="/prayer" onClick={() => setMenuOpen(false)}>🙏 기도</MobileNavLink>
               <MobileNavLink href="/clubs" onClick={() => setMenuOpen(false)}>목록</MobileNavLink>
               {!loading && nickname && (
                 <>
