@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
-import { parsePersonalityReport } from "@/lib/ai";
+import { parsePersonalityReport, classifyAiError } from "@/lib/ai";
 import { generateUniqueSlug } from "@/lib/slug";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
@@ -61,22 +61,22 @@ export async function POST(req: NextRequest) {
   try {
     reportData = await parsePersonalityReport(personalityType);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Unknown";
-    console.error("POST /api/reports/personality failed:", msg);
+    const c = classifyAiError(e);
+    console.error("POST /api/reports/personality failed:", c.raw);
 
     await prisma.parsingLog.create({
       data: {
         userId: user?.dbUserId ?? null,
-        status: "parse_failed",
+        status: c.code === "AI_QUOTA" ? "api_error" : "parse_failed",
         sourceAi: "personality",
         inputLength: personalityType.length,
-        errorMessage: msg.slice(0, 200),
+        errorMessage: c.raw.slice(0, 200),
       },
     }).catch(() => {});
 
     return NextResponse.json(
-      { ok: false, code: "PARSE_FAILED", error: "분석에 실패했습니다. 다시 시도해주세요." },
-      { status: 422 },
+      { ok: false, code: c.code, error: c.error },
+      { status: c.status },
     );
   }
 

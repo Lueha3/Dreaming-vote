@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
-import { parseReport } from "@/lib/ai";
+import { parseReport, classifyAiError } from "@/lib/ai";
 import { generateUniqueSlug } from "@/lib/slug";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
@@ -70,27 +70,23 @@ export async function POST(req: NextRequest) {
   try {
     reportData = await parseReport(rawText);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Unknown";
-    console.error("POST /api/reports parse failed:", msg);
+    const c = classifyAiError(e);
+    console.error("POST /api/reports failed:", c.raw);
 
     // 실패 로그 (원문 글자 수만)
     await prisma.parsingLog.create({
       data: {
         userId: user?.dbUserId ?? null,
-        status: "parse_failed",
+        status: c.code === "AI_QUOTA" ? "api_error" : "parse_failed",
         sourceAi,
         inputLength: rawText.length,
-        errorMessage: msg.slice(0, 200),
+        errorMessage: c.raw.slice(0, 200),
       },
     }).catch(() => {}); // 로그 실패가 응답에 영향 주지 않도록
 
     return NextResponse.json(
-      {
-        ok: false,
-        code: "PARSE_FAILED",
-        error: "분석에 실패했습니다. AI 결과를 더 자세하게 붙여넣고 다시 시도해주세요.",
-      },
-      { status: 422 },
+      { ok: false, code: c.code, error: c.error },
+      { status: c.status },
     );
   }
 

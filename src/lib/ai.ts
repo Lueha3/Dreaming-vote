@@ -13,6 +13,34 @@ export const reportSchema = z.object({
 
 export type ParsedReport = z.infer<typeof reportSchema>;
 
+/**
+ * AI 호출 실패를 사용자 메시지로 분류
+ * - 사용량/크레딧/429 → 일시적 한도 문제 (입력 탓 아님)
+ * - 그 외 → 파싱 실패 (입력을 더 자세히)
+ */
+export function classifyAiError(e: unknown): {
+  code: "AI_QUOTA" | "PARSE_FAILED";
+  status: number;
+  error: string;
+  raw: string;
+} {
+  const raw = e instanceof Error ? e.message : String(e);
+  if (/429|quota|credit|rate limit|too many requests|resource.?exhausted|overloaded|503/i.test(raw)) {
+    return {
+      code: "AI_QUOTA",
+      status: 503,
+      error: "지금 AI 사용량이 많아 잠시 분석이 어려워요. 잠시 후 다시 시도해주세요.",
+      raw,
+    };
+  }
+  return {
+    code: "PARSE_FAILED",
+    status: 422,
+    error: "분석에 실패했습니다. AI 결과를 더 자세하게 붙여넣고 다시 시도해주세요.",
+    raw,
+  };
+}
+
 const SYSTEM_INSTRUCTION = `당신은 비즈니스 페르소나 분석 전문가입니다.
 반드시 아래 규칙을 따르세요:
 1. 오직 valid JSON만 출력. 설명, 마크다운 코드블록, 인사 일체 금지.
