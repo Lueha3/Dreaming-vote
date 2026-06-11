@@ -57,3 +57,19 @@ body {
 .card-slide-in {
   animation: cardSlideIn 0.32s cubic-bezier(0.16,1,0.3,1) forwards;
 }
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.modal-fade-in {
+  animation: modalFadeIn 0.18s ease-out forwards;
+}
+
+@keyframes modalPopIn {
+  from { transform: scale(0.94) translateY(8px); opacity: 0; }
+  to   { transform: scale(1) translateY(0);      opacity: 1; }
+}
+.modal-pop-in {
+  animation: modalPopIn 0.22s cubic-bezier(0.16,1,0.3,1) forwards;
+}

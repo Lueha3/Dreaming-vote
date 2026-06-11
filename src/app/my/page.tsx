@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { parseTraits } from "@/lib/bibleArchetypes";
 
 type ReportItem = {
   shareSlug: string;
@@ -192,7 +193,7 @@ function ReportListItem({
   onVisibilityChange: (slug: string, isPublic: boolean) => void;
 }) {
   const [toggling, setToggling] = useState(false);
-  const traits = item.coreTraits.split(/[,，、]/).map((t) => t.trim()).filter(Boolean);
+  const traits = parseTraits(item.coreTraits);
 
   async function toggleVisibility(e: React.MouseEvent) {
     e.preventDefault();
@@ -221,9 +222,10 @@ function ReportListItem({
         </p>
         {traits.length > 0 && (
           <div className="mt-2.5 flex flex-wrap gap-1.5">
-            {traits.map((t, i) => (
-              <span key={i} className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2.5 py-0.5 text-xs text-violet-400">
-                {t}
+            {traits.map(({ token, archetype }, i) => (
+              <span key={i} className="inline-flex items-center gap-1 rounded-full border border-violet-500/20 bg-violet-500/10 px-2.5 py-0.5 text-xs text-violet-400">
+                {archetype && <span className="leading-none">{archetype.emoji}</span>}
+                {archetype?.label ?? token}
               </span>
             ))}
           </div>

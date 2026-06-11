@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ClubRecommendations } from "./ClubRecommendations";
+import { ArchetypeTags } from "@/app/components/ArchetypeTags";
 
 type Report = {
   id: string;
@@ -38,8 +39,6 @@ export function ReportCard({ report }: { report: Report }) {
     }).catch(() => {});
   }
 
-  const traits = report.coreTraits.split(/[,，、]/).map((t) => t.trim()).filter(Boolean);
-
   return (
     <div className="space-y-3">
       {/* 캐치프레이즈 */}
@@ -57,18 +56,12 @@ export function ReportCard({ report }: { report: Report }) {
           </span>
           &rdquo;
         </h1>
-        {traits.length > 0 && (
-          <div className="relative mt-5 flex flex-wrap justify-center gap-1.5">
-            {traits.map((trait, i) => (
-              <span
-                key={i}
-                className="rounded-full border border-violet-500/20 bg-violet-500/[0.08] px-3 py-1 text-xs text-violet-300"
-              >
-                {trait}
-              </span>
-            ))}
-          </div>
-        )}
+        <div className="relative mt-5">
+          <ArchetypeTags coreTraits={report.coreTraits} />
+        </div>
+        <p className="relative mt-2 text-[11px] text-zinc-600">
+          인물형을 눌러 나와 닮은 성경 인물을 확인해보세요
+        </p>
         <div className="relative mt-5 flex items-center justify-center gap-3">
           <span className="rounded-full border border-white/[0.07] bg-white/[0.04] px-3 py-1 text-xs text-zinc-500">
             {SOURCE_LABEL[report.sourceAi] ?? "AI"} 분석

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { fetchJson } from "@/lib/http";
+import { ArchetypeTags } from "@/app/components/ArchetypeTags";
 
 /* ── 타입 ─────────────────────────────────────────────────────────────────── */
 
@@ -506,11 +507,6 @@ function CardResult({
   shareSlug: string | null;
   router: ReturnType<typeof useRouter>;
 }) {
-  const traits = reportData.coreTraits
-    .split(/[,，、]/)
-    .map((t) => t.trim())
-    .filter(Boolean);
-
   return (
     <div className="space-y-4">
       {/* 성향 카드 결과 */}
@@ -531,16 +527,12 @@ function CardResult({
             &rdquo;
           </h2>
 
-          <div className="mb-5 flex flex-wrap items-center justify-center gap-2">
-            {traits.map((t, i) => (
-              <span
-                key={i}
-                className="rounded-full border border-violet-500/25 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-300"
-              >
-                {t}
-              </span>
-            ))}
+          <div className="mb-2">
+            <ArchetypeTags coreTraits={reportData.coreTraits} />
           </div>
+          <p className="mb-5 text-[11px] text-zinc-600">
+            인물형을 눌러 나와 닮은 성경 인물을 확인해보세요
+          </p>
 
           <p className="text-sm leading-relaxed text-zinc-400">
             {reportData.optimalEcosystem}

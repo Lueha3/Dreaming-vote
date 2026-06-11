@@ -1,6 +1,12 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { z } from "zod";
 
+import {
+  archetypeListForPrompt,
+  normalizeTraits,
+  expandTraitsForMatching,
+} from "./bibleArchetypes";
+
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
 
 // 파싱 결과 스키마 (route에서도 재사용)
@@ -41,25 +47,28 @@ export function classifyAiError(e: unknown): {
   };
 }
 
-const SYSTEM_INSTRUCTION = `당신은 한국 청년의 협업 성향 카드를 만드는 전문가입니다.
+const SYSTEM_INSTRUCTION = `당신은 한국 교회 청년부 청년의 협업 성향 카드를 만드는 전문가입니다.
 반드시 아래 규칙을 따르세요:
 1. 오직 valid JSON만 출력. 설명, 마크다운 코드블록, 인사 일체 금지.
 2. catchphrase: 15자 이내, 시적·은유적 한 줄
-3. coreTraits: 핵심 기질 키워드 3~5개, 쉼표 구분
-4. optimalEcosystem: 200% 발휘되는 조직 문화 (200자 이내)
-5. corePosition: 팀 내 압도적 역할 (100자 이내)`;
+3. coreTraits: 프롬프트의 [성경 인물형 목록]에서 이 사람과 가장 닮은 인물형 3~5개의 label을 정확히 골라 쉼표로 구분. 목록에 없는 인물은 절대 만들지 말 것.
+4. optimalEcosystem: 이 사람이 200% 빛나는 공동체·팀 환경 (200자 이내, 중학생도 이해할 쉬운 말)
+5. corePosition: 동아리·팀에서 맡으면 좋은 역할 (100자 이내, 쉬운 말)`;
 
 // ── AI 결과 텍스트 파싱 ──────────────────────────────────────────────────────
 
 const buildPrompt = (rawText: string) => `
 다음은 사용자가 AI에게서 받은 성향 분석 결과입니다.
-내용을 아래 JSON 형식으로 추출·정제하세요.
+내용을 바탕으로 아래 JSON 형식의 "성향 카드"를 만드세요.
 
 [분석 결과]
 ${rawText}
 
+[성경 인물형 목록] — coreTraits는 반드시 이 목록의 label 중에서만 고를 것
+${archetypeListForPrompt()}
+
 [출력 형식]
-{"catchphrase":"...","coreTraits":"...","optimalEcosystem":"...","corePosition":"..."}
+{"catchphrase":"...","coreTraits":"다윗형, 느헤미야형, 바울형","optimalEcosystem":"...","corePosition":"..."}
 `;
 
 // 모델 폴백 순서: 2.5-flash 과부하(503) 시 2.0-flash로 자동 전환
@@ -98,21 +107,24 @@ async function generateJson(systemInstruction: string, prompt: string): Promise<
  */
 export async function parseReport(rawText: string): Promise<ParsedReport> {
   const parsed = await generateJson(SYSTEM_INSTRUCTION, buildPrompt(rawText));
-  return reportSchema.parse(parsed);
+  const report = reportSchema.parse(parsed);
+  return { ...report, coreTraits: normalizeTraits(report.coreTraits) };
 }
 
 // ── 성격 유형 기반 파싱 ──────────────────────────────────────────────────────
 
 const buildPersonalityPrompt = (type: string) => `
-다음은 "${type}" 성격 유형을 가진 사람입니다.
-이 성격 유형의 비즈니스 환경에서의 핵심 특성, 강점, 역할을 분석하여 아래 JSON 형식으로 작성하세요.
-실제 직장/팀에서 이 유형이 어떻게 빛나는지 구체적이고 생동감 있게 표현하세요.
+"${type}" 성격 유형을 가진 청년의 협업 성향을 분석해 아래 JSON 형식의 "성향 카드"를 만드세요.
+교회 동아리·공동체·팀 활동에서 이 유형이 어떻게 빛나는지 구체적이고 생동감 있게, 중학생도 이해할 쉬운 말로 표현하세요.
 
 [성격 유형]
 ${type}
 
+[성경 인물형 목록] — coreTraits는 반드시 이 목록의 label 중에서만 고를 것
+${archetypeListForPrompt()}
+
 [출력 형식]
-{"catchphrase":"...","coreTraits":"...","optimalEcosystem":"...","corePosition":"..."}
+{"catchphrase":"...","coreTraits":"다윗형, 느헤미야형, 바울형","optimalEcosystem":"...","corePosition":"..."}
 `;
 
 /**
@@ -120,7 +132,8 @@ ${type}
  */
 export async function parsePersonalityReport(personalityType: string): Promise<ParsedReport> {
   const parsed = await generateJson(SYSTEM_INSTRUCTION, buildPersonalityPrompt(personalityType));
-  return reportSchema.parse(parsed);
+  const report = reportSchema.parse(parsed);
+  return { ...report, coreTraits: normalizeTraits(report.coreTraits) };
 }
 
 // ── 동아리 매칭 추천 ──────────────────────────────────────────────────────────
@@ -163,7 +176,7 @@ const MATCH_SYSTEM_INSTRUCTION = `당신은 사람의 협업 성향과 동아리
 const buildMatchPrompt = (persona: PersonaInput, candidates: ClubCandidate[], topN: number) => `
 [사용자 성향]
 한 줄 정의: ${persona.catchphrase}
-핵심 기질: ${persona.coreTraits}
+핵심 기질: ${expandTraitsForMatching(persona.coreTraits)}
 최적 환경: ${persona.optimalEcosystem}
 핵심 역할: ${persona.corePosition}
 
