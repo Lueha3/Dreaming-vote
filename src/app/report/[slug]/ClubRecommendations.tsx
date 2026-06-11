@@ -64,10 +64,10 @@ export function ClubRecommendations({ reportId, shareSlug }: { reportId: string;
   /* ── 로딩 ── */
   if (state === "loading") {
     return (
-      <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-8 text-center">
-        <div className="mx-auto mb-4 h-9 w-9 animate-spin rounded-full border-2 border-violet-500/20 border-t-violet-400" />
-        <p className="text-sm text-zinc-300">AI가 어울리는 동아리를 찾고 있어요...</p>
-        <p className="mt-1 text-xs text-zinc-600">잠시만 기다려주세요</p>
+      <div className="glass-card p-8 text-center">
+        <div className="mx-auto mb-4 h-9 w-9 animate-spin rounded-full border-2 border-teal/25 border-t-teal-deep" />
+        <p className="text-sm text-ink">AI가 어울리는 동아리를 찾고 있어요...</p>
+        <p className="mt-1 text-xs text-ink-faint">잠시만 기다려주세요</p>
       </div>
     );
   }
@@ -75,19 +75,19 @@ export function ClubRecommendations({ reportId, shareSlug }: { reportId: string;
   /* ── 에러 ── */
   if (state === "error") {
     return (
-      <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-6 text-center">
-        <p className="mb-4 text-sm text-zinc-400">{error}</p>
+      <div className="glass-card p-6 text-center">
+        <p className="mb-4 text-sm text-ink-soft">{error}</p>
         {needLogin ? (
           <Link
             href={`/login?next=/report/${shareSlug}`}
-            className="inline-block rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
+            className="btn-gold inline-block rounded-full px-6 py-2.5 text-sm"
           >
             로그인
           </Link>
         ) : (
           <button
             onClick={getRecommendations}
-            className="rounded-full border border-white/[0.07] bg-white/[0.04] px-6 py-2.5 text-sm text-zinc-300 transition-all hover:border-white/20 hover:text-white"
+            className="glass-soft rounded-full px-6 py-2.5 text-sm text-ink-soft transition-all hover:bg-white/90 hover:text-ink"
           >
             다시 시도
           </button>
@@ -99,20 +99,20 @@ export function ClubRecommendations({ reportId, shareSlug }: { reportId: string;
   /* ── 결과: 동아리 없음 ── */
   if (state === "done" && items.length === 0) {
     return (
-      <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-8 text-center">
+      <div className="glass-card p-8 text-center">
         <div className="mb-3 text-3xl">🌱</div>
-        <p className="mb-1 text-sm text-zinc-300">아직 추천할 동아리가 충분하지 않아요.</p>
-        <p className="mb-5 text-xs text-zinc-600">첫 번째 동아리를 직접 개설하거나 둘러보세요.</p>
+        <p className="mb-1 text-sm text-ink">아직 추천할 동아리가 충분하지 않아요.</p>
+        <p className="mb-5 text-xs text-ink-faint">첫 번째 동아리를 직접 개설하거나 둘러보세요.</p>
         <div className="flex justify-center gap-3">
           <Link
             href="/clubs"
-            className="rounded-full border border-white/[0.07] bg-white/[0.04] px-5 py-2.5 text-sm text-zinc-300 transition-all hover:border-white/20 hover:text-white"
+            className="glass-soft rounded-full px-5 py-2.5 text-sm text-ink-soft transition-all hover:bg-white/90 hover:text-ink"
           >
             동아리 둘러보기
           </Link>
           <Link
             href="/clubs/new"
-            className="rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
+            className="btn-gold rounded-full px-5 py-2.5 text-sm"
           >
             + 동아리 개설
           </Link>
@@ -126,12 +126,12 @@ export function ClubRecommendations({ reportId, shareSlug }: { reportId: string;
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
-          <h2 className="text-sm font-semibold text-zinc-200">
+          <h2 className="text-sm font-semibold text-ink">
             🎯 나와 잘 맞는 동아리 TOP {items.length}
           </h2>
           <button
             onClick={getRecommendations}
-            className="text-xs text-zinc-600 transition-colors hover:text-zinc-300"
+            className="text-xs text-ink-faint transition-colors hover:text-teal-ink"
           >
             다시 추천받기
           </button>
@@ -142,38 +142,38 @@ export function ClubRecommendations({ reportId, shareSlug }: { reportId: string;
             <Link
               key={item.club.id}
               href={`/clubs/${item.club.id}`}
-              className="group block rounded-2xl border border-white/[0.07] bg-[#111111] p-5 transition-all hover:border-violet-500/25 hover:bg-[#161616] card-glow"
+              className="glass-card group block p-5 transition-all card-glow"
             >
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
-                  <span className="text-xs font-bold text-violet-500">#{i + 1}</span>
+                  <span className="text-xs font-bold text-gold-ink">#{i + 1}</span>
                   <span className="text-lg">{CLUB_CATEGORY_META[item.club.category]?.emoji ?? "✨"}</span>
-                  <h3 className="min-w-0 truncate font-semibold text-white group-hover:text-violet-200">
+                  <h3 className="min-w-0 truncate font-semibold text-ink group-hover:text-teal-ink">
                     {item.club.name}
                   </h3>
                 </div>
-                <span className="shrink-0 rounded-full border border-violet-500/25 bg-violet-500/[0.08] px-2.5 py-1 text-xs font-semibold text-violet-300">
+                <span className="shrink-0 rounded-full border border-gold/35 bg-gold/10 px-2.5 py-1 text-xs font-semibold text-gold-ink">
                   {Math.round(item.score)}%
                 </span>
               </div>
-              <div className="mb-3 rounded-xl border border-white/[0.05] bg-white/[0.03] px-3 py-2.5">
-                <p className="text-xs leading-relaxed text-zinc-400">
-                  <span className="font-medium text-zinc-300">AI </span>
+              <div className="glass-soft mb-3 rounded-xl px-3 py-2.5">
+                <p className="text-xs leading-relaxed text-ink-soft">
+                  <span className="font-medium text-ink">AI </span>
                   {item.reason}
                 </p>
               </div>
               <div className="mb-2 flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-white/[0.07] bg-white/[0.04] px-2 py-0.5 text-xs text-zinc-500">
+                <span className="glass-soft rounded-full px-2 py-0.5 text-xs text-ink-soft">
                   {item.club.category}
                 </span>
-                <span className="text-xs text-zinc-600">
+                <span className="text-xs text-ink-faint">
                   멤버 {item.club.memberCount}{item.club.maxMembers ? `/${item.club.maxMembers}` : ""}명
                 </span>
               </div>
               {tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {tags.map((t, ti) => (
-                    <span key={ti} className="rounded-full border border-white/[0.05] bg-white/[0.02] px-2 py-0.5 text-xs text-zinc-600">
+                    <span key={ti} className="rounded-full border border-sky-line bg-white/55 px-2 py-0.5 text-xs text-ink-faint">
                       {t}
                     </span>
                   ))}
@@ -188,15 +188,15 @@ export function ClubRecommendations({ reportId, shareSlug }: { reportId: string;
 
   /* ── idle ── */
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/[0.07] bg-[#111111] p-6 text-center">
+    <div className="glass-card relative overflow-hidden p-6 text-center">
       <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 h-32 w-72 rounded-full bg-violet-600/10 blur-[60px]" />
+        <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 h-32 w-72 rounded-full bg-teal/15 blur-[60px]" />
       </div>
-      <p className="relative mb-1 text-base font-semibold text-white">나와 맞는 동아리는?</p>
-      <p className="relative mb-5 text-sm text-zinc-500">AI가 내 기질·역할에 어울리는 동아리를 추천해드려요.</p>
+      <p className="relative mb-1 text-base font-semibold text-ink">나와 맞는 동아리는?</p>
+      <p className="relative mb-5 text-sm text-ink-soft">AI가 내 기질·역할에 어울리는 동아리를 추천해드려요.</p>
       <button
         onClick={getRecommendations}
-        className="relative inline-block rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-7 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
+        className="btn-gold relative inline-block rounded-full px-7 py-3 text-sm"
       >
         🎯 동아리 추천 받기
       </button>

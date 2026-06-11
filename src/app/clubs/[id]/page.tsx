@@ -102,7 +102,7 @@ export default function ClubDetailPage({ params }: PageProps) {
         setApplyOpen(false);
         setApplyMessage("");
       } else {
-        setApplyError(json.error ?? "신청에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        setApplyError(json.error ?? "신청에 실패했어요. 잠시 후 다시 시도해주세요.");
       }
     } catch {
       setApplyError("네트워크 오류. 잠시 후 다시 시도해주세요.");
@@ -113,11 +113,10 @@ export default function ClubDetailPage({ params }: PageProps) {
   /* ── 로딩 ──────────────────────────────────────────────────── */
   if (loading) {
     return (
-      <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
-        <AmbientGlow />
+      <div className="relative min-h-screen overflow-hidden">
         <main className="relative mx-auto max-w-2xl px-4 py-14">
-          <div className="h-6 w-24 animate-pulse rounded bg-white/5" />
-          <div className="mt-6 h-64 animate-pulse rounded-2xl border border-white/[0.07] bg-[#111111]" />
+          <div className="h-6 w-24 animate-pulse rounded bg-white/55" />
+          <div className="glass-card mt-6 h-64 animate-pulse" />
         </main>
       </div>
     );
@@ -126,17 +125,16 @@ export default function ClubDetailPage({ params }: PageProps) {
   /* ── 없음 ──────────────────────────────────────────────────── */
   if (notFound || !data) {
     return (
-      <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden flex items-center justify-center">
-        <AmbientGlow />
+      <div className="relative min-h-screen overflow-hidden flex items-center justify-center">
         <div className="relative text-center px-6">
           <div className="mb-6 text-5xl">🔍</div>
-          <h2 className="mb-3 text-2xl font-bold text-white">동아리를 찾을 수 없습니다</h2>
-          <p className="mb-8 text-sm text-zinc-500">
+          <h2 className="mb-3 text-2xl font-bold text-ink">동아리를 찾을 수 없어요</h2>
+          <p className="mb-8 text-sm text-ink-soft">
             삭제되었거나 아직 승인되지 않은 동아리일 수 있어요.
           </p>
           <Link
             href="/clubs"
-            className="inline-block rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
+            className="btn-gold inline-block rounded-full px-6 py-3 text-sm"
           >
             동아리 목록으로
           </Link>
@@ -150,13 +148,11 @@ export default function ClubDetailPage({ params }: PageProps) {
   const pending = !club.isApproved || !club.isActive;
 
   return (
-    <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
-      <AmbientGlow />
-
+    <div className="relative min-h-screen overflow-hidden">
       <main className="relative mx-auto max-w-2xl px-4 py-12">
         <Link
           href="/clubs"
-          className="text-xs text-zinc-500 transition-colors hover:text-zinc-300"
+          className="text-xs font-medium text-ink-faint transition-colors hover:text-skyx-ink"
         >
           ← 동아리 목록
         </Link>
@@ -169,13 +165,13 @@ export default function ClubDetailPage({ params }: PageProps) {
         )}
 
         {/* 본문 카드 */}
-        <div className={`${club.images?.length > 0 ? "mt-4" : "mt-5"} rounded-2xl border border-white/[0.07] bg-[#111111] p-6 sm:p-8 card-glow`}>
+        <div className={`${club.images?.length > 0 ? "mt-4" : "mt-5"} glass-card glass-ribbon relative overflow-hidden p-6 sm:p-8 card-glow`}>
           {/* 개설자 본인 + 승인 대기 안내 */}
           {isOwner && pending && (
-            <div className="mb-5 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+            <div className="mb-5 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3 text-sm text-gold-ink">
               {!club.isApproved
-                ? "관리자 승인 대기 중입니다. 승인되면 다른 청년들에게 공개됩니다."
-                : "현재 숨김 처리된 동아리입니다."}
+                ? "관리자 승인을 기다리는 중이에요. 승인되면 다른 청년들에게 공개됩니다."
+                : "지금은 숨김 처리된 동아리예요."}
             </div>
           )}
 
@@ -184,23 +180,23 @@ export default function ClubDetailPage({ params }: PageProps) {
             <span className="text-3xl">
               {CLUB_CATEGORY_META[club.category]?.emoji ?? "✨"}
             </span>
-            <h1 className="flex-1 text-2xl font-bold leading-snug text-white">{club.name}</h1>
+            <h1 className="flex-1 text-2xl font-bold leading-snug text-ink">{club.name}</h1>
           </div>
 
           {/* 카테고리 + 메타 */}
           <div className="mb-5 flex flex-wrap items-center gap-2 text-xs">
-            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-zinc-300">
+            <span className="glass-soft rounded-full px-2.5 py-0.5 text-ink-soft">
               {club.category}
             </span>
-            <span className="text-zinc-600">
+            <span className="text-ink-faint">
               멤버 {club.memberCount}
               {club.maxMembers ? `/${club.maxMembers}` : ""}명
             </span>
-            <span className="text-zinc-600">· 조회 {club.viewCount}</span>
+            <span className="text-ink-faint">· 조회 {club.viewCount}</span>
           </div>
 
           {/* 소개 */}
-          <div className="mb-6 whitespace-pre-wrap text-sm leading-relaxed text-zinc-300">
+          <div className="mb-6 whitespace-pre-wrap text-sm leading-relaxed text-ink">
             {club.description}
           </div>
 
@@ -210,7 +206,7 @@ export default function ClubDetailPage({ params }: PageProps) {
               {tags.map((t, i) => (
                 <span
                   key={i}
-                  className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2.5 py-0.5 text-xs text-violet-300"
+                  className="rounded-full border border-gold/35 bg-gold/10 px-2.5 py-0.5 text-xs text-gold-ink"
                 >
                   {t}
                 </span>
@@ -219,7 +215,7 @@ export default function ClubDetailPage({ params }: PageProps) {
           )}
 
           {/* 개설자 */}
-          <div className="flex items-center gap-2 border-t border-white/[0.06] pt-5 text-sm text-zinc-500">
+          <div className="flex items-center gap-2 border-t border-sky-line pt-5 text-sm text-ink-soft">
             {club.ownerAvatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -228,7 +224,7 @@ export default function ClubDetailPage({ params }: PageProps) {
                 className="h-6 w-6 rounded-full object-cover"
               />
             ) : (
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-500/20 text-xs text-violet-300">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-skyx/25 text-xs text-skyx-ink">
                 {(club.ownerNickname ?? "익")[0]}
               </div>
             )}
@@ -249,7 +245,7 @@ export default function ClubDetailPage({ params }: PageProps) {
       return (
         <Link
           href="/my/clubs"
-          className="block rounded-2xl border border-white/[0.07] bg-[#111111] px-5 py-4 text-center text-sm font-medium text-zinc-300 transition-all hover:border-white/20 hover:text-white"
+          className="glass-card block px-5 py-4 text-center text-sm font-medium text-ink-soft transition-all hover:border-teal/40 hover:text-ink"
         >
           내가 개설한 동아리예요 · 신청 관리하기 →
         </Link>
@@ -259,11 +255,11 @@ export default function ClubDetailPage({ params }: PageProps) {
     // 비로그인
     if (!isLoggedIn) {
       return (
-        <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-5 text-center">
-          <p className="mb-4 text-sm text-zinc-400">가입을 신청하려면 로그인이 필요해요.</p>
+        <div className="glass-card p-5 text-center">
+          <p className="mb-4 text-sm text-ink-soft">가입을 신청하려면 로그인이 필요해요.</p>
           <Link
             href={`/login?next=/clubs/${club.id}`}
-            className="inline-block rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
+            className="btn-gold inline-block rounded-full px-6 py-3 text-sm"
           >
             로그인하고 신청하기
           </Link>
@@ -274,14 +270,14 @@ export default function ClubDetailPage({ params }: PageProps) {
     // 신청 상태별
     if (status === "pending") {
       return (
-        <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 px-5 py-4 text-center text-sm font-medium text-amber-300">
+        <div className="rounded-2xl border border-gold/40 bg-gold/10 px-5 py-4 text-center text-sm font-medium text-gold-ink">
           ⏳ 가입 신청 완료 — 개설자 승인을 기다리는 중이에요.
         </div>
       );
     }
     if (status === "accepted") {
       return (
-        <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-5 py-4 text-center text-sm font-medium text-emerald-300">
+        <div className="rounded-2xl border border-teal/35 bg-teal/10 px-5 py-4 text-center text-sm font-medium text-teal-ink">
           ✓ 가입된 동아리예요!
         </div>
       );
@@ -289,10 +285,10 @@ export default function ClubDetailPage({ params }: PageProps) {
 
     // null 또는 rejected → 신청 가능
     return (
-      <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-5">
+      <div className="glass-card p-5">
         {status === "rejected" && (
-          <p className="mb-3 text-center text-sm text-zinc-500">
-            이전 신청은 거절되었어요. 다시 신청할 수 있습니다.
+          <p className="mb-3 text-center text-sm text-ink-soft">
+            이전 신청은 거절되었어요. 다시 신청할 수 있어요.
           </p>
         )}
 
@@ -304,16 +300,16 @@ export default function ClubDetailPage({ params }: PageProps) {
               rows={4}
               maxLength={500}
               placeholder="개설자에게 전할 한마디 (선택) — 가입 동기, 관심사 등"
-              className="w-full rounded-xl border border-white/[0.07] bg-black/30 px-4 py-3 text-sm leading-relaxed text-zinc-200 placeholder-zinc-600 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
+              className="w-full rounded-xl border border-white/95 bg-white/70 px-4 py-3 text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:border-teal focus:outline-none"
             />
             {applyError && (
-              <p className="text-sm text-red-400">{applyError}</p>
+              <p className="text-sm text-red-500">{applyError}</p>
             )}
             <div className="flex gap-3">
               <button
                 onClick={handleApply}
                 disabled={applying}
-                className="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-3 text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-40 btn-glow"
+                className="btn-gold flex-1 rounded-xl px-6 py-3 text-sm"
               >
                 {applying ? "신청 중..." : "신청 보내기"}
               </button>
@@ -322,7 +318,7 @@ export default function ClubDetailPage({ params }: PageProps) {
                   setApplyOpen(false);
                   setApplyError(null);
                 }}
-                className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-medium text-zinc-400 transition-all hover:border-white/20 hover:text-zinc-200"
+                className="glass-soft rounded-xl px-5 py-3 text-sm font-medium text-ink-soft transition-all hover:bg-white/90 hover:text-ink"
               >
                 취소
               </button>
@@ -331,7 +327,7 @@ export default function ClubDetailPage({ params }: PageProps) {
         ) : (
           <button
             onClick={() => setApplyOpen(true)}
-            className="block w-full rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
+            className="btn-gold block w-full rounded-xl px-6 py-3.5 text-sm"
           >
             가입 신청하기
           </button>
@@ -339,13 +335,4 @@ export default function ClubDetailPage({ params }: PageProps) {
       </div>
     );
   }
-}
-
-function AmbientGlow() {
-  return (
-    <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
-      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[350px] rounded-full bg-violet-600/8 blur-[120px]" />
-      <div className="absolute top-1/2 -left-24 w-[300px] h-[300px] rounded-full bg-blue-600/6 blur-[100px]" />
-    </div>
-  );
 }

@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BlueHumanity — 시안 C: 맑은 주일 아침</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<style>
+  /* ============================================================
+     시안 C — "맑은 주일 아침" (꿈꾸는교회 로고 충실 라이트)
+     팔레트: 하늘 #E9F5FC→#CCE4F6 / 진하늘 #7FBDE4
+             골드 #F0B429·#D99B0B / 틸 #35C3B4 / 차콜 #3A4149
+     ============================================================ */
+  :root {
+    --sky-50:  #F4FAFE;
+    --sky-100: #E9F5FC;
+    --sky-200: #CCE4F6;
+    --sky-300: #A9D2EE;
+    --sky-400: #7FBDE4;
+    --sky-700: #1F6FA8;
+    --gold:    #F0B429;
+    --gold-deep: #D99B0B;
+    --gold-ink: #8A6206;
+    --teal:    #35C3B4;
+    --teal-ink:#1F7A70;
+    --ink:     #3A4149;
+    --ink-soft:#57626E;
+    --ink-mute:#7A8794;
+    --line:    #9AA3AD;
+    --card-border: #DCEDF8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+  body {
+    font-family: "Pretendard Variable", Pretendard, sans-serif;
+    color: var(--ink);
+    background: linear-gradient(180deg, var(--sky-100) 0%, #DFF0FA 42%, var(--sky-200) 100%) fixed;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  ::selection { background: rgba(240, 180, 41, .35); color: var(--ink); }
+
+  button { font-family: inherit; cursor: pointer; }
+  a { text-decoration: none; }
+
+  /* ---------- 배경 장식 레이어 (해, 구름, 틸 사각 포인트) ---------- */
+  .bg-decor {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .bg-sun {
+    position: absolute; top: -140px; right: -100px;
+    width: 520px; height: 520px;
+    background: radial-gradient(circle, rgba(240,180,41,.20) 0%, rgba(240,180,41,0) 65%);
+  }
+  .bg-cloud {
+    position: absolute;
+    background: #fff;
+    border-radius: 999px;
+    filter: blur(20px);
+  }
+  .bg-cloud.c1 { top: 130px; left: 4%;  width: 260px; height: 74px; opacity: .60; }
+  .bg-cloud.c2 { top: 420px; right: 3%; width: 320px; height: 90px; opacity: .45; }
+  .bg-cloud.c3 { top: 700px; left: 9%;  width: 200px; height: 60px; opacity: .40; }
+  .bg-sq {
+    position: absolute;
+    width: 11px; height: 11px;
+    border-radius: 2.5px;
+  }
+  .bg-sq.t1 { top: 300px; left: 13%;  background: var(--teal); opacity: .35; transform: rotate(18deg); }
+  .bg-sq.t2 { top: 560px; right: 11%; background: var(--teal); opacity: .28; transform: rotate(-14deg); }
+  .bg-sq.g1 { top: 210px; right: 22%; background: var(--gold); opacity: .30; transform: rotate(24deg); width: 9px; height: 9px; }
+  .bg-sq.g2 { top: 760px; right: 18%; background: var(--gold); opacity: .22; transform: rotate(-20deg); width: 8px; height: 8px; }
+
+  /* ============================ 헤더 ============================ */
+  .site-header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(244, 250, 254, .74);
+    backdrop-filter: blur(16px) saturate(1.15);
+    -webkit-backdrop-filter: blur(16px) saturate(1.15);
+    border-bottom: 1px solid rgba(127, 189, 228, .28);
+  }
+  .header-inner {
+    max-width: 1200px; margin: 0 auto;
+    height: 64px; padding: 0 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .wordmark {
+    font-size: 19px; font-weight: 800; letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .wordmark .blue { color: var(--sky-700); }
+  .brand-x { color: var(--line); font-size: 12px; font-weight: 500; }
+  .church-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 11px 5px 8px;
+    background: rgba(255,255,255,.85);
+    border: 1px solid var(--sky-200);
+    border-radius: 999px;
+    font-size: 12px; font-weight: 600; color: var(--ink-soft);
+    box-shadow: 0 2px 8px -2px rgba(127,189,228,.30);
+  }
+
+  .nav { display: flex; align-items: center; gap: 2px; font-size: 14px; }
+  .nav a {
+    color: var(--ink-soft);
+    padding: 8px 11px; border-radius: 10px;
+    font-weight: 500;
+    transition: background .15s ease, color .15s ease;
+  }
+  .nav a:hover { background: rgba(127,189,228,.16); color: var(--ink); }
+  .nav a.active {
+    color: var(--sky-700); font-weight: 700;
+    background: rgba(127,189,228,.18);
+  }
+  .nav .nick-pill {
+    margin-left: 6px;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 13px;
+    background: #FFF4D6;
+    border: 1px solid #F0C254;
+    border-radius: 999px;
+    font-size: 13px; font-weight: 600; color: var(--gold-ink);
+    transition: background .15s ease, box-shadow .15s ease, transform .15s ease;
+  }
+  .nav .nick-pill:hover {
+    background: #FFEDBC;
+    box-shadow: 0 6px 16px -6px rgba(217,155,11,.45);
+    transform: translateY(-1px);
+  }
+  .nav-sep {
+    width: 1px; height: 16px; margin: 0 8px;
+    background: rgba(127,189,228,.45);
+  }
+  .nav .logout { color: var(--ink-mute); }
+  .nav .logout:hover { color: var(--ink); background: rgba(127,189,228,.14); }
+
+  /* ============================ 본문 ============================ */
+  .page { position: relative; z-index: 1; }
+  .container {
+    max-width: 672px; margin: 0 auto;
+    padding: 0 16px;
+  }
+
+  /* ---------- 히어로 ---------- */
+  .hero {
+    position: relative;
+    padding-top: 88px;
+    text-align: center;
+  }
+  .hero-art {
+    position: absolute;
+    top: -8px; left: 50%;
+    transform: translateX(-50%);
+    width: 660px; max-width: none;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .hero > *:not(.hero-art) { position: relative; z-index: 1; }
+
+  .hero-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255,255,255,.78);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.95);
+    border-radius: 999px;
+    font-size: 13.5px; font-weight: 600; color: var(--ink-soft);
+    box-shadow: 0 8px 24px -10px rgba(73,134,184,.35);
+  }
+  .hero-pill .dot { color: var(--teal); font-size: 10px; line-height: 1; }
+
+  h1 {
+    margin: 26px 0 18px;
+    font-size: 47px; font-weight: 800;
+    letter-spacing: -0.035em; line-height: 1.18;
+    color: var(--ink);
+  }
+  h1 .em {
+    position: relative; z-index: 0;
+    background: linear-gradient(118deg, var(--gold-deep) 8%, var(--gold) 55%, #E8B43A 95%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  h1 .em::after {
+    content: "";
+    position: absolute; z-index: -1;
+    left: -3%; right: -3%; bottom: 5px;
+    height: 34%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, rgba(240,180,41,.30), rgba(53,195,180,.32));
+    transform: rotate(-1deg);
+  }
+
+  .hero-sub {
+    font-size: 17px; line-height: 1.75;
+    color: var(--ink-soft);
+    margin-bottom: 40px;
+  }
+
+  /* ---------- 메인 카드 ---------- */
+  .card-wrap { position: relative; }
+  .card-wrap::before {
+    /* Suno 글로우의 라이트 버전: 골드·틸·하늘 번짐 */
+    content: "";
+    position: absolute; inset: -36px -48px;
+    z-index: 0;
+    background:
+      radial-gradient(440px 240px at 16% 90%, rgba(240,180,41,.30), transparent 70%),
+      radial-gradient(440px 240px at 86% 6%,  rgba(53,195,180,.26), transparent 70%),
+      radial-gradient(620px 340px at 50% 50%, rgba(127,189,228,.34), transparent 72%);
+    filter: blur(34px);
+    pointer-events: none;
+  }
+  .card {
+    position: relative; z-index: 1;
+    background: rgba(255,255,255,.88);
+    backdrop-filter: blur(18px) saturate(1.1);
+    -webkit-backdrop-filter: blur(18px) saturate(1.1);
+    border: 1px solid rgba(255,255,255,.95);
+    border-radius: 24px;
+    padding: 34px 34px 30px;
+    text-align: left;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.95),
+      0 32px 72px -30px rgba(63,124,176,.40),
+      0 8px 26px -14px rgba(63,124,176,.20);
+  }
+  .card-title {
+    display: flex; align-items: center; gap: 9px;
+    font-size: 20px; font-weight: 700; letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .card-title svg { flex: none; }
+  .card-caption {
+    margin-top: 7px;
+    font-size: 14px; color: var(--ink-mute);
+  }
+
+  /* MBTI 4×4 격자 */
+  .mbti-grid {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .mbti-btn {
+    padding: 15px 0;
+    border-radius: 14px;
+    border: 1px solid var(--card-border);
+    background: linear-gradient(180deg, #FBFDFF, #F3FAFD);
+    font-size: 15px; font-weight: 700; letter-spacing: .05em;
+    color: #46525E;
+    transition: transform .16s ease, box-shadow .16s ease,
+                border-color .16s ease, background .16s ease, color .16s ease;
+  }
+  .mbti-btn:hover {
+    transform: translateY(-2px);
+    border-color: #F0C254;
+    background: #FFFDF4;
+    color: #9A6E06;
+    box-shadow: 0 14px 28px -12px rgba(240,180,41,.55);
+  }
+  .mbti-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 6px 14px -8px rgba(240,180,41,.45);
+  }
+
+  /* 무료 검사 링크 행 */
+  .helper-row {
+    margin-top: 22px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 11px;
+    font-size: 14px; color: #6B7884;
+  }
+  .gold-cta {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 8px 15px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #F8C95B, #EFA90F);
+    color: #4A3403;
+    font-size: 13.5px; font-weight: 700;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.55),
+      0 10px 22px -10px rgba(217,155,11,.65);
+    transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+  }
+  .gold-cta:hover {
+    transform: translateY(-1px);
+    filter: saturate(1.08) brightness(1.02);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.55),
+      0 14px 28px -10px rgba(217,155,11,.75);
+  }
+  .gold-cta .arrow { font-size: 12px; }
+
+  /* 구분선 */
+  .divider {
+    display: flex; align-items: center; gap: 14px;
+    margin: 28px 0 18px;
+    font-size: 13px; color: #93A2AE;
+  }
+  .divider::before, .divider::after {
+    content: ""; flex: 1; height: 1px;
+  }
+  .divider::before { background: linear-gradient(90deg, transparent, #CBE2F2); }
+  .divider::after  { background: linear-gradient(90deg, #CBE2F2, transparent); }
+
+  /* 접힌 확장 버튼 (틸 보조 포인트) */
+  .expander {
+    width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(53,195,180,.32);
+    background: rgba(53,195,180,.07);
+    color: var(--teal-ink);
+    font-size: 14.5px; font-weight: 600;
+    transition: background .16s ease, border-color .16s ease, box-shadow .16s ease;
+  }
+  .expander:hover {
+    background: rgba(53,195,180,.13);
+    border-color: rgba(53,195,180,.55);
+    box-shadow: 0 12px 26px -14px rgba(53,195,180,.55);
+  }
+  .expander .chev { font-size: 13px; opacity: .75; }
+
+  /* ============================ 푸터 ============================ */
+  .footer {
+    margin-top: 120px;
+    position: relative; z-index: 1;
+  }
+  .skyline {
+    display: block;
+    width: 100%; max-width: 1280px;
+    margin: 0 auto;
+  }
+  .footer-note {
+    text-align: center;
+    font-size: 13px; color: #8895A1;
+    padding: 26px 0 48px;
+  }
+  .footer-note .star { color: var(--gold); }
+</style>
+</head>
+<body>
+
+<!-- 배경 장식: 아침 해 글로우 + 구름 + 로고의 사각 포인트 -->
+<div class="bg-decor" aria-hidden="true">
+  <div class="bg-sun"></div>
+  <div class="bg-cloud c1"></div>
+  <div class="bg-cloud c2"></div>
+  <div class="bg-cloud c3"></div>
+  <div class="bg-sq t1"></div>
+  <div class="bg-sq t2"></div>
+  <div class="bg-sq g1"></div>
+  <div class="bg-sq g2"></div>
+</div>
+
+<!-- ============================ 헤더 ============================ -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="brand">
+      <span class="wordmark"><span class="blue">Blue</span>Humanity</span>
+      <span class="brand-x">×</span>
+      <span class="church-badge">
+        <!-- 꿈꾸는교회 미니 로고: 종탑 + 십자가 + 골드 별 -->
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 2.6v3" stroke="#D99B0B" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M10.7 3.9h2.6" stroke="#D99B0B" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M8.2 11.2 12 6.4l3.8 4.8Z" fill="#F0B429"/>
+          <path d="M9 11.5h6V20H9Z" stroke="#9AA3AD" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M11 20v-3.2q1-1 2 0V20" stroke="#9AA3AD" stroke-width="1.3" stroke-linejoin="round"/>
+          <path d="M5 20h14" stroke="#9AA3AD" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M19.4 4.6c.5 1.6.9 2 2.4 2.4-1.5.4-1.9.8-2.4 2.4-.4-1.6-.8-2-2.3-2.4 1.5-.4 1.9-.8 2.3-2.4Z" fill="#F0B429"/>
+          <rect x="4.2" y="14.8" width="2.2" height="2.2" rx="0.5" transform="rotate(18 5.3 15.9)" fill="#35C3B4"/>
+        </svg>
+        꿈꾸는교회
+      </span>
+    </div>
+    <nav class="nav">
+      <a href="#" class="active">홈</a>
+      <a href="#">기도</a>
+      <a href="#">목록</a>
+      <a href="#">내 성향 카드</a>
+      <a href="#">내 동아리</a>
+      <a href="#" class="nick-pill">닉네임 설정 <span>⚠️</span></a>
+      <span class="nav-sep"></span>
+      <a href="#" class="logout">로그아웃</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <div class="container">
+
+    <!-- ============================ 히어로 ============================ -->
+    <section class="hero">
+
+      <!-- 히어로 배경 라인아트: 회색 선 교회 + 골드 종탑 + 골드 별 -->
+      <svg class="hero-art" viewBox="0 0 660 400" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <g stroke="#9AA3AD" stroke-opacity=".45" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <!-- 지면 -->
+          <path d="M70 362h520" stroke-opacity=".32"/>
+          <!-- 본당 -->
+          <path d="M214 362V254"/>
+          <path d="M380 362V254"/>
+          <path d="M200 254 297 192l97 62"/>
+          <circle cx="297" cy="238" r="14"/>
+          <!-- 아치형 문 -->
+          <path d="M275 362v-36q22-20 44 0v36"/>
+          <!-- 측면 창 -->
+          <path d="M238 322v-22q9-9 18 0v22" stroke-opacity=".35"/>
+          <path d="M338 322v-22q9-9 18 0v22" stroke-opacity=".35"/>
+          <!-- 종탑 -->
+          <path d="M394 362V172"/>
+          <path d="M458 362V172"/>
+          <path d="M412 252v-22q14-14 28 0v22"/>
+          <path d="M412 308v-16q14-12 28 0v16" stroke-opacity=".35"/>
+        </g>
+        <!-- 골드 종탑 지붕 -->
+        <path d="M386 172 426 104l40 68Z" fill="#F0B429" fill-opacity=".88" stroke="#D99B0B" stroke-opacity=".7" stroke-width="2" stroke-linejoin="round"/>
+        <!-- 십자가 -->
+        <g stroke="#D99B0B" stroke-width="5" stroke-linecap="round" stroke-opacity=".85">
+          <path d="M426 58v40"/>
+          <path d="M412 72h28"/>
+        </g>
+        <!-- 골드 별 (로고의 ✶) -->
+        <path transform="translate(528 112)" d="M0 -26C3.5 -6.5 6.5 -3.5 26 0 6.5 3.5 3.5 6.5 0 26-3.5 6.5-6.5 3.5-26 0-6.5-3.5-3.5-6.5 0-26Z" fill="#F0B429" fill-opacity=".9"/>
+        <path transform="translate(152 142)" d="M0 -12C1.8 -3 3 -1.8 12 0 3 1.8 1.8 3 0 12-1.8 3-3 1.8-12 0-3 -1.8-1.8 -3 0 -12Z" fill="#F0B429" fill-opacity=".7"/>
+        <circle cx="586" cy="62" r="3" fill="#F0B429" fill-opacity=".6"/>
+        <circle cx="96" cy="86" r="2.5" fill="#F0B429" fill-opacity=".5"/>
+        <!-- 틸 사각 포인트 -->
+        <rect x="178" y="306" width="10" height="10" rx="2.5" transform="rotate(16 183 311)" fill="#35C3B4" fill-opacity=".65"/>
+        <rect x="488" y="332" width="8" height="8" rx="2" transform="rotate(-12 492 336)" fill="#35C3B4" fill-opacity=".5"/>
+        <!-- 라인 구름 -->
+        <g fill="#FFFFFF" fill-opacity=".85" stroke="#9AA3AD" stroke-opacity=".35" stroke-width="2">
+          <path d="M76 108q0-16 16-16 4-14 20-12 8-12 22-4 16-4 18 12 14 4 10 18-2 8-14 8H86q-10 0-10-6Z"/>
+          <path d="M506 222q0-12 12-12 3-11 15-9 6-9 17-3 12-3 13 9 11 3 8 14-2 6-11 6h-46q-8 0-8-5Z" fill-opacity=".7"/>
+        </g>
+      </svg>
+
+      <!-- 뱃지 -->
+      <span class="hero-pill"><span class="dot">●</span> 꿈꾸는교회 청년부 · 나에게 맞는 동아리</span>
+
+      <!-- H1 -->
+      <h1>나에게 맞는 <span class="em">동아리</span>를<br/>찾아보세요</h1>
+
+      <!-- 서브 카피 -->
+      <p class="hero-sub">
+        성격유형을 안다면 1분이면 충분해요.<br/>
+        AI가 내 성향에 맞는 동아리를 추천해드려요.
+      </p>
+    </section>
+
+    <!-- ============================ 메인 카드 ============================ -->
+    <section class="card-wrap">
+      <div class="card">
+        <h2 class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M12 2c1.6 7.2 2.8 8.4 10 10-7.2 1.6-8.4 2.8-10 10-1.6-7.2-2.8-8.4-10-10 7.2-1.6 8.4-2.8 10-10Z" fill="#F0B429"/>
+          </svg>
+          성격유형을 고르면 바로 시작해요
+        </h2>
+        <p class="card-caption">대충 골라도 괜찮아요 — 나중에 다시 만들 수 있어요</p>
+
+        <div class="mbti-grid">
+          <button class="mbti-btn" type="button">INTJ</button>
+          <button class="mbti-btn" type="button">INTP</button>
+          <button class="mbti-btn" type="button">ENTJ</button>
+          <button class="mbti-btn" type="button">ENTP</button>
+          <button class="mbti-btn" type="button">INFJ</button>
+          <button class="mbti-btn" type="button">INFP</button>
+          <button class="mbti-btn" type="button">ENFJ</button>
+          <button class="mbti-btn" type="button">ENFP</button>
+          <button class="mbti-btn" type="button">ISTJ</button>
+          <button class="mbti-btn" type="button">ISFJ</button>
+          <button class="mbti-btn" type="button">ESTJ</button>
+          <button class="mbti-btn" type="button">ESFJ</button>
+          <button class="mbti-btn" type="button">ISTP</button>
+          <button class="mbti-btn" type="button">ISFP</button>
+          <button class="mbti-btn" type="button">ESTP</button>
+          <button class="mbti-btn" type="button">ESFP</button>
+        </div>
+
+        <div class="helper-row">
+          <span>성격유형을 모른다면?</span>
+          <a class="gold-cta" href="#">무료 검사하기 <span class="arrow">↗</span></a>
+        </div>
+
+        <div class="divider">또는</div>
+
+        <button class="expander" type="button">
+          ChatGPT 등 AI를 써봤다면 — 더 깊게 분석하기 <span class="chev">⌄</span>
+        </button>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ============================ 푸터: 마을 스카이라인 라인아트 ============================ -->
+  <footer class="footer">
+    <svg class="skyline" viewBox="0 0 1280 230" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g stroke="#9AA3AD" stroke-opacity=".48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- 지면 -->
+        <path d="M40 196h1200" stroke-opacity=".30"/>
+        <!-- 왼쪽 집 -->
+        <path d="M182 196v-40h72v40"/>
+        <path d="M172 156l46-28 46 28"/>
+        <path d="M206 196v-18q12-10 24 0v18" stroke-opacity=".38"/>
+        <circle cx="218" cy="148" r="6" stroke-opacity=".38"/>
+        <!-- 나무 -->
+        <path d="M330 196v-24"/>
+        <circle cx="330" cy="156" r="17"/>
+        <!-- 가운데 교회 -->
+        <path d="M610 196v-76h52v76"/>
+        <path d="M662 196v-46h82v46"/>
+        <path d="M656 150l47-28 47 28"/>
+        <path d="M694 196v-20q10-9 20 0v20"/>
+        <path d="M622 142v-14q14-12 28 0v14" stroke-opacity=".38"/>
+        <!-- 나무 2 -->
+        <path d="M858 196v-22"/>
+        <circle cx="858" cy="160" r="14"/>
+        <!-- 오른쪽 집 -->
+        <path d="M1002 196v-36h68v36"/>
+        <path d="M992 160l44-26 44 26"/>
+        <path d="M1022 196v-16q14-11 28 0v16" stroke-opacity=".38"/>
+      </g>
+      <!-- 교회 골드 첨탑 + 십자가 -->
+      <path d="M602 120l34-44 34 44Z" fill="#F0B429" fill-opacity=".85" stroke="#D99B0B" stroke-opacity=".6" stroke-width="1.6" stroke-linejoin="round"/>
+      <g stroke="#D99B0B" stroke-width="3.4" stroke-linecap="round" stroke-opacity=".8">
+        <path d="M636 44v26"/>
+        <path d="M627 53h18"/>
+      </g>
+      <!-- 골드 별들 -->
+      <path transform="translate(480 70)" d="M0 -12C1.8 -3 3 -1.8 12 0 3 1.8 1.8 3 0 12-1.8 3-3 1.8-12 0-3 -1.8-1.8 -3 0 -12Z" fill="#F0B429" fill-opacity=".8"/>
+      <path transform="translate(152 62) scale(.7)" d="M0 -12C1.8 -3 3 -1.8 12 0 3 1.8 1.8 3 0 12-1.8 3-3 1.8-12 0-3 -1.8-1.8 -3 0 -12Z" fill="#F0B429" fill-opacity=".65"/>
+      <path transform="translate(1118 84) scale(.85)" d="M0 -12C1.8 -3 3 -1.8 12 0 3 1.8 1.8 3 0 12-1.8 3-3 1.8-12 0-3 -1.8-1.8 -3 0 -12Z" fill="#F0B429" fill-opacity=".7"/>
+      <circle cx="560" cy="42" r="2.4" fill="#F0B429" fill-opacity=".55"/>
+      <circle cx="1190" cy="56" r="2.8" fill="#F0B429" fill-opacity=".5"/>
+      <circle cx="84" cy="104" r="2.2" fill="#F0B429" fill-opacity=".5"/>
+      <!-- 틸 사각 포인트 -->
+      <rect x="766" y="178" width="9" height="9" rx="2" transform="rotate(15 770 182)" fill="#35C3B4" fill-opacity=".6"/>
+      <rect x="396" y="120" width="7" height="7" rx="2" transform="rotate(-18 399 123)" fill="#35C3B4" fill-opacity=".5"/>
+      <!-- 라인 구름 -->
+      <g fill="#FFFFFF" fill-opacity=".8" stroke="#9AA3AD" stroke-opacity=".32" stroke-width="1.8">
+        <path d="M340 78q0-13 13-13 3-11 16-10 7-10 18-3 13-3 14 10 11 3 8 14-2 7-12 7h-49q-8 0-8-5Z"/>
+        <path d="M906 58q0-11 11-11 3-9 13-8 6-8 15-2 11-3 12 8 9 3 6 12-1 5-10 5h-40q-7 0-7-4Z" fill-opacity=".65"/>
+      </g>
+    </svg>
+    <p class="footer-note"><span class="star">✶</span>&nbsp; BlueHumanity · 꿈꾸는교회 청년부 — 맑은 주일 아침, 교회 가는 길</p>
+  </footer>
+</main>
+
+</body>
+</html>

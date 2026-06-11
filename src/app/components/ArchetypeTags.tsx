@@ -31,18 +31,18 @@ export function ArchetypeTags({
               key={i}
               type="button"
               onClick={() => setOpen(archetype)}
-              className={`group inline-flex items-center gap-1 rounded-full border border-violet-500/25 bg-violet-500/[0.1] ${pad} font-medium text-violet-300 transition-all hover:border-violet-400/50 hover:bg-violet-500/20 hover:text-violet-200 active:scale-95`}
+              className={`group inline-flex items-center gap-1 rounded-full border border-gold/35 bg-gold/10 ${pad} font-medium text-gold-ink transition-all hover:border-gold/60 hover:bg-gold/20 active:scale-95`}
             >
               <span className="leading-none">{archetype.emoji}</span>
               {archetype.label}
-              <span className="text-violet-400/50 transition-colors group-hover:text-violet-300/80">
+              <span className="text-gold-ink/50 transition-colors group-hover:text-gold-ink/80">
                 ⌄
               </span>
             </button>
           ) : (
             <span
               key={i}
-              className={`rounded-full border border-violet-500/20 bg-violet-500/[0.08] ${pad} text-violet-300`}
+              className={`rounded-full border border-gold/30 bg-gold/[0.08] ${pad} text-gold-ink`}
             >
               {token}
             </span>
@@ -88,20 +88,21 @@ function ArchetypeModal({
       aria-modal="true"
       onClick={onClose}
     >
-      <div className="absolute inset-0 bg-black/75 backdrop-blur-sm modal-fade-in" />
+      <div className="absolute inset-0 bg-[#2E6E9E]/25 backdrop-blur-sm modal-fade-in" />
       <div
-        className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-violet-500/25 bg-[#121212] p-7 text-left shadow-2xl shadow-violet-900/30 modal-pop-in"
+        className="glass-card relative w-full max-w-sm overflow-hidden p-7 text-left modal-pop-in"
+        style={{ background: "rgba(255,255,255,.92)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="pointer-events-none absolute inset-0" aria-hidden>
-          <div className="absolute -top-16 left-1/2 -translate-x-1/2 h-36 w-72 rounded-full bg-violet-600/15 blur-[60px]" />
+          <div className="absolute -top-16 left-1/2 -translate-x-1/2 h-36 w-72 rounded-full bg-gold/15 blur-[60px]" />
         </div>
 
         <button
           type="button"
           onClick={onClose}
           aria-label="닫기"
-          className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-200"
+          className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-skyx/15 hover:text-ink"
         >
           ✕
         </button>
@@ -109,25 +110,25 @@ function ArchetypeModal({
         {/* 인물 헤더 */}
         <div className="relative text-center">
           <div className="mb-3 text-5xl leading-none">{archetype.emoji}</div>
-          <h3 className="text-xl font-bold text-white">{archetype.figure}</h3>
-          <p className="mt-1 text-sm font-medium text-violet-300">{archetype.type}</p>
+          <h3 className="text-xl font-bold text-ink">{archetype.figure}</h3>
+          <p className="mt-1 text-sm font-medium text-teal-ink">{archetype.type}</p>
         </div>
 
         {/* 인물 설명 */}
-        <p className="relative mt-5 text-sm leading-relaxed text-zinc-300">
+        <p className="relative mt-5 text-sm leading-relaxed text-ink">
           {archetype.blurb}
         </p>
 
         {/* 연결 문구 */}
-        <div className="relative mt-4 rounded-2xl border border-violet-500/20 bg-violet-500/[0.08] px-4 py-3.5">
-          <p className="text-sm leading-relaxed text-violet-200">
-            <span className="mr-1">💜</span>
+        <div className="relative mt-4 rounded-2xl border border-white/85 bg-gradient-to-r from-gold/15 to-teal/15 px-4 py-3.5">
+          <p className="text-sm leading-relaxed text-ink">
+            <span className="mr-1">💛</span>
             {archetype.connect}
           </p>
         </div>
 
         {/* 본문 출처 */}
-        <p className="relative mt-4 text-center text-xs text-zinc-600">
+        <p className="relative mt-4 text-center text-xs text-ink-faint">
           📖 {archetype.scripture}
         </p>
       </div>

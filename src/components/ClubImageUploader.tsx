@@ -148,25 +148,25 @@ export function ClubImageUploader({ onChange, maxImages = 10 }: Props) {
       {items.map((item, idx) => (
         <div
           key={item.localId}
-          className="flex items-start gap-3 rounded-xl border border-white/[0.07] bg-black/30 p-3"
+          className="glass-soft flex items-start gap-3 rounded-xl p-3"
         >
           {/* 순서 번호 */}
-          <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-white/10 text-[10px] text-zinc-400">
+          <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-skyx/25 text-[10px] font-semibold text-skyx-ink">
             {idx + 1}
           </div>
 
           {/* 썸네일 */}
-          <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-white/5">
+          <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-white/55">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={item.previewUrl} alt="" className="h-full w-full object-cover" />
             {item.uploading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+              <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-sm">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-skyx/30 border-t-skyx-deep" />
               </div>
             )}
             {item.error && (
-              <div className="absolute inset-0 flex items-center justify-center bg-red-900/60">
-                <span className="text-xs text-red-300">!</span>
+              <div className="absolute inset-0 flex items-center justify-center bg-red-500/55">
+                <span className="text-xs font-bold text-red-50">!</span>
               </div>
             )}
           </div>
@@ -179,10 +179,10 @@ export function ClubImageUploader({ onChange, maxImages = 10 }: Props) {
               placeholder="카드 설명 (선택 · 최대 100자)"
               maxLength={100}
               disabled={item.uploading}
-              className="w-full rounded-lg border border-white/[0.07] bg-black/20 px-3 py-2 text-xs text-zinc-300 placeholder-zinc-600 focus:border-violet-500/50 focus:outline-none disabled:opacity-50"
+              className="w-full rounded-lg border border-white/95 bg-white/70 px-3 py-2 text-xs text-ink placeholder:text-ink-faint focus:border-teal focus:outline-none disabled:opacity-50"
             />
-            {item.error && <p className="text-xs text-red-400">{item.error}</p>}
-            {item.uploading && <p className="text-xs text-zinc-500">업로드 중...</p>}
+            {item.error && <p className="text-xs text-red-500">{item.error}</p>}
+            {item.uploading && <p className="text-xs text-ink-soft">업로드 중...</p>}
           </div>
 
           {/* 순서 이동 + 삭제 */}
@@ -191,7 +191,7 @@ export function ClubImageUploader({ onChange, maxImages = 10 }: Props) {
               type="button"
               onClick={() => move(idx, -1)}
               disabled={idx === 0}
-              className="flex h-6 w-6 items-center justify-center rounded text-zinc-500 transition-colors hover:text-zinc-200 disabled:opacity-20"
+              className="flex h-6 w-6 items-center justify-center rounded text-ink-faint transition-colors hover:text-ink disabled:opacity-20"
             >
               ↑
             </button>
@@ -199,14 +199,14 @@ export function ClubImageUploader({ onChange, maxImages = 10 }: Props) {
               type="button"
               onClick={() => move(idx, 1)}
               disabled={idx === items.length - 1}
-              className="flex h-6 w-6 items-center justify-center rounded text-zinc-500 transition-colors hover:text-zinc-200 disabled:opacity-20"
+              className="flex h-6 w-6 items-center justify-center rounded text-ink-faint transition-colors hover:text-ink disabled:opacity-20"
             >
               ↓
             </button>
             <button
               type="button"
               onClick={() => handleRemove(item.localId)}
-              className="flex h-6 w-6 items-center justify-center rounded text-zinc-600 transition-colors hover:text-red-400"
+              className="flex h-6 w-6 items-center justify-center rounded text-ink-faint transition-colors hover:text-red-500"
             >
               ✕
             </button>
@@ -218,7 +218,7 @@ export function ClubImageUploader({ onChange, maxImages = 10 }: Props) {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 py-4 text-sm text-zinc-500 transition-all hover:border-violet-500/40 hover:text-violet-300"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-sky-line py-4 text-sm text-ink-soft transition-all hover:border-teal/60 hover:bg-white/50 hover:text-teal-ink"
         >
           <span className="text-xl leading-none">+</span>
           <span>

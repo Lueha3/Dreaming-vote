@@ -63,15 +63,14 @@ export default function MyClubsPage() {
   /* ── 로딩 ─────────────────────────────────────────────────── */
   if (loading) {
     return (
-      <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
-        <AmbientGlow />
+      <div className="relative min-h-screen overflow-hidden">
         <main className="relative mx-auto max-w-2xl px-4 py-14">
-          <div className="h-8 w-40 animate-pulse rounded bg-white/5" />
+          <div className="h-8 w-40 animate-pulse rounded bg-white/55" />
           <div className="mt-6 space-y-3">
             {[1, 2].map((i) => (
               <div
                 key={i}
-                className="h-28 animate-pulse rounded-2xl border border-white/[0.07] bg-[#111111]"
+                className="glass-card h-28 animate-pulse"
               />
             ))}
           </div>
@@ -83,15 +82,14 @@ export default function MyClubsPage() {
   /* ── 비로그인 ─────────────────────────────────────────────── */
   if (notLoggedIn) {
     return (
-      <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden flex items-center justify-center">
-        <AmbientGlow />
+      <div className="relative min-h-screen overflow-hidden flex items-center justify-center">
         <div className="relative text-center px-6">
           <div className="mb-6 text-5xl">🔐</div>
-          <h2 className="mb-3 text-2xl font-bold text-white">로그인이 필요합니다</h2>
-          <p className="mb-8 text-sm text-zinc-500">내 동아리를 보려면 로그인을 해주세요.</p>
+          <h2 className="mb-3 text-2xl font-bold text-ink">로그인이 필요합니다</h2>
+          <p className="mb-8 text-sm text-ink-soft">내 동아리를 보려면 로그인을 해주세요.</p>
           <Link
             href="/login?next=/my/clubs"
-            className="inline-block rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
+            className="btn-gold inline-block rounded-full px-6 py-3 text-sm font-semibold btn-glow"
           >
             로그인하기
           </Link>
@@ -102,21 +100,19 @@ export default function MyClubsPage() {
 
   /* ── 메인 ─────────────────────────────────────────────────── */
   return (
-    <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
-      <AmbientGlow />
-
+    <div className="relative min-h-screen overflow-hidden">
       <main className="relative mx-auto max-w-2xl px-4 py-14">
         {/* 헤더 */}
         <div className="mb-8 flex items-end justify-between">
           <div>
-            <Link href="/my" className="text-xs text-zinc-500 transition-colors hover:text-zinc-300">
+            <Link href="/my" className="text-xs text-ink-soft transition-colors hover:text-ink">
               ← 내 정보
             </Link>
-            <h1 className="mt-3 text-2xl font-bold text-white">내 동아리</h1>
+            <h1 className="mt-3 text-2xl font-bold text-ink">내 동아리</h1>
           </div>
           <Link
             href="/clubs/new"
-            className="rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-4 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
+            className="btn-gold rounded-full px-4 py-2 text-xs font-semibold btn-glow"
           >
             + 동아리 개설
           </Link>
@@ -124,16 +120,16 @@ export default function MyClubsPage() {
 
         {/* 내가 개설한 동아리 */}
         <section className="mb-10">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-300">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink">
             <span>🚩</span> 내가 개설한 동아리
-            <span className="text-zinc-600">({owned.length})</span>
+            <span className="text-ink-faint">({owned.length})</span>
           </h2>
           {owned.length === 0 ? (
-            <div className="rounded-2xl border border-white/[0.07] bg-[#111111] px-6 py-10 text-center">
-              <p className="mb-1 text-sm text-zinc-400">아직 개설한 동아리가 없어요.</p>
+            <div className="glass-card px-6 py-10 text-center">
+              <p className="mb-1 text-sm text-ink-soft">아직 개설한 동아리가 없어요.</p>
               <Link
                 href="/clubs/new"
-                className="mt-3 inline-block text-sm font-medium text-violet-400 hover:text-violet-300"
+                className="mt-3 inline-block text-sm font-medium text-teal-ink hover:text-teal-deep"
               >
                 + 첫 동아리 개설하기
               </Link>
@@ -149,16 +145,16 @@ export default function MyClubsPage() {
 
         {/* 내가 신청한 동아리 */}
         <section>
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-300">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink">
             <span>✋</span> 내가 신청한 동아리
-            <span className="text-zinc-600">({applied.length})</span>
+            <span className="text-ink-faint">({applied.length})</span>
           </h2>
           {applied.length === 0 ? (
-            <div className="rounded-2xl border border-white/[0.07] bg-[#111111] px-6 py-10 text-center">
-              <p className="mb-1 text-sm text-zinc-400">아직 신청한 동아리가 없어요.</p>
+            <div className="glass-card px-6 py-10 text-center">
+              <p className="mb-1 text-sm text-ink-soft">아직 신청한 동아리가 없어요.</p>
               <Link
                 href="/clubs"
-                className="mt-3 inline-block text-sm font-medium text-violet-400 hover:text-violet-300"
+                className="mt-3 inline-block text-sm font-medium text-teal-ink hover:text-teal-deep"
               >
                 동아리 둘러보기 →
               </Link>
@@ -234,34 +230,34 @@ function OwnedClubCard({ club, onChanged }: { club: OwnedClub; onChanged: () => 
   }
 
   const statusBadge = !club.isApproved ? (
-    <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-300">
+    <span className="rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 text-xs font-medium text-gold-ink">
       승인 대기
     </span>
   ) : club.isActive ? (
-    <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
+    <span className="rounded-full border border-teal/35 bg-teal/10 px-2.5 py-0.5 text-xs font-medium text-teal-ink">
       모집 중
     </span>
   ) : (
-    <span className="rounded-full border border-zinc-600/40 bg-zinc-700/20 px-2.5 py-0.5 text-xs font-medium text-zinc-400">
+    <span className="rounded-full border border-sky-line bg-white/60 px-2.5 py-0.5 text-xs font-medium text-ink-faint">
       숨김
     </span>
   );
 
   return (
-    <li className="rounded-2xl border border-white/[0.07] bg-[#111111] p-5">
+    <li className="glass-card p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
             <span className="text-lg">{CLUB_CATEGORY_META[club.category]?.emoji ?? "✨"}</span>
             <Link
               href={`/clubs/${club.id}`}
-              className="truncate font-semibold text-white hover:text-violet-200"
+              className="truncate font-semibold text-ink hover:text-teal-ink"
             >
               {club.name}
             </Link>
             {statusBadge}
           </div>
-          <p className="text-xs text-zinc-600">
+          <p className="text-xs text-ink-faint">
             멤버 {club.memberCount}
             {club.maxMembers ? `/${club.maxMembers}` : ""}명 · 조회 {club.viewCount}
           </p>
@@ -269,11 +265,11 @@ function OwnedClubCard({ club, onChanged }: { club: OwnedClub; onChanged: () => 
 
         <button
           onClick={toggle}
-          className="relative shrink-0 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-all hover:border-white/20 hover:text-white"
+          className="glass-soft relative shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium text-ink-soft transition-all hover:bg-white/90 hover:text-ink"
         >
           신청 관리
           {club.pendingCount > 0 && (
-            <span className="ml-1.5 rounded-full bg-amber-500/20 px-1.5 py-0.5 text-xs text-amber-300">
+            <span className="ml-1.5 rounded-full bg-gold/20 px-1.5 py-0.5 text-xs text-gold-ink">
               {club.pendingCount}
             </span>
           )}
@@ -282,17 +278,17 @@ function OwnedClubCard({ club, onChanged }: { club: OwnedClub; onChanged: () => 
 
       {/* 신청 관리 패널 */}
       {open && (
-        <div className="mt-4 border-t border-white/[0.06] pt-4">
+        <div className="mt-4 border-t border-sky-line pt-4">
           {loadingApps ? (
-            <p className="py-4 text-center text-xs text-zinc-600">신청 내역 불러오는 중...</p>
+            <p className="py-4 text-center text-xs text-ink-faint">신청 내역 불러오는 중...</p>
           ) : !apps || apps.length === 0 ? (
-            <p className="py-4 text-center text-xs text-zinc-600">아직 가입 신청이 없어요.</p>
+            <p className="py-4 text-center text-xs text-ink-faint">아직 가입 신청이 없어요.</p>
           ) : (
             <ul className="space-y-2.5">
               {apps.map((a) => (
                 <li
                   key={a.id}
-                  className="rounded-xl border border-white/[0.06] bg-black/20 p-3"
+                  className="glass-soft rounded-xl p-3"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-start gap-2">
@@ -304,16 +300,16 @@ function OwnedClubCard({ club, onChanged }: { club: OwnedClub; onChanged: () => 
                           className="mt-0.5 h-6 w-6 shrink-0 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-xs text-violet-300">
+                        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-skyx/25 text-xs text-skyx-ink">
                           {(a.applicantNickname ?? "익")[0]}
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-zinc-200">
+                        <p className="text-sm font-medium text-ink">
                           {a.applicantNickname ?? "익명"}
                         </p>
                         {a.message && (
-                          <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-zinc-500">
+                          <p className="mt-0.5 whitespace-pre-wrap text-xs leading-relaxed text-ink-faint">
                             {a.message}
                           </p>
                         )}
@@ -326,22 +322,22 @@ function OwnedClubCard({ club, onChanged }: { club: OwnedClub; onChanged: () => 
                           <button
                             onClick={() => act(a.id, "accept")}
                             disabled={busyId === a.id}
-                            className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400 transition-all hover:bg-emerald-500/20 disabled:opacity-40"
+                            className="rounded-lg border border-teal/35 bg-teal/10 px-2.5 py-1 text-xs font-medium text-teal-ink transition-all hover:bg-teal/20 disabled:opacity-40"
                           >
                             수락
                           </button>
                           <button
                             onClick={() => act(a.id, "reject")}
                             disabled={busyId === a.id}
-                            className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-zinc-400 transition-all hover:border-red-500/30 hover:text-red-400 disabled:opacity-40"
+                            className="glass-soft rounded-lg px-2.5 py-1 text-xs font-medium text-ink-soft transition-all hover:border-red-300/60 hover:text-red-500 disabled:opacity-40"
                           >
                             거절
                           </button>
                         </div>
                       ) : a.status === "accepted" ? (
-                        <span className="text-xs font-medium text-emerald-400">수락됨 ✓</span>
+                        <span className="text-xs font-medium text-teal-ink">수락됨 ✓</span>
                       ) : (
-                        <span className="text-xs font-medium text-zinc-500">거절됨</span>
+                        <span className="text-xs font-medium text-ink-faint">거절됨</span>
                       )}
                     </div>
                   </div>
@@ -349,7 +345,7 @@ function OwnedClubCard({ club, onChanged }: { club: OwnedClub; onChanged: () => 
               ))}
             </ul>
           )}
-          {actError && <p className="mt-2 text-xs text-red-400">{actError}</p>}
+          {actError && <p className="mt-2 text-xs text-red-500">{actError}</p>}
         </div>
       )}
     </li>
@@ -361,24 +357,24 @@ function OwnedClubCard({ club, onChanged }: { club: OwnedClub; onChanged: () => 
 function AppliedRow({ item }: { item: AppliedClub }) {
   const badge =
     item.status === "accepted" ? (
-      <span className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
+      <span className="shrink-0 rounded-full border border-teal/35 bg-teal/10 px-2.5 py-0.5 text-xs font-medium text-teal-ink">
         가입됨
       </span>
     ) : item.status === "pending" ? (
-      <span className="shrink-0 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-300">
+      <span className="shrink-0 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 text-xs font-medium text-gold-ink">
         대기 중
       </span>
     ) : (
-      <span className="shrink-0 rounded-full border border-zinc-600/40 bg-zinc-700/20 px-2.5 py-0.5 text-xs font-medium text-zinc-500">
+      <span className="shrink-0 rounded-full border border-sky-line bg-white/60 px-2.5 py-0.5 text-xs font-medium text-ink-faint">
         거절됨
       </span>
     );
 
   const inner = (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/[0.07] bg-[#111111] px-4 py-3.5">
+    <div className="glass-card flex items-center justify-between gap-3 px-4 py-3.5">
       <div className="flex min-w-0 items-center gap-2">
         <span className="text-base">{CLUB_CATEGORY_META[item.category]?.emoji ?? "✨"}</span>
-        <span className="truncate text-sm font-medium text-zinc-200">{item.clubName}</span>
+        <span className="truncate text-sm font-medium text-ink">{item.clubName}</span>
       </div>
       {badge}
     </div>
@@ -390,14 +386,5 @@ function AppliedRow({ item }: { item: AppliedClub }) {
     </Link>
   ) : (
     <div className="opacity-60">{inner}</div>
-  );
-}
-
-function AmbientGlow() {
-  return (
-    <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
-      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[350px] rounded-full bg-violet-600/8 blur-[120px]" />
-      <div className="absolute top-1/2 -left-24 w-[300px] h-[300px] rounded-full bg-blue-600/6 blur-[100px]" />
-    </div>
   );
 }

@@ -12,12 +12,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     where: { shareSlug: slug },
     select: { catchphrase: true, isPublic: true, userId: true },
   });
-  if (!report) return { title: "리포트 없음" };
+  if (!report) return { title: "성향 카드를 찾을 수 없어요" };
 
   if (!report.isPublic) {
     const viewer = await getAuthUser();
     if (!viewer || viewer.dbUserId !== report.userId) {
-      return { title: "비공개 리포트 — BlueHumanity" };
+      return { title: "비공개 성향 카드 — BlueHumanity" };
     }
   }
 
@@ -42,18 +42,14 @@ export default async function ReportPage({ params }: Props) {
 
   if (!report) notFound();
 
-  // 비공개 리포트는 본인만 열람 가능
+  // 비공개 성향 카드는 본인만 열람 가능
   if (!report.isPublic) {
     const viewer = await getAuthUser();
     if (!viewer || viewer.dbUserId !== report.userId) notFound();
   }
 
   return (
-    <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
-      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[350px] rounded-full bg-violet-600/8 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[300px] h-[300px] rounded-full bg-blue-600/5 blur-[100px]" />
-      </div>
+    <div className="relative min-h-screen overflow-hidden">
       <main className="relative mx-auto max-w-2xl px-4 py-10">
         <ReportCard report={report} />
       </main>

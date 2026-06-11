@@ -163,10 +163,10 @@ export function PromptSection() {
               <div
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all duration-300 ${
                   i < step
-                    ? "bg-violet-600 text-white"
+                    ? "border border-teal/35 bg-teal/15 text-teal-ink"
                     : i === step
-                      ? "bg-gradient-to-br from-violet-600 to-blue-600 text-white shadow-lg shadow-violet-500/30"
-                      : "border border-white/10 bg-white/5 text-zinc-600"
+                      ? "bg-gradient-to-br from-gold to-teal text-[#3A2A02] shadow-lg shadow-gold/30"
+                      : "border border-white/90 bg-white/55 text-ink-faint"
                 }`}
               >
                 {i < step ? "✓" : i}
@@ -174,7 +174,7 @@ export function PromptSection() {
               {i < 2 && (
                 <div
                   className={`h-px w-6 sm:w-10 transition-colors duration-500 ${
-                    i < step ? "bg-violet-600/40" : "bg-white/10"
+                    i < step ? "bg-teal/50" : "bg-sky-line"
                   }`}
                 />
               )}
@@ -223,7 +223,7 @@ export function PromptSection() {
   );
 }
 
-/* ── 카드 1: 메인 (MBTI 기본 + AI 확장) ──────────────────────────── */
+/* ── 카드 1: 메인 (AI 확장 + MBTI 기본) ──────────────────────────── */
 
 function CardMain({
   prompt,
@@ -253,68 +253,14 @@ function CardMain({
   const [aiExpanded, setAiExpanded] = useState(false);
 
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-6 card-glow">
-      {/* 기본 경로: MBTI */}
-      <h2 className="mb-2 text-xl font-bold leading-snug text-white">
-        성격유형을 고르면{" "}
-        <span className="bg-gradient-to-r from-violet-300 to-blue-300 bg-clip-text text-transparent">
-          바로 시작해요
-        </span>
-      </h2>
-      <p className="mb-4 text-xs text-zinc-500">
-        대충 골라도 괜찮아요 — 나중에 다시 만들 수 있어요
-      </p>
-
-      {error && (
-        <div className="mb-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-center text-xs text-red-400">
-          {error}
-        </div>
-      )}
-
-      {/* MBTI 4×4 격자 */}
-      <div className="space-y-2">
-        {PERSONALITY_TYPES.map((row, rowIdx) => (
-          <div key={rowIdx} className="grid grid-cols-4 gap-2">
-            {row.map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => onPersonalitySelect(type)}
-                className="rounded-xl border border-white/[0.07] bg-white/[0.03] py-2.5 text-xs font-bold text-zinc-400 transition-all hover:border-violet-500/40 hover:bg-violet-500/10 hover:text-violet-300 active:scale-95"
-              >
-                {type}
-              </button>
-            ))}
-          </div>
-        ))}
-      </div>
-
-      <p className="mt-3 text-center text-xs text-zinc-600">
-        성격유형을 모른다면?{" "}
-        <a
-          href="https://www.16personalities.com/ko"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-violet-400 underline underline-offset-2 hover:text-violet-300"
-        >
-          무료 검사하기 ↗
-        </a>
-      </p>
-
-      {/* 구분선 */}
-      <div className="my-6 flex items-center gap-3">
-        <div className="h-px flex-1 bg-white/[0.07]" />
-        <span className="text-xs text-zinc-600">또는</span>
-        <div className="h-px flex-1 bg-white/[0.07]" />
-      </div>
-
-      {/* AI 경로 접기/펼치기 */}
+    <div className="glass-card glass-ribbon card-glow relative overflow-hidden p-6">
+      {/* AI 경로 접기/펼치기 — 카드 맨 위 */}
       <button
         type="button"
         onClick={() => setAiExpanded((v) => !v)}
-        className="flex w-full items-center justify-between gap-2 rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3 text-sm text-zinc-400 transition-all hover:border-white/20 hover:text-zinc-200"
+        className="relative z-[1] flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-skyx-deep/45 bg-[#E9F5FC]/55 px-4 py-3.5 text-center text-sm font-semibold text-skyx-ink transition-all hover:border-teal hover:bg-white/85 hover:text-teal-deep hover:shadow-[0_8px_22px_-8px_rgba(53,195,180,.4)]"
       >
-        <span>ChatGPT 등 AI를 써봤다면 — 더 깊게 분석하기</span>
+        <span>ChatGPT 등 AI를 쓰고 있다면 — 나도 몰랐던 &lsquo;나&rsquo;에 대해 알아볼까요?</span>
         <svg
           className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${aiExpanded ? "rotate-180" : ""}`}
           viewBox="0 0 12 12"
@@ -341,8 +287,8 @@ function CardMain({
                 onClick={() => setSourceAi(opt.value)}
                 className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
                   sourceAi === opt.value
-                    ? "bg-gradient-to-r from-violet-600 to-blue-600 text-white"
-                    : "border border-white/10 bg-white/5 text-zinc-400 hover:border-white/20 hover:text-zinc-200"
+                    ? "btn-gold"
+                    : "glass-soft text-ink-soft hover:bg-white/90 hover:text-ink"
                 }`}
               >
                 {opt.label}
@@ -351,8 +297,8 @@ function CardMain({
           </div>
 
           {/* 질문 텍스트 */}
-          <div className="max-h-44 overflow-y-auto rounded-xl border border-white/[0.06] bg-black/30 p-4">
-            <pre className="whitespace-pre-wrap text-xs leading-relaxed text-zinc-400">
+          <div className="glass-soft max-h-44 overflow-y-auto rounded-xl p-4">
+            <pre className="whitespace-pre-wrap text-xs leading-relaxed text-ink-soft">
               {promptError
                 ? "질문을 불러오지 못했어요. 성격유형을 대신 선택해보세요."
                 : (prompt?.content ?? "질문 불러오는 중...")}
@@ -360,7 +306,7 @@ function CardMain({
           </div>
 
           {prompt?.version && (
-            <p className="text-right text-xs text-zinc-700">{prompt.version}</p>
+            <p className="text-right text-xs text-ink-faint">{prompt.version}</p>
           )}
 
           {/* 복사 버튼 */}
@@ -368,10 +314,10 @@ function CardMain({
             type="button"
             onClick={onCopy}
             disabled={!prompt || promptError}
-            className={`w-full rounded-xl py-4 text-sm font-bold text-white transition-all disabled:opacity-40 ${
+            className={`w-full rounded-xl py-4 text-sm font-bold transition-all disabled:opacity-40 ${
               copied
-                ? "bg-emerald-600"
-                : "bg-gradient-to-r from-violet-600 to-blue-600 hover:opacity-90 btn-glow"
+                ? "border border-teal/35 bg-teal/15 text-teal-ink"
+                : "btn-gold"
             }`}
           >
             {copied ? "✓ 질문이 복사됐어요!" : "AI에게 보낼 질문 복사하기 →"}
@@ -384,27 +330,78 @@ function CardMain({
                 href={aiUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 rounded-xl border border-white/[0.07] bg-white/[0.04] py-3 text-center text-sm font-medium text-zinc-300 transition-all hover:border-white/20 hover:text-white"
+                className="glass-soft flex-1 rounded-xl py-3 text-center text-sm font-medium text-ink-soft transition-all hover:bg-white/90 hover:text-ink"
               >
                 {aiLabel} 열기 ↗
               </a>
               <button
                 type="button"
                 onClick={onGoToPaste}
-                className="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 btn-glow"
+                className="btn-gold flex-1 rounded-xl py-3 text-sm font-bold"
               >
                 답변 붙여넣기 →
               </button>
             </div>
           ) : (
             !promptError && (
-              <p className="text-center text-xs text-zinc-600">
+              <p className="text-center text-xs text-ink-faint">
                 복사 후 {aiLabel}에 붙여넣고 답변을 받아오세요
               </p>
             )
           )}
         </div>
       )}
+
+      {/* 구분선 */}
+      <div className="my-6 flex items-center gap-3">
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent to-sky-line" />
+        <span className="text-xs font-semibold text-ink-faint">또는</span>
+        <div className="h-px flex-1 bg-gradient-to-r from-sky-line to-transparent" />
+      </div>
+
+      {/* 기본 경로: MBTI */}
+      <h2 className="text-xl font-extrabold tracking-tight text-ink">
+        성격유형을 고르면 바로 시작해요
+      </h2>
+      <p className="mb-4 mt-1.5 text-[13px] font-medium text-ink-faint">
+        신중하게 선택해주세요!!
+      </p>
+
+      {error && (
+        <div className="mb-3 rounded-xl border border-red-300/60 bg-red-500/[0.08] px-4 py-2.5 text-center text-xs text-red-500">
+          {error}
+        </div>
+      )}
+
+      {/* MBTI 4×4 격자 */}
+      <div className="space-y-2.5">
+        {PERSONALITY_TYPES.map((row, rowIdx) => (
+          <div key={rowIdx} className="grid grid-cols-4 gap-2.5">
+            {row.map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => onPersonalitySelect(type)}
+                className="rounded-xl border border-white/95 bg-white/60 py-3 text-[13px] font-bold tracking-[0.07em] text-ink shadow-[0_2px_10px_-3px_rgba(74,144,194,.18)] transition-all hover:-translate-y-[3px] hover:border-transparent hover:text-teal-deep hover:shadow-[0_12px_26px_-8px_rgba(53,195,180,.45)] hover:[background:linear-gradient(#fff,#fff)_padding-box,linear-gradient(120deg,#F0B429,#35C3B4)_border-box] active:-translate-y-px"
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <p className="mt-5 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-2.5 text-center text-[13px] font-medium text-ink-soft">
+        성격유형을 모른다면?
+        <a
+          href="https://www.16personalities.com/ko"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-gold inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs"
+        >
+          무료 검사하기 <span aria-hidden>↗</span>
+        </a>
+      </p>
     </div>
   );
 }
@@ -429,23 +426,23 @@ function CardPaste({
   onBack: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-6 card-glow">
+    <div className="glass-card card-glow p-6">
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">
+        <p className="text-xs font-semibold uppercase tracking-widest text-teal-ink">
           2단계
         </p>
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
+          className="flex items-center gap-1 text-xs text-ink-faint hover:text-ink-soft transition-colors"
         >
           ← 이전으로
         </button>
       </div>
 
-      <h2 className="mb-5 text-xl font-bold leading-snug text-white">
+      <h2 className="mb-5 text-xl font-bold leading-snug text-ink">
         {aiLabel}에서 받은 답변을{" "}
-        <span className="bg-gradient-to-r from-violet-300 to-blue-300 bg-clip-text text-transparent">
+        <span className="gradient-text">
           여기에 붙여넣어 보세요! 📋
         </span>
       </h2>
@@ -455,12 +452,12 @@ function CardPaste({
         onChange={(e) => setRawText(e.target.value)}
         rows={9}
         autoFocus
-        className="w-full rounded-xl border border-white/[0.07] bg-black/30 px-4 py-3 text-sm leading-relaxed text-zinc-300 placeholder-zinc-600 transition-colors focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
+        className="w-full rounded-xl border border-white/95 bg-white/70 px-4 py-3 text-sm leading-relaxed text-ink placeholder:text-ink-faint transition-colors focus:border-teal focus:outline-none focus:ring-1 focus:ring-teal/30"
         placeholder={`${aiLabel}에서 받은 분석 결과를 전체 복사해서 여기에 붙여넣으세요...`}
       />
 
       {error && (
-        <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-sm text-red-400">
+        <div className="mt-3 rounded-xl border border-red-300/60 bg-red-500/[0.08] px-4 py-2.5 text-sm text-red-500">
           {error}
         </div>
       )}
@@ -469,13 +466,13 @@ function CardPaste({
         type="button"
         onClick={onSubmit}
         disabled={!rawText.trim() || submitting}
-        className="mt-4 w-full rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 py-4 text-sm font-bold text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 btn-glow"
+        className="btn-gold mt-4 w-full rounded-xl py-4 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40"
       >
         분석 시작하기 →
       </button>
 
-      <p className="mt-3 text-center text-xs text-zinc-600">
-        원문은 저장되지 않습니다. 분석 결과만 저장됩니다.
+      <p className="mt-3 text-center text-xs text-ink-faint">
+        원문은 저장되지 않아요 — 분석 결과만 저장돼요
       </p>
     </div>
   );
@@ -485,13 +482,13 @@ function CardPaste({
 
 function CardLoading() {
   return (
-    <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-white/[0.07] bg-[#111111] p-8 text-center">
+    <div className="glass-card flex min-h-72 flex-col items-center justify-center p-8 text-center">
       <div className="relative mb-6">
-        <div className="h-14 w-14 animate-spin rounded-full border-2 border-violet-500/20 border-t-violet-400" />
-        <div className="absolute inset-0 rounded-full bg-violet-600/5 blur-lg" />
+        <div className="h-14 w-14 animate-spin rounded-full border-2 border-gold/25 border-t-gold-deep" />
+        <div className="absolute inset-0 rounded-full bg-gold/10 blur-lg" />
       </div>
-      <p className="text-lg font-bold text-white">AI가 분석 중이에요...</p>
-      <p className="mt-2 text-sm text-zinc-500">성향 카드를 만들고 있어요</p>
+      <p className="text-lg font-bold text-ink">AI가 분석 중이에요...</p>
+      <p className="mt-2 text-sm text-ink-soft">성향 카드를 만들고 있어요</p>
     </div>
   );
 }
@@ -510,18 +507,18 @@ function CardResult({
   return (
     <div className="space-y-4">
       {/* 성향 카드 결과 */}
-      <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-[#111111] px-6 py-8 text-center">
+      <div className="glass-card glass-ribbon relative overflow-hidden px-6 py-8 text-center">
         <div className="pointer-events-none absolute inset-0" aria-hidden>
-          <div className="absolute -top-16 left-1/2 -translate-x-1/2 h-36 w-72 rounded-full bg-violet-600/18 blur-[60px]" />
+          <div className="absolute -top-16 left-1/2 h-36 w-72 -translate-x-1/2 rounded-full bg-gold/20 blur-[60px]" />
         </div>
 
         <div className="relative">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-violet-400">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-gold-ink">
             내 성향 카드
           </p>
-          <h2 className="mb-4 text-2xl font-bold text-white">
+          <h2 className="mb-4 text-2xl font-bold text-ink">
             &ldquo;
-            <span className="bg-gradient-to-r from-violet-300 to-blue-300 bg-clip-text text-transparent">
+            <span className="gradient-text">
               {reportData.catchphrase}
             </span>
             &rdquo;
@@ -530,24 +527,24 @@ function CardResult({
           <div className="mb-2">
             <ArchetypeTags coreTraits={reportData.coreTraits} />
           </div>
-          <p className="mb-5 text-[11px] text-zinc-600">
+          <p className="mb-5 text-[11px] text-ink-faint">
             인물형을 눌러 나와 닮은 성경 인물을 확인해보세요
           </p>
 
-          <p className="text-sm leading-relaxed text-zinc-400">
+          <p className="text-sm leading-relaxed text-ink-soft">
             {reportData.optimalEcosystem}
           </p>
         </div>
       </div>
 
       {/* 다음 단계 CTA */}
-      <div className="rounded-2xl border border-white/[0.07] bg-[#111111] px-6 py-7 text-center">
-        <p className="mb-0.5 text-xs font-semibold uppercase tracking-widest text-violet-400">
+      <div className="glass-card px-6 py-7 text-center">
+        <p className="mb-0.5 text-xs font-semibold uppercase tracking-widest text-teal-ink">
           다음 단계
         </p>
-        <p className="mb-5 text-lg font-bold text-white">
+        <p className="mb-5 text-lg font-bold text-ink">
           이제{" "}
-          <span className="bg-gradient-to-r from-violet-300 to-blue-300 bg-clip-text text-transparent">
+          <span className="gradient-text">
             AI
           </span>
           가 동아리를 추천해드릴게요! 🎯
@@ -557,7 +554,7 @@ function CardResult({
           <button
             type="button"
             onClick={() => router.push(`/report/${shareSlug}`)}
-            className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 py-4 text-sm font-bold text-white transition-all hover:opacity-90 btn-glow"
+            className="btn-gold w-full rounded-xl py-4 text-sm font-bold"
           >
             성향 카드 전체 보기 →
           </button>
@@ -565,13 +562,13 @@ function CardResult({
           <button
             type="button"
             onClick={() => router.push("/login?next=/report/pending")}
-            className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 py-4 text-sm font-bold text-white transition-all hover:opacity-90 btn-glow"
+            className="btn-gold w-full rounded-xl py-4 text-sm font-bold"
           >
             로그인하고 성향 카드 저장하기 →
           </button>
         )}
 
-        <p className="mt-3 text-xs text-zinc-600">
+        <p className="mt-3 text-xs text-ink-faint">
           성향 카드를 저장하면 언제든 다시 볼 수 있어요
         </p>
       </div>

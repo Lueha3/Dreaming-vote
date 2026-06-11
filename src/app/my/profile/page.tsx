@@ -135,16 +135,16 @@ export default function ProfilePage() {
 
   if (loading) return (
     <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500/30 border-t-violet-400" />
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-teal/30 border-t-teal" />
     </div>
   );
 
   if (notLoggedIn) return (
     <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 text-center">
       <div>
-        <p className="mb-4 text-sm text-zinc-400">로그인이 필요합니다.</p>
+        <p className="mb-4 text-sm text-ink-soft">로그인이 필요합니다.</p>
         <Link href="/login?next=/my/profile"
-          className="rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-2.5 text-sm font-semibold text-white btn-glow">
+          className="btn-gold rounded-full px-6 py-2.5 text-sm font-semibold btn-glow">
           로그인하기
         </Link>
       </div>
@@ -155,19 +155,19 @@ export default function ProfilePage() {
     <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center text-center">
       <div>
         <div className="mb-4 text-4xl">✅</div>
-        <p className="text-lg font-bold text-white">저장됐습니다!</p>
-        <p className="mt-2 text-sm text-zinc-500">잠시 후 이동합니다...</p>
+        <p className="text-lg font-bold text-ink">저장됐습니다!</p>
+        <p className="mt-2 text-sm text-ink-soft">잠시 후 이동합니다...</p>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] bg-[#0a0a0a] text-white">
+    <div className="min-h-[calc(100vh-3.5rem)]">
       <div className="mx-auto max-w-sm px-4 py-12">
-        <Link href="/my" className="mb-6 inline-block text-xs text-zinc-500 hover:text-zinc-300">
+        <Link href="/my" className="mb-6 inline-block text-xs text-ink-soft hover:text-ink">
           ← 내 정보
         </Link>
-        <h1 className="mb-8 text-xl font-bold text-white">프로필 수정</h1>
+        <h1 className="mb-8 text-xl font-bold text-ink">프로필 수정</h1>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* 프로필 사진 */}
@@ -175,19 +175,19 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="group relative h-24 w-24 overflow-hidden rounded-full border-2 border-white/10 transition-all hover:border-violet-500/50"
+              className="group relative h-24 w-24 overflow-hidden rounded-full border-2 border-white/90 transition-all hover:border-teal/60"
             >
               {displayAvatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={displayAvatar} alt="프로필" className="h-full w-full object-cover" />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-violet-500/20 text-3xl">👤</div>
+                <div className="flex h-full w-full items-center justify-center bg-skyx/25 text-3xl">👤</div>
               )}
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                <span className="text-xs font-medium text-white">변경</span>
+              <div className="absolute inset-0 flex items-center justify-center bg-white/70 opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100">
+                <span className="text-xs font-semibold text-ink">변경</span>
               </div>
             </button>
-            <p className="text-xs text-zinc-500">클릭해서 사진 변경 · JPG·PNG·WebP · 최대 2MB</p>
+            <p className="text-xs text-ink-faint">클릭해서 사진 변경 · JPG·PNG·WebP · 최대 2MB</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -198,63 +198,63 @@ export default function ProfilePage() {
           </div>
 
           {/* 닉네임 */}
-          <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-5 space-y-4">
-            <p className="text-xs font-semibold text-zinc-300">닉네임 <span className="text-zinc-600 font-normal">(집단-나이-이름)</span></p>
+          <div className="glass-card p-5 space-y-4">
+            <p className="text-xs font-semibold text-ink">닉네임 <span className="text-ink-faint font-normal">(집단-나이-이름)</span></p>
 
             <div>
-              <label className="mb-1.5 block text-xs text-zinc-500">나이 <span className="text-zinc-600">(20~34세)</span></label>
+              <label className="mb-1.5 block text-xs text-ink-soft">나이 <span className="text-ink-faint">(20~34세)</span></label>
               <input
                 type="number"
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
                 min={20} max={34}
                 placeholder="예: 31"
-                className="w-full rounded-xl border border-white/[0.07] bg-black/30 px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 focus:border-violet-500/50 focus:outline-none"
+                className="w-full rounded-xl border border-white/95 bg-white/70 px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-teal focus:outline-none"
               />
               {age && (
                 <div className="mt-2">
                   {group ? (
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
-                      group === "러비아" ? "bg-blue-500/15 text-blue-300 border border-blue-500/25" : "bg-violet-500/15 text-violet-300 border border-violet-500/25"
+                      group === "러비아" ? "bg-skyx/20 text-skyx-ink border border-skyx/40" : "bg-teal/15 text-teal-ink border border-teal/35"
                     }`}>✓ {group} 소속</span>
                   ) : (
-                    <span className="text-xs text-red-400">20~34세만 가입 가능합니다.</span>
+                    <span className="text-xs text-red-500">20~34세만 가입 가능합니다.</span>
                   )}
                 </div>
               )}
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs text-zinc-500">이름</label>
+              <label className="mb-1.5 block text-xs text-ink-soft">이름</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="예: 이정현"
                 maxLength={20}
-                className="w-full rounded-xl border border-white/[0.07] bg-black/30 px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 focus:border-violet-500/50 focus:outline-none"
+                className="w-full rounded-xl border border-white/95 bg-white/70 px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-teal focus:outline-none"
               />
             </div>
           </div>
 
           {/* 미리보기 */}
           <div className={`rounded-xl border px-4 py-3.5 text-center transition-all ${
-            preview ? "border-violet-500/30 bg-violet-500/[0.07]" : "border-white/[0.07] bg-white/[0.03]"
+            preview ? "border-teal/40 bg-teal/[0.07]" : "border-sky-line bg-white/55"
           }`}>
-            <p className="mb-1 text-[11px] uppercase tracking-widest text-zinc-500">닉네임 미리보기</p>
-            <p className={`text-lg font-bold ${preview ? "text-white" : "text-zinc-600"}`}>
+            <p className="mb-1 text-[11px] uppercase tracking-widest text-ink-faint">닉네임 미리보기</p>
+            <p className={`text-lg font-bold ${preview ? "text-ink" : "text-ink-faint"}`}>
               {preview ?? "집단-나이-이름"}
             </p>
           </div>
 
           {error && (
-            <p className="rounded-xl bg-red-500/10 px-4 py-3 text-xs text-red-400">{error}</p>
+            <p className="rounded-xl border border-red-300/60 bg-red-500/[0.08] px-4 py-3 text-xs text-red-500">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={(!preview && !avatarFile) || saving || uploadingAvatar}
-            className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40 btn-glow"
+            className="btn-gold w-full rounded-xl py-3 text-sm font-semibold disabled:opacity-40 btn-glow"
           >
             {saving || uploadingAvatar ? "저장 중..." : "저장하기"}
           </button>

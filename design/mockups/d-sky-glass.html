@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BlueHumanity — 방향 D · 꿈꾸는 하늘 (라이트 글래스 아트)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<style>
+  /* ============================================================
+     방향 D — "꿈꾸는 하늘" Dreaming Church, Light Glass Art
+     로고 팔레트(하늘/골드/민트/차콜)가 주역, Suno의 글래스 감성을
+     라이트 모드로 번역. 아트워크 위에 frosted glass UI를 얹는다.
+     ============================================================ */
+  :root{
+    --sky-50:  #F4FAFE;
+    --sky-100: #E9F5FC;
+    --sky-200: #CCE4F6;
+    --sky-400: #7FBDE4;
+    --sky-600: #4A90C2;
+    --sky-700: #2E6E9E;
+    --gold:      #F0B429;
+    --gold-deep: #D99B0B;
+    --teal:      #35C3B4;
+    --teal-deep: #1A9D8F;
+    --ink:      #3A4149;
+    --ink-soft: #5E6973;
+    --ink-faint:#8A95A1;
+    --line:     #9AA3AD;
+    --glass:        rgba(255,255,255,.58);
+    --glass-strong: rgba(255,255,255,.78);
+    --glass-border: rgba(255,255,255,.85);
+    --shadow-sky:  0 24px 60px -18px rgba(74,144,194,.35);
+    --shadow-soft: 0 8px 24px -8px rgba(74,144,194,.22);
+    --radius-card: 24px;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    font-family:"Pretendard Variable", Pretendard, sans-serif;
+    color:var(--ink);
+    background:linear-gradient(180deg, var(--sky-100) 0%, var(--sky-200) 58%, #BCDCF2 100%);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+    word-break:keep-all; /* 한글이 글자 단위로 쪼개지지 않게 */
+  }
+  a{ text-decoration:none; color:inherit; }
+  button{ font-family:inherit; }
+
+  /* ---------- 배경 아트 레이어: 글로우 · 구름 · 별 ---------- */
+  .bg{
+    position:fixed; inset:0; z-index:0;
+    overflow:hidden; pointer-events:none;
+  }
+  .glow{ position:absolute; border-radius:50%; filter:blur(70px); }
+  .glow-sky{
+    width:880px; height:560px; left:50%; top:-220px; transform:translateX(-50%);
+    background:radial-gradient(closest-side, rgba(127,189,228,.55), transparent 70%);
+  }
+  .glow-gold{
+    width:560px; height:460px; right:-160px; top:60px;
+    background:radial-gradient(closest-side, rgba(240,180,41,.30), transparent 70%);
+  }
+  .glow-teal{
+    width:620px; height:520px; left:-200px; bottom:-140px;
+    background:radial-gradient(closest-side, rgba(53,195,180,.26), transparent 70%);
+  }
+
+  .cloud{
+    position:absolute; background:rgba(255,255,255,.72);
+    border-radius:50%; filter:blur(26px);
+    animation:drift 16s ease-in-out infinite alternate;
+  }
+  .cloud.c1{ width:340px; height:96px;  left:6%;  top:16%;  animation-delay:0s; }
+  .cloud.c2{ width:260px; height:78px;  right:8%; top:30%;  animation-delay:-4s; opacity:.85; }
+  .cloud.c3{ width:420px; height:110px; left:14%; top:62%;  animation-delay:-8s; opacity:.6; }
+  .cloud.c4{ width:300px; height:84px;  right:4%; top:74%;  animation-delay:-12s; opacity:.7; }
+  @keyframes drift{
+    from{ transform:translateX(0)    translateY(0); }
+    to  { transform:translateX(36px) translateY(-10px); }
+  }
+
+  .star{ position:absolute; animation:twinkle 5s ease-in-out infinite; }
+  .star.s1{ left:9%;  top:20%; animation-delay:0s; }
+  .star.s2{ right:14%; top:13%; animation-delay:-1.2s; }
+  .star.s3{ right:7%;  top:46%; animation-delay:-2.4s; }
+  .star.s4{ left:5%;  top:58%; animation-delay:-3.1s; }
+  .star.s5{ left:22%; top:9%;  animation-delay:-4.2s; }
+  .star.s6{ right:24%; top:64%; animation-delay:-1.8s; }
+  @keyframes twinkle{
+    0%,100%{ opacity:.95; transform:scale(1); }
+    50%    { opacity:.45; transform:scale(.86); }
+  }
+
+  /* ---------- 상단 헤더 (sticky glass) ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(255,255,255,.52);
+    -webkit-backdrop-filter:blur(18px) saturate(1.5);
+    backdrop-filter:blur(18px) saturate(1.5);
+    border-bottom:1px solid rgba(255,255,255,.7);
+    box-shadow:0 4px 24px -12px rgba(74,144,194,.25);
+  }
+  .topbar-inner{
+    max-width:1120px; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 28px;
+  }
+  .brand{ display:flex; align-items:center; gap:11px; }
+  .brand-badge{
+    width:36px; height:36px; border-radius:11px; flex:none;
+    background:linear-gradient(140deg, var(--sky-400) 0%, var(--sky-600) 100%);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 4px 12px -2px rgba(74,144,194,.45), inset 0 1px 0 rgba(255,255,255,.45);
+  }
+  .brand-name{
+    font-size:19px; font-weight:800; letter-spacing:-.02em; color:var(--ink);
+  }
+  .brand-name b{
+    background:linear-gradient(120deg, var(--sky-600), var(--teal));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    font-weight:800;
+  }
+  .brand-sub{
+    font-size:11px; font-weight:600; color:var(--ink-faint);
+    letter-spacing:.02em; margin-top:1px;
+  }
+
+  .nav{ display:flex; align-items:center; gap:4px; }
+  .nav a.nav-link, .nav .pill-warn, .nav a.logout{ white-space:nowrap; }
+  .nav a.nav-link{
+    font-size:14px; font-weight:600; color:var(--ink-soft);
+    padding:7px 11px; border-radius:999px;
+    transition:color .18s, background .18s;
+  }
+  .nav a.nav-link:hover{
+    color:var(--sky-700);
+    background:rgba(255,255,255,.75);
+  }
+  .nav .pill-warn{
+    display:inline-flex; align-items:center; gap:5px;
+    font-size:13px; font-weight:700; color:#A6780B;
+    background:rgba(240,180,41,.16);
+    border:1px solid rgba(240,180,41,.45);
+    padding:6px 13px; border-radius:999px; margin-left:4px;
+    transition:background .18s, box-shadow .18s, transform .18s;
+  }
+  .nav .pill-warn:hover{
+    background:rgba(240,180,41,.26);
+    box-shadow:0 4px 14px -4px rgba(240,180,41,.5);
+    transform:translateY(-1px);
+  }
+  .nav .vline{
+    width:1px; height:18px; background:rgba(122,150,176,.35); margin:0 10px;
+  }
+  .nav a.logout{
+    font-size:14px; font-weight:600; color:var(--ink-faint);
+    padding:7px 10px; border-radius:999px;
+    transition:color .18s, background .18s;
+  }
+  .nav a.logout:hover{ color:var(--ink); background:rgba(255,255,255,.75); }
+
+  /* 모바일: 풀 네비 대신 글래스 햄버거 버튼 (실제 앱과 동일한 패턴) */
+  .menu-btn{
+    display:none;
+    width:38px; height:38px; flex:none;
+    align-items:center; justify-content:center;
+    border-radius:12px; cursor:pointer;
+    color:var(--ink-soft);
+    background:rgba(255,255,255,.62);
+    border:1px solid rgba(255,255,255,.95);
+    box-shadow:var(--shadow-soft);
+    transition:color .18s, background .18s;
+  }
+  .menu-btn:hover{ color:var(--sky-700); background:rgba(255,255,255,.9); }
+
+  @media (max-width: 920px){
+    .nav{ display:none; }
+    .menu-btn{ display:flex; }
+  }
+
+  /* ---------- 메인 콘텐츠 ---------- */
+  main{
+    position:relative; z-index:1;
+    max-width:672px; margin:0 auto;
+    padding:72px 24px 0;
+  }
+
+  .hero{ text-align:center; }
+  .hero-pill{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:13px; font-weight:600; color:var(--sky-700);
+    background:var(--glass);
+    -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
+    border:1px solid var(--glass-border);
+    border-radius:999px; padding:8px 18px;
+    box-shadow:var(--shadow-soft);
+  }
+  .hero-pill .dot{
+    width:7px; height:7px; border-radius:50%;
+    background:var(--teal);
+    box-shadow:0 0 0 4px rgba(53,195,180,.18), 0 0 10px rgba(53,195,180,.7);
+  }
+
+  h1{
+    margin-top:26px;
+    font-size:46px; font-weight:800; letter-spacing:-.035em; line-height:1.22;
+    color:var(--ink);
+  }
+  h1 em{
+    font-style:normal; position:relative; white-space:nowrap;
+    background:linear-gradient(115deg, var(--gold-deep) 0%, var(--gold) 38%, var(--teal) 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  h1 em::after{ /* 골드→틸 하이라이트 스워시 */
+    content:""; position:absolute; left:-3%; right:-3%; bottom:7%;
+    height:30%; z-index:-1; border-radius:8px;
+    background:linear-gradient(100deg, rgba(240,180,41,.30), rgba(53,195,180,.28));
+    transform:skewX(-8deg);
+  }
+
+  .sub{
+    margin-top:18px;
+    font-size:17px; line-height:1.65; color:var(--ink-soft); font-weight:500;
+  }
+
+  /* ---------- 메인 카드 (frosted glass) ---------- */
+  .card{
+    margin-top:44px;
+    background:var(--glass-strong);
+    -webkit-backdrop-filter:blur(22px) saturate(1.4);
+    backdrop-filter:blur(22px) saturate(1.4);
+    border:1px solid var(--glass-border);
+    border-radius:var(--radius-card);
+    box-shadow:var(--shadow-sky), inset 0 1px 0 rgba(255,255,255,.9);
+    padding:36px 36px 30px;
+    position:relative;
+    overflow:hidden;
+  }
+  .card::before{ /* 카드 상단 골드→틸 빛띠 */
+    content:""; position:absolute; left:0; right:0; top:0; height:4px;
+    background:linear-gradient(90deg, var(--gold) 0%, var(--gold-deep) 28%, var(--teal) 75%, var(--sky-400) 100%);
+    opacity:.85;
+  }
+  .card::after{ /* 카드 안쪽 은은한 하늘 글로우 */
+    content:""; position:absolute; width:420px; height:240px;
+    right:-120px; top:-120px; border-radius:50%; pointer-events:none;
+    background:radial-gradient(closest-side, rgba(127,189,228,.22), transparent 70%);
+  }
+  .card h2{
+    font-size:21px; font-weight:800; letter-spacing:-.02em; color:var(--ink);
+  }
+  .card .caption{
+    margin-top:7px; font-size:14px; color:var(--ink-faint); font-weight:500;
+  }
+
+  .mbti-grid{
+    margin-top:24px;
+    display:grid; grid-template-columns:repeat(4,1fr); gap:10px;
+    position:relative; z-index:1;
+  }
+  .mbti{
+    appearance:none; cursor:pointer;
+    padding:15px 0; border-radius:14px;
+    font-size:15px; font-weight:700; letter-spacing:.07em; color:var(--ink);
+    background:rgba(255,255,255,.62);
+    border:1px solid rgba(255,255,255,.95);
+    box-shadow:0 2px 10px -3px rgba(74,144,194,.18);
+    transition:transform .16s ease, box-shadow .16s ease, background .16s ease, color .16s ease, border-color .16s ease;
+  }
+  .mbti:hover{
+    transform:translateY(-3px);
+    color:var(--teal-deep);
+    border-color:transparent;
+    background:
+      linear-gradient(#ffffff,#ffffff) padding-box,
+      linear-gradient(120deg, var(--gold), var(--teal)) border-box;
+    box-shadow:0 12px 26px -8px rgba(53,195,180,.45), 0 6px 18px -6px rgba(240,180,41,.35);
+  }
+  .mbti:active{ transform:translateY(-1px); }
+
+  .quiz-row{
+    margin-top:22px; text-align:center;
+    font-size:14px; color:var(--ink-soft); font-weight:500;
+    position:relative; z-index:1;
+  }
+  .cta-quiz{
+    display:inline-flex; align-items:center; gap:6px;
+    margin-left:8px; padding:8px 18px; border-radius:999px;
+    font-size:14px; font-weight:800; letter-spacing:-.01em; color:#3A2A02;
+    background:linear-gradient(120deg, var(--gold) 0%, var(--gold-deep) 35%, var(--teal) 100%);
+    box-shadow:0 8px 20px -6px rgba(240,180,41,.55), 0 4px 14px -4px rgba(53,195,180,.4);
+    transition:transform .16s ease, box-shadow .16s ease, filter .16s ease;
+  }
+  .cta-quiz:hover{
+    transform:translateY(-2px);
+    filter:brightness(1.06) saturate(1.08);
+    box-shadow:0 14px 30px -8px rgba(240,180,41,.6), 0 8px 22px -6px rgba(53,195,180,.5);
+  }
+  .cta-quiz .arr{ font-size:13px; }
+
+  .divider{
+    margin:26px 0 18px;
+    display:flex; align-items:center; gap:14px;
+    font-size:13px; font-weight:600; color:var(--ink-faint);
+    position:relative; z-index:1;
+  }
+  .divider::before, .divider::after{
+    content:""; flex:1; height:1px;
+  }
+  .divider::before{ background:linear-gradient(90deg, transparent, rgba(122,150,176,.45)); }
+  .divider::after { background:linear-gradient(90deg, rgba(122,150,176,.45), transparent); }
+
+  .expander{
+    width:100%; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    padding:15px 18px; border-radius:16px;
+    font-size:14.5px; font-weight:600; color:var(--sky-700);
+    background:rgba(233,245,252,.55);
+    border:1px dashed rgba(74,144,194,.45);
+    transition:background .18s, border-color .18s, color .18s, box-shadow .18s;
+    position:relative; z-index:1;
+  }
+  .expander:hover{
+    background:rgba(255,255,255,.85);
+    border-color:var(--teal);
+    color:var(--teal-deep);
+    box-shadow:0 8px 22px -8px rgba(53,195,180,.4);
+  }
+  .expander .chev{ font-size:15px; line-height:1; transform:translateY(1px); }
+
+  /* ---------- 하단 교회 라인아트 ---------- */
+  .artwork{
+    margin-top:84px; position:relative; z-index:1;
+    display:flex; justify-content:center;
+  }
+  .artwork svg{ width:100%; max-width:760px; height:auto; display:block; }
+
+  footer{
+    position:relative; z-index:1;
+    text-align:center; padding:26px 0 44px;
+    font-size:12.5px; font-weight:500; color:rgba(58,65,73,.55);
+    letter-spacing:.01em;
+  }
+  footer .fdot{ margin:0 7px; color:rgba(58,65,73,.3); }
+
+  /* ---------- 모바일 레이아웃 ---------- */
+  @media (max-width: 640px){
+    .topbar-inner{ padding:10px 18px; }
+    .brand-name{ font-size:17px; }
+    .brand-sub{ font-size:10px; }
+
+    main{ padding:46px 18px 0; }
+    .hero-pill{ font-size:12px; padding:7px 14px; }
+    h1{ margin-top:22px; font-size:31px; line-height:1.3; }
+    .sub{ margin-top:14px; font-size:15px; }
+
+    .card{ margin-top:34px; padding:26px 20px 24px; }
+    .card h2{ font-size:18.5px; }
+    .card .caption{ font-size:13px; }
+
+    .mbti-grid{ margin-top:20px; gap:8px; }
+    .mbti{ padding:13px 0; font-size:13.5px; letter-spacing:.05em; border-radius:12px; }
+
+    .quiz-row{
+      display:flex; flex-direction:column; align-items:center; gap:10px;
+      margin-top:20px;
+    }
+    .cta-quiz{ margin-left:0; }
+
+    .expander{ font-size:13.5px; padding:13px 14px; line-height:1.5; }
+    .artwork{ margin-top:56px; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ===== 배경 아트: 글로우 + 구름 + 흩뿌린 골드 별 ===== -->
+  <div class="bg" aria-hidden="true">
+    <div class="glow glow-sky"></div>
+    <div class="glow glow-gold"></div>
+    <div class="glow glow-teal"></div>
+
+    <div class="cloud c1"></div>
+    <div class="cloud c2"></div>
+    <div class="cloud c3"></div>
+    <div class="cloud c4"></div>
+
+    <!-- 골드 스파클 별 (로고의 ✶) -->
+    <svg class="star s1" width="22" height="22" viewBox="-12 -12 24 24"><path d="M0,-11 C1.4,-3.2 3.2,-1.4 11,0 C3.2,1.4 1.4,3.2 0,11 C-1.4,3.2 -3.2,1.4 -11,0 C-3.2,-1.4 -1.4,-3.2 0,-11 Z" fill="#F0B429"/></svg>
+    <svg class="star s2" width="16" height="16" viewBox="-12 -12 24 24"><path d="M0,-11 C1.4,-3.2 3.2,-1.4 11,0 C3.2,1.4 1.4,3.2 0,11 C-1.4,3.2 -3.2,1.4 -11,0 C-3.2,-1.4 -1.4,-3.2 0,-11 Z" fill="#D99B0B"/></svg>
+    <svg class="star s3" width="26" height="26" viewBox="-12 -12 24 24"><path d="M0,-11 C1.4,-3.2 3.2,-1.4 11,0 C3.2,1.4 1.4,3.2 0,11 C-1.4,3.2 -3.2,1.4 -11,0 C-3.2,-1.4 -1.4,-3.2 0,-11 Z" fill="#F0B429" opacity=".85"/></svg>
+    <svg class="star s4" width="14" height="14" viewBox="-12 -12 24 24"><path d="M0,-11 C1.4,-3.2 3.2,-1.4 11,0 C3.2,1.4 1.4,3.2 0,11 C-1.4,3.2 -3.2,1.4 -11,0 C-3.2,-1.4 -1.4,-3.2 0,-11 Z" fill="#F0B429" opacity=".8"/></svg>
+    <svg class="star s5" width="12" height="12" viewBox="-12 -12 24 24"><path d="M0,-11 C1.4,-3.2 3.2,-1.4 11,0 C3.2,1.4 1.4,3.2 0,11 C-1.4,3.2 -3.2,1.4 -11,0 C-3.2,-1.4 -1.4,-3.2 0,-11 Z" fill="#35C3B4" opacity=".75"/></svg>
+    <svg class="star s6" width="18" height="18" viewBox="-12 -12 24 24"><path d="M0,-11 C1.4,-3.2 3.2,-1.4 11,0 C3.2,1.4 1.4,3.2 0,11 C-1.4,3.2 -3.2,1.4 -11,0 C-3.2,-1.4 -1.4,-3.2 0,-11 Z" fill="#D99B0B" opacity=".7"/></svg>
+  </div>
+
+  <!-- ===== Sticky 헤더 ===== -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#">
+        <span class="brand-badge" aria-hidden="true">
+          <!-- 꿈꾸는교회 미니 로고: 교회 + 십자가 + 골드 별 + 틸 포인트 -->
+          <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
+            <g stroke="rgba(255,255,255,.95)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 2.5 V7.5 M17 4.8 H23"/>                 <!-- 십자가 -->
+              <path d="M14 16 L20 8.5 L26 16 Z"/>                  <!-- 첨탑 -->
+              <path d="M15 16 V26 H25 V16"/>                       <!-- 종탑 -->
+              <path d="M8 26 H32 V34 H8 Z"/>                       <!-- 본당 -->
+              <path d="M18 34 V30.5 A2 2 0 0 1 22 30.5 V34"/>      <!-- 아치문 -->
+            </g>
+            <path d="M31,7 C31.5,9.6 32.4,10.5 35,11 C32.4,11.5 31.5,12.4 31,15 C30.5,12.4 29.6,11.5 27,11 C29.6,10.5 30.5,9.6 31,7 Z" fill="#F0B429"/>
+            <rect x="9.4" y="20.4" width="3" height="3" rx=".7" fill="#35C3B4" transform="rotate(12 10.9 21.9)"/>
+          </svg>
+        </span>
+        <span>
+          <span class="brand-name">Blue<b>Humanity</b></span>
+          <div class="brand-sub">꿈꾸는교회 청년부</div>
+        </span>
+      </a>
+
+      <nav class="nav">
+        <a class="nav-link" href="#">홈</a>
+        <a class="nav-link" href="#">기도</a>
+        <a class="nav-link" href="#">목록</a>
+        <a class="nav-link" href="#">내 성향 카드</a>
+        <a class="nav-link" href="#">내 동아리</a>
+        <a class="pill-warn" href="#">닉네임 설정 <span aria-hidden="true">⚠️</span></a>
+        <span class="vline" aria-hidden="true"></span>
+        <a class="logout" href="#">로그아웃</a>
+      </nav>
+
+      <!-- 모바일 햄버거 (920px 이하에서 네비 대신 표시) -->
+      <button class="menu-btn" type="button" aria-label="메뉴">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M2 4H14M2 8H14M2 12H14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== 메인 ===== -->
+  <main>
+    <section class="hero">
+      <span class="hero-pill"><span class="dot" aria-hidden="true"></span>꿈꾸는교회 청년부 · 동아리 뭐 들지!?</span>
+
+      <h1>나에게 꼭 맞는 <em>동아리</em>를<br/>찾아보세요</h1>
+
+      <p class="sub">
+        AI가 내 성향에 맞는 동아리를 추천해드려요.
+      </p>
+    </section>
+
+    <!-- ===== 메인 카드 ===== -->
+    <section class="card">
+      <button class="expander" type="button">
+        ChatGPT 등 AI를 쓰고 있다면 — 나도 몰랐던 &lsquo;나&rsquo;에 대해 알아볼까요? <span class="chev" aria-hidden="true">⌄</span>
+      </button>
+
+      <div class="divider">또는</div>
+
+      <h2>성격유형을 고르면 바로 시작해요</h2>
+      <p class="caption">신중하게 선택해주세요!!</p>
+
+      <div class="mbti-grid">
+        <button class="mbti" type="button">INTJ</button>
+        <button class="mbti" type="button">INTP</button>
+        <button class="mbti" type="button">ENTJ</button>
+        <button class="mbti" type="button">ENTP</button>
+
+        <button class="mbti" type="button">INFJ</button>
+        <button class="mbti" type="button">INFP</button>
+        <button class="mbti" type="button">ENFJ</button>
+        <button class="mbti" type="button">ENFP</button>
+
+        <button class="mbti" type="button">ISTJ</button>
+        <button class="mbti" type="button">ISFJ</button>
+        <button class="mbti" type="button">ESTJ</button>
+        <button class="mbti" type="button">ESFJ</button>
+
+        <button class="mbti" type="button">ISTP</button>
+        <button class="mbti" type="button">ISFP</button>
+        <button class="mbti" type="button">ESTP</button>
+        <button class="mbti" type="button">ESFP</button>
+      </div>
+
+      <p class="quiz-row">
+        성격유형을 모른다면?
+        <a class="cta-quiz" href="#">무료 검사하기 <span class="arr" aria-hidden="true">↗</span></a>
+      </p>
+    </section>
+
+    <!-- ===== 하단 교회 라인아트 (로고 오마주) ===== -->
+    <div class="artwork" aria-hidden="true">
+      <svg viewBox="0 0 900 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="hillFill" x1="0" y1="190" x2="0" y2="250" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#FFFFFF" stop-opacity=".45"/>
+            <stop offset="1" stop-color="#FFFFFF" stop-opacity=".05"/>
+          </linearGradient>
+        </defs>
+
+        <!-- 언덕 -->
+        <path d="M0,214 C150,194 310,204 455,198 C610,192 770,202 900,208 L900,250 L0,250 Z" fill="url(#hillFill)"/>
+        <path d="M0,214 C150,194 310,204 455,198 C610,192 770,202 900,208"
+              stroke="rgba(255,255,255,.9)" stroke-width="2.5" stroke-linecap="round"/>
+
+        <!-- 교회 라인아트 -->
+        <g stroke="rgba(255,255,255,.95)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+          <!-- 십자가 -->
+          <path d="M450 28 V50 M441 37 H459"/>
+          <!-- 첨탑 -->
+          <path d="M427 94 L450 56 L473 94 Z"/>
+          <!-- 종탑 -->
+          <path d="M431 94 V172 M469 94 V172"/>
+          <!-- 종탑 아치창 -->
+          <path d="M443 126 V114 A7 7 0 0 1 457 114 V126 Z"/>
+          <!-- 좌우 본당 (슬랜트 지붕) -->
+          <path d="M376 172 V136 L431 112"/>
+          <path d="M524 172 V136 L469 112"/>
+          <path d="M368 172 H532"/>
+          <!-- 본당 아치창 -->
+          <path d="M394 168 V158 A6 6 0 0 1 406 158 V168 Z"/>
+          <path d="M494 168 V158 A6 6 0 0 1 506 158 V168 Z"/>
+          <!-- 정문 아치 -->
+          <path d="M440 172 V152 A10 10 0 0 1 460 152 V172"/>
+        </g>
+
+        <!-- 구름 라인아트 -->
+        <g stroke="#9AA3AD" stroke-opacity=".55" stroke-width="2.2" stroke-linecap="round">
+          <path d="M118 92 a14 14 0 0 1 26 -7 a11 11 0 0 1 20 5 a9 9 0 0 1 6 16 H124 a10 10 0 0 1 -6 -14 Z" fill="rgba(255,255,255,.5)"/>
+          <path d="M742 128 a12 12 0 0 1 23 -6 a10 10 0 0 1 18 4 a8 8 0 0 1 5 14 H748 a9 9 0 0 1 -6 -12 Z" fill="rgba(255,255,255,.5)"/>
+        </g>
+
+        <!-- 골드 별 (첨탑 옆 — 로고의 ✶) -->
+        <path d="M504,44 C505.6,53 508,55.4 517,57 C508,58.6 505.6,61 504,70 C502.4,61 500,58.6 491,57 C500,55.4 502.4,53 504,44 Z" fill="#F0B429"/>
+        <path d="M385,70 C386,75.4 387.6,77 393,78 C387.6,79 386,80.6 385,86 C384,80.6 382.4,79 377,78 C382.4,77 384,75.4 385,70 Z" fill="#D99B0B"/>
+        <path d="M560,100 C560.7,103.6 561.8,104.7 565.4,105.4 C561.8,106.1 560.7,107.2 560,110.8 C559.3,107.2 558.2,106.1 554.6,105.4 C558.2,104.7 559.3,103.6 560,100 Z" fill="#F0B429" opacity=".85"/>
+        <path d="M212 150 C212.8,154 214,155.2 218,156 C214,156.8 212.8,158 212,162 C211.2,158 210,156.8 206,156 C210,155.2 211.2,154 212,150 Z" fill="rgba(255,255,255,.9)"/>
+        <path d="M688 76 C688.8,80 690,81.2 694,82 C690,82.8 688.8,84 688,88 C687.2,84 686,82.8 682,82 C686,81.2 687.2,80 688,76 Z" fill="rgba(255,255,255,.9)"/>
+
+        <!-- 민트 사각 포인트 -->
+        <rect x="540" y="78" width="9" height="9" rx="2" fill="#35C3B4" transform="rotate(14 544.5 82.5)"/>
+        <rect x="346" y="100" width="6.5" height="6.5" rx="1.6" fill="#35C3B4" opacity=".75" transform="rotate(-10 349 103)"/>
+      </svg>
+    </div>
+
+    <footer>
+      Dreaming Church — 꿈꾸는 하늘 위<span class="fdot">·</span>꿈꾸는교회 청년부<span class="fdot">·</span>BlueHumanity
+    </footer>
+  </main>
+
+</body>
+</html>

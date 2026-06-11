@@ -59,27 +59,25 @@ export default function ClubsPage() {
   }, [load]);
 
   return (
-    <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
-      <AmbientGlow />
-
+    <div className="relative min-h-screen overflow-hidden">
       <main className="relative mx-auto max-w-4xl px-4 py-12">
         {/* 헤더 */}
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
             <Link
               href="/"
-              className="text-xs text-zinc-500 transition-colors hover:text-zinc-300"
+              className="text-xs font-medium text-ink-faint transition-colors hover:text-skyx-ink"
             >
               ← 홈
             </Link>
-            <h1 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-white">동아리 둘러보기</h1>
-            <p className="mt-1.5 text-sm text-zinc-500">
+            <h1 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-ink">동아리 둘러보기</h1>
+            <p className="mt-1.5 text-sm text-ink-soft">
               관심사가 맞는 사람들과 함께할 동아리를 찾아보세요.
             </p>
           </div>
           <Link
             href="/clubs/new"
-            className="shrink-0 rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
+            className="btn-gold shrink-0 rounded-full px-5 py-2.5 text-sm"
           >
             + 동아리 개설
           </Link>
@@ -91,7 +89,7 @@ export default function ClubsPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="이름, 소개, 키워드로 검색..."
-            className="w-full rounded-xl border border-white/[0.07] bg-[#111111] px-4 py-3 text-sm text-zinc-200 placeholder-zinc-600 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
+            className="w-full rounded-xl border border-white/95 bg-white/70 px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:border-teal focus:outline-none"
           />
         </div>
 
@@ -101,8 +99,8 @@ export default function ClubsPage() {
             onClick={() => setCategory("")}
             className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
               category === ""
-                ? "bg-violet-500/15 text-violet-200 ring-1 ring-violet-500/40"
-                : "bg-white/5 text-zinc-400 hover:text-zinc-200"
+                ? "bg-teal/15 text-teal-ink ring-1 ring-teal/40"
+                : "glass-soft text-ink-soft hover:bg-white/90 hover:text-ink"
             }`}
           >
             전체
@@ -115,8 +113,8 @@ export default function ClubsPage() {
                 onClick={() => setCategory(cat)}
                 className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
                   active
-                    ? "bg-violet-500/15 text-violet-200 ring-1 ring-violet-500/40"
-                    : "bg-white/5 text-zinc-400 hover:text-zinc-200"
+                    ? "bg-teal/15 text-teal-ink ring-1 ring-teal/40"
+                    : "glass-soft text-ink-soft hover:bg-white/90 hover:text-ink"
                 }`}
               >
                 <span>{CLUB_CATEGORY_META[cat]?.emoji}</span>
@@ -132,26 +130,26 @@ export default function ClubsPage() {
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="animate-pulse rounded-2xl border border-white/[0.07] bg-[#111111] p-5"
+                className="glass-card animate-pulse p-5"
               >
-                <div className="mb-3 h-5 w-32 rounded bg-white/5" />
-                <div className="mb-2 h-3 w-full rounded bg-white/5" />
-                <div className="h-3 w-3/4 rounded bg-white/5" />
+                <div className="mb-3 h-5 w-32 rounded bg-white/55" />
+                <div className="mb-2 h-3 w-full rounded bg-white/55" />
+                <div className="h-3 w-3/4 rounded bg-white/55" />
               </div>
             ))}
           </div>
         ) : items.length === 0 ? (
-          <div className="rounded-2xl border border-white/[0.07] bg-[#111111] px-8 py-16 text-center">
+          <div className="glass-card px-8 py-16 text-center">
             <div className="mb-3 text-4xl">🔍</div>
-            <p className="mb-1 text-zinc-300">
+            <p className="mb-1 text-ink">
               {debouncedQuery || category
-                ? "조건에 맞는 동아리가 없습니다."
-                : "아직 등록된 동아리가 없습니다."}
+                ? "조건에 맞는 동아리가 없어요."
+                : "아직 등록된 동아리가 없어요."}
             </p>
-            <p className="mb-6 text-sm text-zinc-500">첫 번째 동아리를 개설해보세요!</p>
+            <p className="mb-6 text-sm text-ink-soft">첫 번째 동아리를 개설해보세요!</p>
             <Link
               href="/clubs/new"
-              className="inline-block rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
+              className="btn-gold inline-block rounded-full px-5 py-2.5 text-sm"
             >
               + 동아리 개설
             </Link>
@@ -164,22 +162,22 @@ export default function ClubsPage() {
                 <li key={club.id}>
                   <Link
                     href={`/clubs/${club.id}`}
-                    className="group block h-full rounded-2xl border border-white/[0.07] bg-[#111111] p-5 transition-all hover:border-violet-500/30 hover:bg-[#161616] card-glow"
+                    className="group block h-full glass-card p-5 transition-all hover:border-teal/40 hover:bg-white/90 card-glow"
                   >
                     <div className="mb-2 flex items-center gap-2">
                       <span className="text-lg">
                         {CLUB_CATEGORY_META[club.category]?.emoji ?? "✨"}
                       </span>
-                      <h3 className="min-w-0 flex-1 truncate font-semibold text-white group-hover:text-violet-200">
+                      <h3 className="min-w-0 flex-1 truncate font-semibold text-ink group-hover:text-teal-ink">
                         {club.name}
                       </h3>
                     </div>
 
-                    <span className="mb-2 inline-block rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-zinc-400">
+                    <span className="glass-soft mb-2 inline-block rounded-full px-2 py-0.5 text-xs text-ink-soft">
                       {club.category}
                     </span>
 
-                    <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-400">
+                    <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-ink-soft">
                       {club.description}
                     </p>
 
@@ -188,7 +186,7 @@ export default function ClubsPage() {
                         {tags.map((t, i) => (
                           <span
                             key={i}
-                            className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-xs text-violet-300"
+                            className="rounded-full border border-gold/35 bg-gold/10 px-2 py-0.5 text-xs text-gold-ink"
                           >
                             {t}
                           </span>
@@ -196,7 +194,7 @@ export default function ClubsPage() {
                       </div>
                     )}
 
-                    <div className="flex items-center gap-3 text-xs text-zinc-600">
+                    <div className="flex items-center gap-3 text-xs text-ink-faint">
                       <span>
                         멤버 {club.memberCount}
                         {club.maxMembers ? `/${club.maxMembers}` : ""}명
@@ -211,15 +209,6 @@ export default function ClubsPage() {
           </ul>
         )}
       </main>
-    </div>
-  );
-}
-
-function AmbientGlow() {
-  return (
-    <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
-      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[350px] rounded-full bg-violet-600/8 blur-[120px]" />
-      <div className="absolute top-1/2 -left-24 w-[300px] h-[300px] rounded-full bg-blue-600/6 blur-[100px]" />
     </div>
   );
 }

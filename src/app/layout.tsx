@@ -1,13 +1,8 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
 import "./globals.css";
 
 import { Header } from "@/components/Header";
-
-const geist = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+import { SkyBackdrop } from "@/components/SkyBackdrop";
 
 export const metadata: Metadata = {
   title: "BlueHumanity — 꿈꾸는교회 청년부",
@@ -24,8 +19,15 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ko" className="dark">
-      <body className={`${geist.variable} antialiased bg-[#09090b]`}>
+    <html lang="ko">
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+        />
+      </head>
+      <body className="antialiased">
+        <SkyBackdrop />
         <Header />
         {children}
       </body>

@@ -42,16 +42,16 @@ export function ReportCard({ report }: { report: Report }) {
   return (
     <div className="space-y-3">
       {/* 캐치프레이즈 */}
-      <div className="relative overflow-hidden rounded-2xl border border-white/[0.07] bg-[#111111] px-8 py-10 text-center">
+      <div className="glass-card glass-ribbon relative overflow-hidden px-8 py-10 text-center">
         <div className="pointer-events-none absolute inset-0" aria-hidden>
-          <div className="absolute -top-20 left-1/2 -translate-x-1/2 h-40 w-80 rounded-full bg-violet-600/12 blur-[60px]" />
+          <div className="absolute -top-20 left-1/2 -translate-x-1/2 h-40 w-80 rounded-full bg-gold/15 blur-[60px]" />
         </div>
-        <p className="relative mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-600">
+        <p className="relative mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-faint">
           내 성향 카드
         </p>
-        <h1 className="relative text-2xl font-bold leading-tight text-white">
+        <h1 className="relative text-2xl font-bold leading-tight text-ink">
           &ldquo;
-          <span className="bg-gradient-to-r from-violet-300 to-blue-300 bg-clip-text text-transparent">
+          <span className="gradient-text">
             {report.catchphrase}
           </span>
           &rdquo;
@@ -59,15 +59,15 @@ export function ReportCard({ report }: { report: Report }) {
         <div className="relative mt-5">
           <ArchetypeTags coreTraits={report.coreTraits} />
         </div>
-        <p className="relative mt-2 text-[11px] text-zinc-600">
+        <p className="relative mt-2 text-[11px] text-ink-faint">
           인물형을 눌러 나와 닮은 성경 인물을 확인해보세요
         </p>
         <div className="relative mt-5 flex items-center justify-center gap-3">
-          <span className="rounded-full border border-white/[0.07] bg-white/[0.04] px-3 py-1 text-xs text-zinc-500">
+          <span className="glass-soft rounded-full px-3 py-1 text-xs text-ink-soft">
             {SOURCE_LABEL[report.sourceAi] ?? "AI"} 분석
           </span>
-          <span className="text-zinc-700">·</span>
-          <span className="text-xs text-zinc-600">조회 {report.viewCount}회</span>
+          <span className="text-ink-faint">·</span>
+          <span className="text-xs text-ink-faint">조회 {report.viewCount}회</span>
         </div>
       </div>
 
@@ -81,25 +81,25 @@ export function ReportCard({ report }: { report: Report }) {
       <ClubRecommendations reportId={report.id} shareSlug={report.shareSlug} />
 
       {/* 공유 */}
-      <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-5">
-        <p className="mb-3 text-sm font-medium text-zinc-300">이 성향 카드 공유하기</p>
+      <div className="glass-card p-5">
+        <p className="mb-3 text-sm font-medium text-ink">이 성향 카드 공유하기</p>
         <button
           onClick={handleShare}
-          className="w-full rounded-xl border border-white/[0.07] bg-white/[0.04] py-2.5 text-sm font-medium text-zinc-400 transition-all hover:border-violet-500/30 hover:bg-violet-500/[0.07] hover:text-violet-300"
+          className="glass-soft w-full rounded-xl py-2.5 text-sm font-medium text-ink-soft transition-all hover:border-teal/40 hover:bg-white/90 hover:text-teal-ink"
         >
           {shareStatus ?? "🔗 링크 복사"}
         </button>
-        <p className="mt-3 text-center text-xs text-zinc-600">
+        <p className="mt-3 text-center text-xs text-ink-faint">
           친구에게 공유하고 &ldquo;나도 해봐&rdquo;라고 말해보세요 🔥
         </p>
       </div>
 
       {/* CTA */}
-      <div className="rounded-2xl border border-violet-500/15 bg-violet-500/[0.04] p-6 text-center">
-        <p className="mb-3 text-sm text-zinc-400">나와 시너지 맞는 팀원을 찾고 싶다면?</p>
+      <div className="glass-card p-6 text-center">
+        <p className="mb-3 text-sm text-ink-soft">나와 시너지 맞는 팀원을 찾고 싶다면?</p>
         <a
           href="/"
-          className="inline-block rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
+          className="btn-gold inline-block rounded-xl px-6 py-2.5 text-sm"
         >
           나도 성향 카드 만들기 →
         </a>
@@ -110,12 +110,12 @@ export function ReportCard({ report }: { report: Report }) {
 
 function Section({ icon, label, content }: { icon: string; label: string; content: string }) {
   return (
-    <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-5">
-      <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-200">
+    <div className="glass-card p-5">
+      <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink">
         <span className="text-base leading-none">{icon}</span>
         {label}
       </h2>
-      <p className="text-sm leading-relaxed text-zinc-400">{content}</p>
+      <p className="text-sm leading-relaxed text-ink-soft">{content}</p>
     </div>
   );
 }

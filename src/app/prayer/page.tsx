@@ -99,7 +99,7 @@ export default function PrayerPage() {
       setIsAnonymous(false);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "올리기에 실패했습니다.");
+      setError(err instanceof Error ? err.message : "올리지 못했어요. 다시 시도해주세요.");
     }
     setPosting(false);
   }
@@ -138,16 +138,12 @@ export default function PrayerPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
-      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[350px] rounded-full bg-violet-600/8 blur-[120px]" />
-      </div>
-
+    <div className="relative min-h-screen overflow-hidden">
       <main className="relative mx-auto max-w-2xl px-4 py-10">
         {/* 헤더 */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white">🙏 기도 광장</h1>
-          <p className="mt-1 text-sm text-zinc-500">서로의 기도제목을 나누고, 함께 기도해요.</p>
+          <h1 className="text-2xl font-bold text-ink">🙏 기도 광장</h1>
+          <p className="mt-1 text-sm text-ink-soft">서로의 기도제목을 나누고, 함께 기도해요.</p>
         </div>
 
         {/* 탭 */}
@@ -155,7 +151,7 @@ export default function PrayerPage() {
           <button
             onClick={() => setTab("all")}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-              tab === "all" ? "bg-violet-500/15 text-violet-200 ring-1 ring-violet-500/40" : "bg-white/5 text-zinc-400 hover:text-zinc-200"
+              tab === "all" ? "bg-skyx/25 text-skyx-ink ring-1 ring-skyx/40" : "glass-soft text-ink-soft hover:bg-white/90 hover:text-ink"
             }`}
           >
             전체
@@ -163,7 +159,7 @@ export default function PrayerPage() {
           <button
             onClick={() => setTab("group")}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-              tab === "group" ? "bg-violet-500/15 text-violet-200 ring-1 ring-violet-500/40" : "bg-white/5 text-zinc-400 hover:text-zinc-200"
+              tab === "group" ? "bg-skyx/25 text-skyx-ink ring-1 ring-skyx/40" : "glass-soft text-ink-soft hover:bg-white/90 hover:text-ink"
             }`}
           >
             {myGroup ? `우리 ${myGroup}` : "우리 집단"}
@@ -173,45 +169,45 @@ export default function PrayerPage() {
         {/* 작성 폼 */}
         {loggedIn ? (
           tab === "group" && needNickname ? (
-            <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/[0.08] px-4 py-3.5 text-sm text-amber-300">
+            <div className="mb-6 rounded-2xl border border-gold/40 bg-gold/10 px-4 py-3.5 text-sm text-gold-ink">
               집단 기도는 닉네임 설정 후 이용할 수 있어요.{" "}
               <Link href="/my/profile" className="font-semibold underline">닉네임 설정하기 →</Link>
             </div>
           ) : (
-            <form onSubmit={handlePost} className="mb-6 rounded-2xl border border-white/[0.07] bg-[#111111] p-4">
+            <form onSubmit={handlePost} className="glass-card mb-6 p-4">
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={3}
                 maxLength={1000}
                 placeholder={tab === "group" ? `우리 ${myGroup}와 나눌 기도제목...` : "전체와 나눌 기도제목..."}
-                className="w-full resize-none rounded-xl border border-white/[0.07] bg-black/30 px-4 py-3 text-sm leading-relaxed text-zinc-200 placeholder-zinc-600 focus:border-violet-500/50 focus:outline-none"
+                className="w-full resize-none rounded-xl border border-white/95 bg-white/70 px-4 py-3 text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:border-teal focus:outline-none"
               />
               <div className="mt-3 flex items-center justify-between">
-                <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
+                <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-soft">
                   <input
                     type="checkbox"
                     checked={isAnonymous}
                     onChange={(e) => setIsAnonymous(e.target.checked)}
-                    className="h-4 w-4 rounded border-white/20 bg-white/5 accent-violet-500"
+                    className="h-4 w-4 rounded border-sky-line bg-white/70 accent-teal"
                   />
                   익명으로 올리기
                 </label>
                 <button
                   type="submit"
                   disabled={!content.trim() || posting}
-                  className="rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40 btn-glow"
+                  className="btn-gold rounded-xl px-5 py-2 text-sm"
                 >
                   {posting ? "올리는 중..." : "기도제목 올리기"}
                 </button>
               </div>
-              {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+              {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
             </form>
           )
         ) : (
-          <div className="mb-6 rounded-2xl border border-white/[0.07] bg-[#111111] p-5 text-center">
-            <p className="mb-3 text-sm text-zinc-400">기도제목을 나누려면 로그인이 필요해요.</p>
-            <Link href="/login?next=/prayer" className="inline-block rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-2.5 text-sm font-semibold text-white btn-glow">
+          <div className="glass-card mb-6 p-5 text-center">
+            <p className="mb-3 text-sm text-ink-soft">기도제목을 나누려면 로그인이 필요해요.</p>
+            <Link href="/login?next=/prayer" className="btn-gold inline-block rounded-full px-6 py-2.5 text-sm">
               로그인하기
             </Link>
           </div>
@@ -221,22 +217,20 @@ export default function PrayerPage() {
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-28 animate-pulse rounded-2xl border border-white/[0.07] bg-[#111111]" />
+              <div key={i} className="h-28 animate-pulse rounded-3xl bg-white/55" />
             ))}
           </div>
         ) : items.length === 0 ? (
-          <div className="rounded-2xl border border-white/[0.07] bg-[#111111] px-8 py-14 text-center">
+          <div className="glass-card px-8 py-14 text-center">
             <div className="mb-3 text-4xl">🙏</div>
-            <p className="text-sm text-zinc-400">아직 나눈 기도제목이 없어요. 첫 기도제목을 올려보세요.</p>
+            <p className="text-sm text-ink-soft">아직 나눈 기도제목이 없어요. 첫 기도제목을 올려보세요.</p>
           </div>
         ) : (
           <ul className="space-y-3">
             {items.map((p) => (
               <li
                 key={p.id}
-                className={`rounded-2xl border bg-[#111111] p-5 transition-all ${
-                  p.isAnswered ? "border-emerald-500/25" : "border-white/[0.07]"
-                }`}
+                className={`glass-card p-5 transition-all ${p.isAnswered ? "border-teal/45!" : ""}`}
               >
                 {/* 작성자 + 시간 */}
                 <div className="mb-2.5 flex items-center justify-between">
@@ -245,26 +239,26 @@ export default function PrayerPage() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={p.authorAvatar} alt="" className="h-6 w-6 rounded-full object-cover" />
                     ) : (
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-500/20 text-xs text-violet-300">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-skyx/25 text-xs text-skyx-ink">
                         {p.authorName[0]}
                       </div>
                     )}
-                    <span className="text-xs text-zinc-400">{p.authorName}</span>
-                    <span className="text-xs text-zinc-600">· {timeAgo(p.createdAt)}</span>
+                    <span className="text-xs text-ink-soft">{p.authorName}</span>
+                    <span className="text-xs text-ink-faint">· {timeAgo(p.createdAt)}</span>
                   </div>
                   {p.isAnswered && (
-                    <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
+                    <span className="rounded-full border border-teal/35 bg-teal/10 px-2.5 py-0.5 text-xs font-medium text-teal-ink">
                       응답됨 🌿
                     </span>
                   )}
                 </div>
 
                 {/* 내용 */}
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-200">{p.content}</p>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink">{p.content}</p>
 
                 {/* 응답 간증 */}
                 {p.isAnswered && p.answeredNote && (
-                  <p className="mt-2 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.06] px-3 py-2 text-xs leading-relaxed text-emerald-300/90">
+                  <p className="mt-2 rounded-xl border border-teal/25 bg-teal/[0.07] px-3 py-2 text-xs leading-relaxed text-teal-ink">
                     🌿 {p.answeredNote}
                   </p>
                 )}
@@ -276,12 +270,12 @@ export default function PrayerPage() {
                     disabled={!loggedIn}
                     className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all disabled:opacity-40 ${
                       p.iPrayed
-                        ? "border border-violet-500/30 bg-violet-500/15 text-violet-300"
-                        : "border border-white/[0.07] bg-white/[0.04] text-zinc-400 hover:text-zinc-200"
+                        ? "border border-gold/45 bg-gold/15 text-gold-ink"
+                        : "glass-soft text-ink-soft hover:bg-white/90 hover:text-ink"
                     }`}
                   >
                     🙏 {p.iPrayed ? "기도했어요" : "기도할게요"}
-                    {p.prayCount > 0 && <span className="text-zinc-500">· {p.prayCount}</span>}
+                    {p.prayCount > 0 && <span className="text-ink-faint">· {p.prayCount}</span>}
                   </button>
 
                   {p.isMine && (
@@ -289,19 +283,19 @@ export default function PrayerPage() {
                       {!p.isAnswered && (
                         <button
                           onClick={() => { setAnsweringId(p.id); setAnswerNote(""); }}
-                          className="text-emerald-400 hover:text-emerald-300"
+                          className="text-teal-ink hover:text-teal-deep"
                         >
                           응답됨 표시
                         </button>
                       )}
                       {deletingId === p.id ? (
                         <div className="flex items-center gap-1.5">
-                          <span className="text-zinc-400">삭제할까요?</span>
-                          <button onClick={() => remove(p)} className="font-medium text-red-400 hover:text-red-300">예</button>
-                          <button onClick={() => setDeletingId(null)} className="text-zinc-500 hover:text-zinc-300">취소</button>
+                          <span className="text-ink-soft">삭제할까요?</span>
+                          <button onClick={() => remove(p)} className="font-medium text-red-500 hover:text-red-400">예</button>
+                          <button onClick={() => setDeletingId(null)} className="text-ink-faint hover:text-ink">취소</button>
                         </div>
                       ) : (
-                        <button onClick={() => setDeletingId(p.id)} className="text-zinc-600 hover:text-red-400">
+                        <button onClick={() => setDeletingId(p.id)} className="text-ink-faint hover:text-red-500">
                           삭제
                         </button>
                       )}
@@ -311,25 +305,25 @@ export default function PrayerPage() {
 
                 {/* 응답 간증 인라인 입력 */}
                 {answeringId === p.id && (
-                  <div className="mt-3 space-y-2 border-t border-white/[0.05] pt-3">
+                  <div className="mt-3 space-y-2 border-t border-sky-line pt-3">
                     <input
                       value={answerNote}
                       onChange={(e) => setAnswerNote(e.target.value)}
                       maxLength={200}
                       placeholder="응답 간증 한 줄 (선택, 비워도 됩니다)"
-                      className="w-full rounded-xl border border-white/[0.07] bg-black/30 px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 focus:border-emerald-500/50 focus:outline-none"
+                      className="w-full rounded-xl border border-white/95 bg-white/70 px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-teal focus:outline-none"
                       autoFocus
                     />
                     <div className="flex gap-2">
                       <button
                         onClick={() => markAnswered(p, answerNote)}
-                        className="flex-1 rounded-xl bg-emerald-600 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                        className="btn-gold flex-1 rounded-xl py-2 text-sm"
                       >
                         응답 표시하기
                       </button>
                       <button
                         onClick={() => { setAnsweringId(null); setAnswerNote(""); }}
-                        className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200"
+                        className="glass-soft rounded-xl px-4 py-2 text-sm text-ink-soft hover:bg-white/90 hover:text-ink"
                       >
                         취소
                       </button>
