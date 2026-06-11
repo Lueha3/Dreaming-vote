@@ -10,14 +10,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = params instanceof Promise ? await params : params;
   const report = await prisma.report.findUnique({
     where: { shareSlug: slug },
-    select: { catchphrase: true },
+    select: { catchphrase: true, isPublic: true, userId: true },
   });
   if (!report) return { title: "리포트 없음" };
+
+  if (!report.isPublic) {
+    const viewer = await getAuthUser();
+    if (!viewer || viewer.dbUserId !== report.userId) {
+      return { title: "비공개 리포트 — BlueHumanity" };
+    }
+  }
+
   return {
     title: `"${report.catchphrase}" — BlueHumanity`,
     openGraph: {
       title: report.catchphrase,
-      description: "AI 대화로 발견한 나의 비즈니스 페르소나",
+      description: "AI가 찾아준 나의 성향 카드",
       images: [`/api/og/${slug}`],
     },
     twitter: { card: "summary_large_image" },

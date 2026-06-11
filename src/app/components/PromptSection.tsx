@@ -33,6 +33,14 @@ const AI_OPTIONS = [
   { value: "other", label: "기타 AI" },
 ] as const;
 
+const AI_URLS: Record<string, string> = {
+  chatgpt: "https://chat.openai.com",
+  claude: "https://claude.ai",
+  gemini: "https://gemini.google.com",
+  copilot: "https://copilot.microsoft.com",
+  other: "https://chat.openai.com",
+};
+
 const PERSONALITY_TYPES = [
   ["INTJ", "INTP", "ENTJ", "ENTP"],
   ["INFJ", "INFP", "ENFJ", "ENFP"],
@@ -45,10 +53,11 @@ const PERSONALITY_TYPES = [
 export function PromptSection() {
   const router = useRouter();
 
-  const [step, setStep] = useState(0);       // 0:복사 1:붙여넣기 2:로딩 3:결과
-  const [animKey, setAnimKey] = useState(0); // 변경 시 슬라이드 애니메이션 재시작
+  const [step, setStep] = useState(0);       // 0:메인 1:붙여넣기 2:로딩 3:결과
+  const [animKey, setAnimKey] = useState(0);
 
   const [prompt, setPrompt] = useState<PromptData | null>(null);
+  const [promptError, setPromptError] = useState(false);
   const [sourceAi, setSourceAi] = useState("chatgpt");
   const [copied, setCopied] = useState(false);
   const [rawText, setRawText] = useState("");
@@ -60,7 +69,7 @@ export function PromptSection() {
   useEffect(() => {
     fetchJson<PromptResponse>("/api/prompt/current")
       .then((data) => setPrompt(data.prompt))
-      .catch(() => {});
+      .catch(() => setPromptError(true));
   }, []);
 
   function goTo(next: number) {
@@ -78,15 +87,11 @@ export function PromptSection() {
     if (!prompt) return;
     await navigator.clipboard.writeText(prompt.content);
     setCopied(true);
-    setTimeout(() => {
-      setCopied(false);
-      goTo(1);
-    }, 1200);
   }
 
   async function handlePersonalitySubmit(personalityType: string) {
     setError(null);
-    goTo(2); // 로딩으로 바로 이동
+    goTo(2);
 
     try {
       const data = await fetchJson<ReportResponse>("/api/reports/personality", {
@@ -128,7 +133,6 @@ export function PromptSection() {
       setReportData(data.reportData);
       if (data.shareSlug) setShareSlug(data.shareSlug);
 
-      // 비로그인이면 pending 저장
       if (!data.saved) {
         sessionStorage.setItem(
           "bh_pending_report",
@@ -146,13 +150,14 @@ export function PromptSection() {
   }
 
   const aiLabel = AI_OPTIONS.find((o) => o.value === sourceAi)?.label ?? "AI";
+  const aiUrl = AI_URLS[sourceAi] ?? "https://chat.openai.com";
 
   return (
     <div className="w-full">
-      {/* 진행 인디케이터 (결과 화면에선 숨김) */}
-      {step < 3 && (
+      {/* 진행 인디케이터 — AI 경로 step 1·2에서만 표시 */}
+      {(step === 1 || step === 2) && (
         <div className="mb-6 flex items-center justify-center gap-1.5">
-          {[0, 1, 2].map((i) => (
+          {[1, 2].map((i) => (
             <div key={i} className="flex items-center gap-1.5">
               <div
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all duration-300 ${
@@ -163,7 +168,7 @@ export function PromptSection() {
                       : "border border-white/10 bg-white/5 text-zinc-600"
                 }`}
               >
-                {i < step ? "✓" : i + 1}
+                {i < step ? "✓" : i}
               </div>
               {i < 2 && (
                 <div
@@ -177,17 +182,20 @@ export function PromptSection() {
         </div>
       )}
 
-      {/* 슬라이드 카드 — key가 바뀔 때마다 slide-in 애니메이션 재실행 */}
       <div key={animKey} className="card-slide-in">
         {step === 0 && (
-          <CardCopy
+          <CardMain
             prompt={prompt}
+            promptError={promptError}
             sourceAi={sourceAi}
             setSourceAi={setSourceAi}
             copied={copied}
             onCopy={handleCopy}
+            onGoToPaste={() => goTo(1)}
             onPersonalitySelect={handlePersonalitySubmit}
             error={error}
+            aiLabel={aiLabel}
+            aiUrl={aiUrl}
           />
         )}
         {step === 1 && (
@@ -214,84 +222,82 @@ export function PromptSection() {
   );
 }
 
-/* ── 카드 1: 프롬프트 복사 ────────────────────────────────────────────────── */
+/* ── 카드 1: 메인 (MBTI 기본 + AI 확장) ──────────────────────────── */
 
-function CardCopy({
+function CardMain({
   prompt,
+  promptError,
   sourceAi,
   setSourceAi,
   copied,
   onCopy,
+  onGoToPaste,
   onPersonalitySelect,
   error,
+  aiLabel,
+  aiUrl,
 }: {
   prompt: PromptData | null;
+  promptError: boolean;
   sourceAi: string;
   setSourceAi: (v: string) => void;
   copied: boolean;
   onCopy: () => void;
+  onGoToPaste: () => void;
   onPersonalitySelect: (type: string) => void;
   error: string | null;
+  aiLabel: string;
+  aiUrl: string;
 }) {
+  const [aiExpanded, setAiExpanded] = useState(false);
+
   return (
     <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-6 card-glow">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-violet-400">
-        Step 1
-      </p>
-      <h2 className="mb-5 text-xl font-bold leading-snug text-white">
-        아래 프롬프트를 복사해서{" "}
+      {/* 기본 경로: MBTI */}
+      <h2 className="mb-2 text-xl font-bold leading-snug text-white">
+        MBTI를 고르면{" "}
         <span className="bg-gradient-to-r from-violet-300 to-blue-300 bg-clip-text text-transparent">
-          가장 자주 쓰는 AI에 붙여넣으세요!
+          바로 시작해요
         </span>
       </h2>
+      <p className="mb-4 text-xs text-zinc-500">
+        대충 골라도 괜찮아요 — 나중에 다시 만들 수 있어요
+      </p>
 
-      {/* AI 선택 */}
-      <div className="mb-4 flex flex-wrap gap-2">
-        {AI_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => setSourceAi(opt.value)}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
-              sourceAi === opt.value
-                ? "bg-gradient-to-r from-violet-600 to-blue-600 text-white"
-                : "border border-white/10 bg-white/5 text-zinc-400 hover:border-white/20 hover:text-zinc-200"
-            }`}
-          >
-            {opt.label}
-          </button>
+      {error && (
+        <div className="mb-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-center text-xs text-red-400">
+          {error}
+        </div>
+      )}
+
+      {/* MBTI 4×4 격자 */}
+      <div className="space-y-2">
+        {PERSONALITY_TYPES.map((row, rowIdx) => (
+          <div key={rowIdx} className="grid grid-cols-4 gap-2">
+            {row.map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => onPersonalitySelect(type)}
+                className="rounded-xl border border-white/[0.07] bg-white/[0.03] py-2.5 text-xs font-bold text-zinc-400 transition-all hover:border-violet-500/40 hover:bg-violet-500/10 hover:text-violet-300 active:scale-95"
+              >
+                {type}
+              </button>
+            ))}
+          </div>
         ))}
       </div>
 
-      {/* 프롬프트 텍스트 */}
-      <div className="mb-3 max-h-44 overflow-y-auto rounded-xl border border-white/[0.06] bg-black/30 p-4">
-        <pre className="whitespace-pre-wrap text-xs leading-relaxed text-zinc-400">
-          {prompt?.content ?? "프롬프트 불러오는 중..."}
-        </pre>
-      </div>
-
-      {prompt?.version && (
-        <p className="mb-3 text-right text-xs text-zinc-700">{prompt.version}</p>
-      )}
-
-      <button
-        type="button"
-        onClick={onCopy}
-        disabled={!prompt}
-        className={`w-full rounded-xl py-4 text-sm font-bold text-white transition-all disabled:opacity-40 ${
-          copied
-            ? "bg-emerald-600"
-            : "bg-gradient-to-r from-violet-600 to-blue-600 hover:opacity-90 btn-glow"
-        }`}
-      >
-        {copied
-          ? "✓ 복사 완료! 다음 단계로 이동 중..."
-          : "프롬프트 복사하기 →"}
-      </button>
-
       <p className="mt-3 text-center text-xs text-zinc-600">
-        복사 후 {AI_OPTIONS.find((o) => o.value === sourceAi)?.label ?? "AI"}에
-        붙여넣고 답변을 받아오세요
+        MBTI를 모른다면?{" "}
+        <a
+          href="https://www.16personalities.com/ko"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-violet-400 underline underline-offset-2 hover:text-violet-300"
+        >
+          무료 검사하기 ↗
+        </a>
       </p>
 
       {/* 구분선 */}
@@ -301,41 +307,108 @@ function CardCopy({
         <div className="h-px flex-1 bg-white/[0.07]" />
       </div>
 
-      {/* 성격 유형 선택 */}
-      <div>
-        <p className="mb-3 text-center text-xs text-zinc-500">
-          자주 쓰는 AI가 없다면?{" "}
-          <span className="font-medium text-zinc-400">내 성격 유형 선택하기</span>
-        </p>
+      {/* AI 경로 접기/펼치기 */}
+      <button
+        type="button"
+        onClick={() => setAiExpanded((v) => !v)}
+        className="flex w-full items-center justify-between gap-2 rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3 text-sm text-zinc-400 transition-all hover:border-white/20 hover:text-zinc-200"
+      >
+        <span>ChatGPT 등 AI를 써봤다면 — 더 깊게 분석하기</span>
+        <svg
+          className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${aiExpanded ? "rotate-180" : ""}`}
+          viewBox="0 0 12 12"
+          fill="none"
+        >
+          <path
+            d="M2 4L6 8L10 4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
 
-        {error && (
-          <div className="mb-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2.5 text-center text-xs text-red-400">
-            {error}
+      {aiExpanded && (
+        <div className="mt-3 space-y-3">
+          {/* AI 선택 */}
+          <div className="flex flex-wrap gap-2">
+            {AI_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setSourceAi(opt.value)}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
+                  sourceAi === opt.value
+                    ? "bg-gradient-to-r from-violet-600 to-blue-600 text-white"
+                    : "border border-white/10 bg-white/5 text-zinc-400 hover:border-white/20 hover:text-zinc-200"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
-        )}
 
-        <div className="space-y-2">
-          {PERSONALITY_TYPES.map((row, rowIdx) => (
-            <div key={rowIdx} className="grid grid-cols-4 gap-2">
-              {row.map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => onPersonalitySelect(type)}
-                  className="rounded-xl border border-white/[0.07] bg-white/[0.03] py-2.5 text-xs font-bold text-zinc-400 transition-all hover:border-violet-500/40 hover:bg-violet-500/10 hover:text-violet-300 active:scale-95"
-                >
-                  {type}
-                </button>
-              ))}
+          {/* 질문 텍스트 */}
+          <div className="max-h-44 overflow-y-auto rounded-xl border border-white/[0.06] bg-black/30 p-4">
+            <pre className="whitespace-pre-wrap text-xs leading-relaxed text-zinc-400">
+              {promptError
+                ? "질문을 불러오지 못했어요. MBTI를 대신 선택해보세요."
+                : (prompt?.content ?? "질문 불러오는 중...")}
+            </pre>
+          </div>
+
+          {prompt?.version && (
+            <p className="text-right text-xs text-zinc-700">{prompt.version}</p>
+          )}
+
+          {/* 복사 버튼 */}
+          <button
+            type="button"
+            onClick={onCopy}
+            disabled={!prompt || promptError}
+            className={`w-full rounded-xl py-4 text-sm font-bold text-white transition-all disabled:opacity-40 ${
+              copied
+                ? "bg-emerald-600"
+                : "bg-gradient-to-r from-violet-600 to-blue-600 hover:opacity-90 btn-glow"
+            }`}
+          >
+            {copied ? "✓ 질문이 복사됐어요!" : "AI에게 보낼 질문 복사하기 →"}
+          </button>
+
+          {/* 복사 후: 2버튼 / 복사 전: 안내 문구 */}
+          {copied ? (
+            <div className="flex gap-2">
+              <a
+                href={aiUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 rounded-xl border border-white/[0.07] bg-white/[0.04] py-3 text-center text-sm font-medium text-zinc-300 transition-all hover:border-white/20 hover:text-white"
+              >
+                {aiLabel} 열기 ↗
+              </a>
+              <button
+                type="button"
+                onClick={onGoToPaste}
+                className="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 btn-glow"
+              >
+                답변 붙여넣기 →
+              </button>
             </div>
-          ))}
+          ) : (
+            !promptError && (
+              <p className="text-center text-xs text-zinc-600">
+                복사 후 {aiLabel}에 붙여넣고 답변을 받아오세요
+              </p>
+            )
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-/* ── 카드 2: 결과 붙여넣기 ────────────────────────────────────────────────── */
+/* ── 카드 2: AI 답변 붙여넣기 ──────────────────────────────────────── */
 
 function CardPaste({
   rawText,
@@ -357,11 +430,9 @@ function CardPaste({
   return (
     <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-6 card-glow">
       <div className="mb-4 flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">
-            Step 2
-          </p>
-        </div>
+        <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">
+          2단계
+        </p>
         <button
           type="button"
           onClick={onBack}
@@ -414,15 +485,12 @@ function CardPaste({
 function CardLoading() {
   return (
     <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-white/[0.07] bg-[#111111] p-8 text-center">
-      {/* 스피너 */}
       <div className="relative mb-6">
         <div className="h-14 w-14 animate-spin rounded-full border-2 border-violet-500/20 border-t-violet-400" />
         <div className="absolute inset-0 rounded-full bg-violet-600/5 blur-lg" />
       </div>
       <p className="text-lg font-bold text-white">AI가 분석 중이에요...</p>
-      <p className="mt-2 text-sm text-zinc-500">
-        나만의 비즈니스 페르소나를 찾고 있습니다
-      </p>
+      <p className="mt-2 text-sm text-zinc-500">성향 카드를 만들고 있어요</p>
     </div>
   );
 }
@@ -445,7 +513,7 @@ function CardResult({
 
   return (
     <div className="space-y-4">
-      {/* 페르소나 결과 카드 */}
+      {/* 성향 카드 결과 */}
       <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-[#111111] px-6 py-8 text-center">
         <div className="pointer-events-none absolute inset-0" aria-hidden>
           <div className="absolute -top-16 left-1/2 -translate-x-1/2 h-36 w-72 rounded-full bg-violet-600/18 blur-[60px]" />
@@ -453,7 +521,7 @@ function CardResult({
 
         <div className="relative">
           <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-violet-400">
-            당신의 비즈니스 페르소나
+            내 성향 카드
           </p>
           <h2 className="mb-4 text-2xl font-bold text-white">
             &ldquo;
@@ -480,10 +548,10 @@ function CardResult({
         </div>
       </div>
 
-      {/* AI 추천 CTA */}
+      {/* 다음 단계 CTA */}
       <div className="rounded-2xl border border-white/[0.07] bg-[#111111] px-6 py-7 text-center">
         <p className="mb-0.5 text-xs font-semibold uppercase tracking-widest text-violet-400">
-          Next Step
+          다음 단계
         </p>
         <p className="mb-5 text-lg font-bold text-white">
           이제{" "}
@@ -499,7 +567,7 @@ function CardResult({
             onClick={() => router.push(`/report/${shareSlug}`)}
             className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 py-4 text-sm font-bold text-white transition-all hover:opacity-90 btn-glow"
           >
-            전체 리포트 보기 →
+            성향 카드 전체 보기 →
           </button>
         ) : (
           <button
@@ -507,12 +575,12 @@ function CardResult({
             onClick={() => router.push("/login?next=/report/pending")}
             className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 py-4 text-sm font-bold text-white transition-all hover:opacity-90 btn-glow"
           >
-            로그인으로 리포트 저장하기 →
+            로그인하고 성향 카드 저장하기 →
           </button>
         )}
 
         <p className="mt-3 text-xs text-zinc-600">
-          리포트를 저장하면 언제든 다시 볼 수 있어요
+          성향 카드를 저장하면 언제든 다시 볼 수 있어요
         </p>
       </div>
     </div>

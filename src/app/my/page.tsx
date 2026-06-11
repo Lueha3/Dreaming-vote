@@ -74,7 +74,7 @@ export default function MyPage() {
           <div className="mb-6 text-5xl">🔐</div>
           <h2 className="mb-3 text-2xl font-bold text-white">로그인이 필요합니다</h2>
           <p className="mb-8 text-sm text-zinc-500 leading-relaxed">
-            내 리포트를 보려면 로그인을 해주세요.
+            내 성향 카드를 보려면 로그인을 해주세요.
           </p>
           <Link
             href="/login?next=/my"
@@ -128,7 +128,7 @@ export default function MyPage() {
               )}
               <div>
                 <p className="font-semibold text-white">{nickname ?? "나"}</p>
-                <p className="text-xs text-zinc-500">리포트 {items.length}개</p>
+                <p className="text-xs text-zinc-500">성향 카드 {items.length}개</p>
               </div>
             </div>
 
@@ -143,14 +143,14 @@ export default function MyPage() {
                 href="/"
                 className="rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-4 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
               >
-                + 새 리포트
+                + 새 성향 카드
               </Link>
             </div>
           </div>
         </div>
 
         {/* 타이틀 */}
-        <h1 className="mb-6 text-2xl font-bold text-white">내 리포트</h1>
+        <h1 className="mb-6 text-2xl font-bold text-white">내 성향 카드</h1>
 
         {/* 리스트 */}
         {items.length === 0 ? (
@@ -261,17 +261,15 @@ function EmptyState() {
   return (
     <div className="rounded-2xl border border-white/[0.07] bg-[#111111] px-8 py-14 text-center">
       <div className="mb-4 text-4xl">✨</div>
-      <p className="mb-2 font-semibold text-zinc-200">아직 리포트가 없어요</p>
+      <p className="mb-2 font-semibold text-zinc-200">아직 성향 카드가 없어요</p>
       <p className="mb-7 text-sm leading-relaxed text-zinc-500">
-        AI와 대화하고 나만의 비즈니스 페르소나를
-        <br />
-        만들어보세요.
+        첫 성향 카드를 만들어볼까요?
       </p>
       <Link
         href="/"
         className="inline-block rounded-full bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
       >
-        첫 리포트 만들기 →
+        첫 성향 카드 만들기 →
       </Link>
     </div>
   );

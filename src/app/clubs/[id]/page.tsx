@@ -174,7 +174,7 @@ export default function ClubDetailPage({ params }: PageProps) {
           {isOwner && pending && (
             <div className="mb-5 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
               {!club.isApproved
-                ? "관리자 승인 대기 중입니다. 승인되면 다른 유저에게 노출됩니다."
+                ? "관리자 승인 대기 중입니다. 승인되면 다른 청년들에게 공개됩니다."
                 : "현재 숨김 처리된 동아리입니다."}
             </div>
           )}
@@ -292,7 +292,7 @@ export default function ClubDetailPage({ params }: PageProps) {
       <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-5">
         {status === "rejected" && (
           <p className="mb-3 text-center text-sm text-zinc-500">
-            이전 신청은 반려되었어요. 다시 신청할 수 있습니다.
+            이전 신청은 거절되었어요. 다시 신청할 수 있습니다.
           </p>
         )}
 

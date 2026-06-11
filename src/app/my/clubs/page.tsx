@@ -239,7 +239,7 @@ function OwnedClubCard({ club, onChanged }: { club: OwnedClub; onChanged: () => 
     </span>
   ) : club.isActive ? (
     <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
-      노출 중
+      모집 중
     </span>
   ) : (
     <span className="rounded-full border border-zinc-600/40 bg-zinc-700/20 px-2.5 py-0.5 text-xs font-medium text-zinc-400">
@@ -335,13 +335,13 @@ function OwnedClubCard({ club, onChanged }: { club: OwnedClub; onChanged: () => 
                             disabled={busyId === a.id}
                             className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-zinc-400 transition-all hover:border-red-500/30 hover:text-red-400 disabled:opacity-40"
                           >
-                            반려
+                            거절
                           </button>
                         </div>
                       ) : a.status === "accepted" ? (
                         <span className="text-xs font-medium text-emerald-400">수락됨 ✓</span>
                       ) : (
-                        <span className="text-xs font-medium text-zinc-500">반려됨</span>
+                        <span className="text-xs font-medium text-zinc-500">거절됨</span>
                       )}
                     </div>
                   </div>
@@ -370,7 +370,7 @@ function AppliedRow({ item }: { item: AppliedClub }) {
       </span>
     ) : (
       <span className="shrink-0 rounded-full border border-zinc-600/40 bg-zinc-700/20 px-2.5 py-0.5 text-xs font-medium text-zinc-500">
-        반려됨
+        거절됨
       </span>
     );
 

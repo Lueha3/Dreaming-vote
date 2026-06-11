@@ -111,7 +111,7 @@ export default function NewClubPage() {
           <div className="mb-6 text-5xl">🎉</div>
           <h2 className="mb-3 text-2xl font-bold text-white">개설 신청 완료!</h2>
           <p className="mb-8 text-sm text-zinc-500 leading-relaxed">
-            관리자 승인 후 동아리 목록에 노출됩니다.
+            관리자 승인 후 동아리 목록에 게시됩니다.
             <br />
             승인 현황은 &lsquo;내 동아리&rsquo;에서 확인할 수 있어요.
           </p>
@@ -146,7 +146,7 @@ export default function NewClubPage() {
           </Link>
           <h1 className="mt-3 text-2xl font-bold text-white">동아리 개설</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            개설 후 관리자 승인을 거쳐 다른 유저에게 노출됩니다.
+            개설 후 관리자 승인을 거쳐 다른 청년들에게 공개됩니다.
           </p>
         </div>
 

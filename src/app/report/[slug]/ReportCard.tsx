@@ -48,7 +48,7 @@ export function ReportCard({ report }: { report: Report }) {
           <div className="absolute -top-20 left-1/2 -translate-x-1/2 h-40 w-80 rounded-full bg-violet-600/12 blur-[60px]" />
         </div>
         <p className="relative mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-600">
-          My Business Persona
+          내 성향 카드
         </p>
         <h1 className="relative text-2xl font-bold leading-tight text-white">
           &ldquo;
@@ -89,7 +89,7 @@ export function ReportCard({ report }: { report: Report }) {
 
       {/* 공유 */}
       <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-5">
-        <p className="mb-3 text-sm font-medium text-zinc-300">이 리포트 공유하기</p>
+        <p className="mb-3 text-sm font-medium text-zinc-300">이 성향 카드 공유하기</p>
         <button
           onClick={handleShare}
           className="w-full rounded-xl border border-white/[0.07] bg-white/[0.04] py-2.5 text-sm font-medium text-zinc-400 transition-all hover:border-violet-500/30 hover:bg-violet-500/[0.07] hover:text-violet-300"
@@ -108,7 +108,7 @@ export function ReportCard({ report }: { report: Report }) {
           href="/"
           className="inline-block rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 btn-glow"
         >
-          내 리포트 만들기 →
+          나도 성향 카드 만들기 →
         </a>
       </div>
     </div>

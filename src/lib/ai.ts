@@ -41,7 +41,7 @@ export function classifyAiError(e: unknown): {
   };
 }
 
-const SYSTEM_INSTRUCTION = `당신은 비즈니스 페르소나 분석 전문가입니다.
+const SYSTEM_INSTRUCTION = `당신은 한국 청년의 협업 성향 카드를 만드는 전문가입니다.
 반드시 아래 규칙을 따르세요:
 1. 오직 valid JSON만 출력. 설명, 마크다운 코드블록, 인사 일체 금지.
 2. catchphrase: 15자 이내, 시적·은유적 한 줄
@@ -52,7 +52,7 @@ const SYSTEM_INSTRUCTION = `당신은 비즈니스 페르소나 분석 전문가
 // ── AI 결과 텍스트 파싱 ──────────────────────────────────────────────────────
 
 const buildPrompt = (rawText: string) => `
-다음은 유저가 AI에게서 받은 비즈니스 페르소나 분석 결과입니다.
+다음은 사용자가 AI에게서 받은 성향 분석 결과입니다.
 내용을 아래 JSON 형식으로 추출·정제하세요.
 
 [분석 결과]
@@ -116,7 +116,7 @@ ${type}
 `;
 
 /**
- * 성격 유형(예: INTJ)을 기반으로 비즈니스 페르소나 리포트 생성 (모델 폴백 적용)
+ * 성격 유형(예: INTJ)을 기반으로 성향 카드 생성 (모델 폴백 적용)
  */
 export async function parsePersonalityReport(personalityType: string): Promise<ParsedReport> {
   const parsed = await generateJson(SYSTEM_INSTRUCTION, buildPersonalityPrompt(personalityType));
@@ -152,16 +152,16 @@ const clubMatchSchema = z.object({
 
 export type ClubMatch = { clubId: string; score: number; reason: string };
 
-const MATCH_SYSTEM_INSTRUCTION = `당신은 사람의 비즈니스 페르소나와 동아리를 매칭하는 전문가입니다.
+const MATCH_SYSTEM_INSTRUCTION = `당신은 사람의 협업 성향과 동아리를 매칭하는 전문가입니다.
 반드시 아래 규칙을 따르세요:
 1. 오직 valid JSON만 출력. 설명, 마크다운 코드블록, 인사 일체 금지.
 2. clubId는 반드시 주어진 후보 목록의 id와 정확히 일치해야 함. 목록에 없는 동아리는 절대 만들지 말 것.
-3. score: 0~100 정수, 페르소나와 동아리의 적합도.
+3. score: 0~100 정수, 성향과 동아리의 적합도.
 4. reason: 한국어 1~2문장. 이 사람의 기질·환경·역할을 근거로 왜 이 동아리가 잘 맞는지 구체적으로.
 5. 적합도가 높은 순으로 정렬. 명백히 어울리지 않는 동아리는 포함하지 말 것.`;
 
 const buildMatchPrompt = (persona: PersonaInput, candidates: ClubCandidate[], topN: number) => `
-[사용자 페르소나]
+[사용자 성향]
 한 줄 정의: ${persona.catchphrase}
 핵심 기질: ${persona.coreTraits}
 최적 환경: ${persona.optimalEcosystem}
@@ -178,7 +178,7 @@ ${JSON.stringify(
   })),
 )}
 
-위 페르소나에 가장 잘 맞는 동아리를 최대 ${topN}개 골라 적합도 순으로 출력하세요.
+위 성향에 가장 잘 맞는 동아리를 최대 ${topN}개 골라 적합도 순으로 출력하세요.
 
 [출력 형식]
 {"recommendations":[{"clubId":"...","score":85,"reason":"..."}]}

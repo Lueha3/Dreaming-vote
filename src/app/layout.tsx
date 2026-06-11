@@ -10,12 +10,12 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "BlueHumanity — AI 대화로 찾는 나의 비즈니스 페르소나",
+  title: "BlueHumanity — 꿈꾸는교회 청년부",
   description:
-    "AI와의 솔직한 대화 기록으로 나만의 협업 페르소나를 발견하고, 진짜 맞는 팀을 만나세요.",
+    "MBTI를 안다면 1분이면 충분해요. 내 성향에 맞는 동아리를 AI가 추천해드려요.",
   openGraph: {
-    title: "BlueHumanity",
-    description: "AI 대화로 찾는 나의 비즈니스 페르소나",
+    title: "BlueHumanity — 꿈꾸는교회 청년부",
+    description: "내 성향에 맞는 동아리 찾기 · 꿈꾸는교회 청년부",
     siteName: "BlueHumanity",
   },
 };

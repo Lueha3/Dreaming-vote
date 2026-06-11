@@ -71,7 +71,7 @@ export function Header() {
           <Link href="/clubs" className="whitespace-nowrap hover:text-zinc-200 transition-colors">목록</Link>
           {!loading && nickname && (
             <>
-              <Link href="/my" className="whitespace-nowrap hover:text-zinc-200 transition-colors">내 리포트</Link>
+              <Link href="/my" className="whitespace-nowrap hover:text-zinc-200 transition-colors">내 성향 카드</Link>
               <Link href="/my/clubs" className="whitespace-nowrap hover:text-zinc-200 transition-colors">내 동아리</Link>
               <Link
                 href="/my/profile"
@@ -128,7 +128,7 @@ export function Header() {
               {!loading && nickname && (
                 <>
                   <div className="my-1.5 mx-4 border-t border-white/[0.06]" />
-                  <MobileNavLink href="/my" onClick={() => setMenuOpen(false)}>내 리포트</MobileNavLink>
+                  <MobileNavLink href="/my" onClick={() => setMenuOpen(false)}>내 성향 카드</MobileNavLink>
                   <MobileNavLink href="/my/clubs" onClick={() => setMenuOpen(false)}>내 동아리</MobileNavLink>
                   <MobileNavLink href="/my/profile" onClick={() => setMenuOpen(false)}>
                     <span className="flex items-center justify-between w-full">

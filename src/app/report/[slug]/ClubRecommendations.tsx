@@ -38,13 +38,13 @@ export function ClubRecommendations({ reportId, shareSlug }: { reportId: string;
       });
       if (res.status === 401) {
         setNeedLogin(true);
-        setError("로그인하면 내 페르소나에 맞는 동아리를 추천받을 수 있어요.");
+        setError("로그인하면 내 성향에 맞는 동아리를 추천받을 수 있어요.");
         setState("error");
         return;
       }
       const data = await res.json();
       if (res.status === 404) {
-        setError("본인이 만든 리포트에서만 추천을 받을 수 있어요.");
+        setError("본인이 만든 성향 카드에서만 추천을 받을 수 있어요.");
         setState("error");
         return;
       }
@@ -192,7 +192,7 @@ export function ClubRecommendations({ reportId, shareSlug }: { reportId: string;
       <div className="pointer-events-none absolute inset-0" aria-hidden>
         <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 h-32 w-72 rounded-full bg-violet-600/10 blur-[60px]" />
       </div>
-      <p className="relative mb-1 text-base font-semibold text-white">이 페르소나에 맞는 동아리는?</p>
+      <p className="relative mb-1 text-base font-semibold text-white">나와 맞는 동아리는?</p>
       <p className="relative mb-5 text-sm text-zinc-500">AI가 내 기질·역할에 어울리는 동아리를 추천해드려요.</p>
       <button
         onClick={getRecommendations}
