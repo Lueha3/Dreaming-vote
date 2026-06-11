@@ -7,34 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 
 const NICKNAME_RE = /^(러비아|유디코)-\d{2}-.+$/;
 
-/* 꿈꾸는교회 미니 로고 — 교회 + 십자가 + 골드 별 + 민트 포인트 */
-function ChurchBadge() {
-  return (
-    <span
-      className="flex h-9 w-9 flex-none items-center justify-center rounded-xl"
-      style={{
-        background: "linear-gradient(140deg, #7FBDE4 0%, #4A90C2 100%)",
-        boxShadow: "0 4px 12px -2px rgba(74,144,194,.45), inset 0 1px 0 rgba(255,255,255,.45)",
-      }}
-      aria-hidden
-    >
-      <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
-        <g stroke="rgba(255,255,255,.95)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20 2.5 V7.5 M17 4.8 H23" />
-          <path d="M14 16 L20 8.5 L26 16 Z" />
-          <path d="M15 16 V26 H25 V16" />
-          <path d="M8 26 H32 V34 H8 Z" />
-          <path d="M18 34 V30.5 A2 2 0 0 1 22 30.5 V34" />
-        </g>
-        <path
-          d="M31,7 C31.5,9.6 32.4,10.5 35,11 C32.4,11.5 31.5,12.4 31,15 C30.5,12.4 29.6,11.5 27,11 C29.6,10.5 30.5,9.6 31,7 Z"
-          fill="#F0B429"
-        />
-        <rect x="9.4" y="20.4" width="3" height="3" rx=".7" fill="#35C3B4" transform="rotate(12 10.9 21.9)" />
-      </svg>
-    </span>
-  );
-}
+
 
 export function Header() {
   const router = useRouter();
@@ -90,18 +63,14 @@ export function Header() {
 
         {/* 로고 */}
         <Link href="/" className="flex items-center gap-2.5">
-          <ChurchBadge />
-          <span>
-            <span className="block text-base font-extrabold tracking-tight text-ink sm:text-lg">
-              Blue
-              <span className="bg-gradient-to-r from-skyx-deep to-teal bg-clip-text text-transparent">
-                Humanity
-              </span>
-            </span>
-            <span className="block text-[10px] font-semibold leading-none text-ink-faint">
-              꿈꾸는교회 청년부
-            </span>
+          <span className="block text-lg font-extrabold tracking-tight sm:text-xl">
+            <span className="text-[#8B84FF]">Blue</span>
+            <span className="text-ink">Humanity</span>
           </span>
+          <span className="text-ink-soft/40 text-sm font-light mt-0.5">×</span>
+          <div className="bg-white rounded-md px-2 py-1 shadow-sm border border-white/80 flex items-center justify-center">
+            <img src="/dreaming-church.png" alt="꿈꾸는교회" className="h-5 sm:h-6 w-auto" />
+          </div>
         </Link>
 
         {/* 데스크톱 네비 */}
