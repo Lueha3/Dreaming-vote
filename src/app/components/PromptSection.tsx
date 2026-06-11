@@ -256,7 +256,7 @@ function CardMain({
     <div className="rounded-2xl border border-white/[0.07] bg-[#111111] p-6 card-glow">
       {/* 기본 경로: MBTI */}
       <h2 className="mb-2 text-xl font-bold leading-snug text-white">
-        MBTI를 고르면{" "}
+        성격유형을 고르면{" "}
         <span className="bg-gradient-to-r from-violet-300 to-blue-300 bg-clip-text text-transparent">
           바로 시작해요
         </span>
@@ -290,7 +290,7 @@ function CardMain({
       </div>
 
       <p className="mt-3 text-center text-xs text-zinc-600">
-        MBTI를 모른다면?{" "}
+        성격유형을 모른다면?{" "}
         <a
           href="https://www.16personalities.com/ko"
           target="_blank"
@@ -354,7 +354,7 @@ function CardMain({
           <div className="max-h-44 overflow-y-auto rounded-xl border border-white/[0.06] bg-black/30 p-4">
             <pre className="whitespace-pre-wrap text-xs leading-relaxed text-zinc-400">
               {promptError
-                ? "질문을 불러오지 못했어요. MBTI를 대신 선택해보세요."
+                ? "질문을 불러오지 못했어요. 성격유형을 대신 선택해보세요."
                 : (prompt?.content ?? "질문 불러오는 중...")}
             </pre>
           </div>

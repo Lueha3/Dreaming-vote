@@ -28,7 +28,7 @@ export default function Home() {
             를 찾아보세요
           </h1>
           <p className="text-sm text-zinc-500 leading-relaxed">
-            MBTI를 안다면 1분이면 충분해요.
+            성격유형을 안다면 1분이면 충분해요.
             <br />
             AI가 내 성향에 맞는 동아리를 추천해드려요.
           </p>
