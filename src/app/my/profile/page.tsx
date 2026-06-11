@@ -4,16 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { NICKNAME_RE } from "@/lib/membership";
 
-const NICKNAME_RE = /^(러비아|유디코)-\d{2}-.+$/;
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-
-function getGroup(age: number): "러비아" | "유디코" | null {
-  if (age >= 20 && age <= 26) return "러비아";
-  if (age >= 27 && age <= 34) return "유디코";
-  return null;
-}
-
+/**
+ * 프로필 수정 — 프로필 사진 전용.
+ * 닉네임(집단-나이-이름)은 청년부 가입 신청서의 이름·나이로 자동 설정되며
+ * 여기서 직접 수정할 수 없다 (가입 신청 폼에 종속).
+ */
 export default function ProfilePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -24,37 +21,42 @@ export default function ProfilePage() {
 
   // 현재 값
   const [currentAvatar, setCurrentAvatar] = useState<string | null>(null);
-  const [currentNickname, setCurrentNickname] = useState<string | null>(null);
+  const [nickname, setNickname] = useState<string | null>(null);
+  const [membershipStatus, setMembershipStatus] = useState<string>("none");
 
   // 폼 상태
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [age, setAge] = useState("");
-  const [name, setName] = useState("");
 
   const [saving, setSaving] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const ageNum = parseInt(age, 10);
-  const group = !isNaN(ageNum) ? getGroup(ageNum) : null;
-  const preview = group && name.trim() ? `${group}-${ageNum}-${name.trim()}` : null;
-
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) { setNotLoggedIn(true); setLoading(false); return; }
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) {
+        setNotLoggedIn(true);
+        setLoading(false);
+        return;
+      }
       setUserId(user.id);
-      const nick = user.user_metadata?.full_name ?? null;
       const avatar = user.user_metadata?.avatar_url ?? null;
-      setCurrentNickname(nick);
       setCurrentAvatar(avatar);
       setAvatarPreview(avatar);
-      if (nick && NICKNAME_RE.test(nick)) {
-        const parts = nick.split("-");
-        setAge(parts[1] ?? "");
-        setName(parts.slice(2).join("-") ?? "");
+
+      // 닉네임·멤버십 상태는 서버(Prisma)가 진실 — 승인 시 자동 생성된 값
+      try {
+        const res = await fetch("/api/membership", { cache: "no-store" });
+        const json = await res.json();
+        if (json?.ok) {
+          // 구글 이름 폴백이 '활동 닉네임'으로 보이지 않게 형식 통과한 값만 표시
+          const raw = json.membership.nickname ?? null;
+          setNickname(raw && NICKNAME_RE.test(raw) ? raw : null);
+          setMembershipStatus(json.membership.membershipStatus ?? "none");
+        }
+      } catch {
+        /* 조회 실패 시 닉네임 카드만 비워진다 */
       }
       setLoading(false);
     });
@@ -71,14 +73,12 @@ export default function ProfilePage() {
 
   async function uploadAvatar(): Promise<string | null> {
     if (!avatarFile || !userId) return null;
-    setUploadingAvatar(true);
     const supabase = createClient();
     const ext = avatarFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
     const path = `${userId}.${ext}`;
     const { data, error } = await supabase.storage
       .from("avatars")
       .upload(path, avatarFile, { upsert: true, cacheControl: "3600" });
-    setUploadingAvatar(false);
     if (error || !data) return null;
     const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(data.path);
     return publicUrl;
@@ -86,45 +86,29 @@ export default function ProfilePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!preview && !avatarFile) return;
+    if (!avatarFile) return;
     setError(null);
     setSaving(true);
 
+    const newAvatarUrl = await uploadAvatar();
+    if (!newAvatarUrl) {
+      setError("사진 업로드에 실패했습니다. 다시 시도해주세요.");
+      setSaving(false);
+      return;
+    }
+
+    // Supabase 메타데이터 + Prisma 양쪽 동기화
     const supabase = createClient();
+    const { error: supaErr } = await supabase.auth.updateUser({
+      data: { avatar_url: newAvatarUrl },
+    });
+    if (supaErr) { setError("저장에 실패했습니다."); setSaving(false); return; }
 
-    // 1. 아바타 업로드 (변경된 경우)
-    let newAvatarUrl: string | null = null;
-    if (avatarFile) {
-      newAvatarUrl = await uploadAvatar();
-      if (!newAvatarUrl) {
-        setError("사진 업로드에 실패했습니다. 다시 시도해주세요.");
-        setSaving(false);
-        return;
-      }
-    }
-
-    // 2. Supabase 메타데이터 업데이트
-    const metaUpdate: Record<string, string> = {};
-    if (preview) metaUpdate.full_name = preview;
-    if (newAvatarUrl) metaUpdate.avatar_url = newAvatarUrl;
-
-    if (Object.keys(metaUpdate).length > 0) {
-      const { error: supaErr } = await supabase.auth.updateUser({ data: metaUpdate });
-      if (supaErr) { setError("저장에 실패했습니다."); setSaving(false); return; }
-    }
-
-    // 3. Prisma 업데이트
-    const prismaBody: Record<string, string> = {};
-    if (preview) prismaBody.nickname = preview;
-    if (newAvatarUrl) prismaBody.avatarUrl = newAvatarUrl;
-
-    if (Object.keys(prismaBody).length > 0) {
-      await fetch("/api/my/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(prismaBody),
-      });
-    }
+    await fetch("/api/my/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ avatarUrl: newAvatarUrl }),
+    });
 
     setSuccess(true);
     setSaving(false);
@@ -197,54 +181,28 @@ export default function ProfilePage() {
             />
           </div>
 
-          {/* 닉네임 */}
-          <div className="glass-card p-5 space-y-4">
-            <p className="text-xs font-semibold text-ink">닉네임 <span className="text-ink-faint font-normal">(집단-나이-이름)</span></p>
-
-            <div>
-              <label className="mb-1.5 block text-xs text-ink-soft">나이 <span className="text-ink-faint">(20~34세)</span></label>
-              <input
-                type="number"
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
-                min={20} max={34}
-                placeholder="예: 31"
-                className="w-full rounded-xl border border-white/95 bg-white/70 px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-teal focus:outline-none"
-              />
-              {age && (
-                <div className="mt-2">
-                  {group ? (
-                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
-                      group === "러비아" ? "bg-skyx/20 text-skyx-ink border border-skyx/40" : "bg-teal/15 text-teal-ink border border-teal/35"
-                    }`}>✓ {group} 소속</span>
-                  ) : (
-                    <span className="text-xs text-red-500">20~34세만 가입 가능합니다.</span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-xs text-ink-soft">이름</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="예: 이정현"
-                maxLength={20}
-                className="w-full rounded-xl border border-white/95 bg-white/70 px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-teal focus:outline-none"
-              />
-            </div>
-          </div>
-
-          {/* 미리보기 */}
-          <div className={`rounded-xl border px-4 py-3.5 text-center transition-all ${
-            preview ? "border-teal/40 bg-teal/[0.07]" : "border-sky-line bg-white/55"
-          }`}>
-            <p className="mb-1 text-[11px] uppercase tracking-widest text-ink-faint">닉네임 미리보기</p>
-            <p className={`text-lg font-bold ${preview ? "text-ink" : "text-ink-faint"}`}>
-              {preview ?? "집단-나이-이름"}
+          {/* 활동 닉네임 — 읽기 전용 (가입 신청 폼에 종속) */}
+          <div className="glass-card p-5">
+            <p className="mb-2 text-xs font-semibold text-ink">
+              활동 닉네임 <span className="text-ink-faint font-normal">(집단-나이-이름)</span>
             </p>
+            <p className={`text-lg font-bold ${nickname ? "text-ink" : "text-ink-faint"}`}>
+              {nickname ?? "가입 승인 후 자동 설정돼요"}
+            </p>
+            <p className="mt-2.5 border-t border-sky-line pt-2.5 text-xs leading-relaxed text-ink-soft">
+              닉네임은 청년부 가입 신청서의 이름·나이로 자동 설정되고, 변경이 까다로워요.
+              {nickname
+                ? " 수정이 필요하면 관리자에게 문의해주세요."
+                : " 신청서를 작성할 때 이름과 나이를 정확히 입력해주세요!"}
+            </p>
+            {membershipStatus !== "approved" && (
+              <Link
+                href="/join"
+                className="mt-3 inline-block text-xs font-semibold text-gold-ink underline underline-offset-2"
+              >
+                {membershipStatus === "pending" ? "가입 신청 현황 보기 →" : "청년부 가입 신청하기 →"}
+              </Link>
+            )}
           </div>
 
           {error && (
@@ -253,10 +211,10 @@ export default function ProfilePage() {
 
           <button
             type="submit"
-            disabled={(!preview && !avatarFile) || saving || uploadingAvatar}
+            disabled={!avatarFile || saving}
             className="btn-gold w-full rounded-xl py-3 text-sm font-semibold disabled:opacity-40 btn-glow"
           >
-            {saving || uploadingAvatar ? "저장 중..." : "저장하기"}
+            {saving ? "저장 중..." : "사진 저장하기"}
           </button>
         </form>
       </div>

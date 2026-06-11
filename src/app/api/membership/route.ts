@@ -17,6 +17,7 @@ export async function GET() {
     where: { id: user.dbUserId },
     select: {
       membershipStatus: true,
+      nickname: true,
       realName: true,
       age: true,
       gender: true,

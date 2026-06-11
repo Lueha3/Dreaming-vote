@@ -3,6 +3,13 @@ export type MembershipStatus = "none" | "pending" | "approved" | "rejected";
 
 export const GENDERS = ["남", "여"] as const;
 
+/**
+ * 활동 닉네임 형식("집단-나이-이름").
+ * 첫 로그인 시 Prisma nickname에 구글 이름이 폴백 저장되므로,
+ * 화면에 '활동 닉네임'으로 표시할 때는 반드시 이 형식 검사를 통과해야 한다.
+ */
+export const NICKNAME_RE = /^(러비아|유디코)-\d{2}-.+$/;
+
 /** 나이 → 집단 (러비아 20~26, 유디코 27~34) — /my/profile과 동일 규칙 */
 export function getGroup(age: number): "러비아" | "유디코" | null {
   if (age >= 20 && age <= 26) return "러비아";

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { parseTraits } from "@/lib/bibleArchetypes";
+import { NICKNAME_RE } from "@/lib/membership";
 
 type ReportItem = {
   shareSlug: string;
@@ -29,6 +30,8 @@ export default function MyPage() {
   const [nickname, setNickname] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [notLoggedIn, setNotLoggedIn] = useState(false);
+  // null = 아직 조회 전(배너 미표시) — 깜빡임 방지
+  const [membershipStatus, setMembershipStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -42,6 +45,18 @@ export default function MyPage() {
 
       setNickname(user.user_metadata?.full_name ?? null);
       setAvatarUrl(user.user_metadata?.avatar_url ?? null);
+
+      // 활동 닉네임·멤버십 상태는 가입 승인 시 자동 생성되는 Prisma 값이 진실
+      fetch("/api/membership", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((json) => {
+          if (json?.ok) {
+            setMembershipStatus(json.membership.membershipStatus ?? "none");
+            const raw = json.membership.nickname ?? null;
+            if (raw && NICKNAME_RE.test(raw)) setNickname(raw);
+          }
+        })
+        .catch(() => {});
 
       fetch("/api/reports/me")
         .then((res) => res.json())
@@ -90,21 +105,41 @@ export default function MyPage() {
   return (
     <div className="relative min-h-screen overflow-hidden">
       <main className="relative mx-auto max-w-2xl px-4 py-14">
-        {/* 닉네임 미설정 배너 — nickname이 null이거나 형식 불일치 시 표시 */}
-        {(!nickname || !/^(러비아|유디코)-\d{2}-.+$/.test(nickname)) && (
-          <Link
-            href="/my/profile"
-            className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3.5 transition-all hover:border-gold/60"
-          >
-            <div className="flex items-center gap-2.5">
-              <span className="text-lg">⚠️</span>
-              <div>
-                <p className="text-sm font-semibold text-gold-ink">닉네임을 설정해주세요</p>
-                <p className="text-xs text-gold-ink/70">집단-나이-이름 형식 필요 · 동아리 참여 전 필수</p>
+        {/* 멤버십 배너 — 상태 조회 후에만 표시 (깜빡임 방지), 승인되면 숨김 */}
+        {membershipStatus && membershipStatus !== "approved" && (
+          membershipStatus === "pending" ? (
+            <Link
+              href="/join"
+              className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-skyx/45 bg-skyx/15 px-4 py-3.5 transition-all hover:border-skyx/60"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="text-lg">⏳</span>
+                <div>
+                  <p className="text-sm font-semibold text-skyx-ink">가입 승인을 기다리는 중이에요</p>
+                  <p className="text-xs text-skyx-ink/70">
+                    승인되면 닉네임(집단-나이-이름)이 자동으로 만들어져요
+                  </p>
+                </div>
               </div>
-            </div>
-            <span className="shrink-0 text-xs text-gold-ink">설정하기 →</span>
-          </Link>
+              <span className="shrink-0 text-xs text-skyx-ink">신청 내용 보기 →</span>
+            </Link>
+          ) : (
+            <Link
+              href="/join"
+              className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3.5 transition-all hover:border-gold/60"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="text-lg">⛪</span>
+                <div>
+                  <p className="text-sm font-semibold text-gold-ink">청년부 가입 신청을 해주세요</p>
+                  <p className="text-xs text-gold-ink/70">
+                    승인되면 닉네임(집단-나이-이름)이 자동으로 만들어져요 · 동아리 참여 전 필수
+                  </p>
+                </div>
+              </div>
+              <span className="shrink-0 text-xs text-gold-ink">신청하기 →</span>
+            </Link>
+          )
         )}
 
         {/* 프로필 헤더 */}
@@ -134,7 +169,7 @@ export default function MyPage() {
                 href="/my/profile"
                 className="glass-soft rounded-full px-3 py-2 text-xs text-ink-soft transition-all hover:bg-white/90 hover:text-ink"
               >
-                닉네임 변경
+                프로필 설정
               </Link>
               <Link
                 href="/"

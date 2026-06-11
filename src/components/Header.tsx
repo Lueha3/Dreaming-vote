@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-
-const NICKNAME_RE = /^(러비아|유디코)-\d{2}-.+$/;
+import { NICKNAME_RE } from "@/lib/membership";
 
 
 
@@ -27,7 +26,12 @@ export function Header() {
         fetch("/api/membership", { cache: "no-store" })
           .then((r) => (r.ok ? r.json() : null))
           .then((json) => {
-            if (json?.ok) setMembershipStatus(json.membership.membershipStatus);
+            if (json?.ok) {
+              setMembershipStatus(json.membership.membershipStatus);
+              // 승인 시 자동 생성되는 Prisma 닉네임이 진실 — 형식 통과한 값만 표시 교체
+              const raw = json.membership.nickname;
+              if (raw && NICKNAME_RE.test(raw)) setNickname(raw);
+            }
           })
           .catch(() => {});
       }
@@ -105,13 +109,9 @@ export function Header() {
               <Link href="/my/clubs" className="whitespace-nowrap rounded-full px-2.5 py-1.5 transition-colors hover:bg-white/75 hover:text-skyx-ink">내 동아리</Link>
               <Link
                 href="/my/profile"
-                className={`ml-1 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-bold transition-all ${
-                  isNicknameSet
-                    ? "border-white/90 bg-white/60 text-ink-soft hover:bg-white/90 hover:text-ink"
-                    : "border-gold/45 bg-gold/15 text-gold-ink hover:bg-gold/25"
-                }`}
+                className="ml-1 whitespace-nowrap rounded-full border border-white/90 bg-white/60 px-3 py-1.5 text-xs font-bold text-ink-soft transition-all hover:bg-white/90 hover:text-ink"
               >
-                {isNicknameSet ? nickname : "닉네임 설정 ⚠️"}
+                {isNicknameSet ? nickname : "프로필"}
               </Link>
               <span className="mx-2 h-[18px] w-px bg-sky-line" aria-hidden />
               <button
@@ -172,10 +172,7 @@ export function Header() {
                   <MobileNavLink href="/my" onClick={() => setMenuOpen(false)}>내 성향 카드</MobileNavLink>
                   <MobileNavLink href="/my/clubs" onClick={() => setMenuOpen(false)}>내 동아리</MobileNavLink>
                   <MobileNavLink href="/my/profile" onClick={() => setMenuOpen(false)}>
-                    <span className="flex items-center justify-between w-full">
-                      <span>프로필 설정</span>
-                      {!isNicknameSet && <span className="text-gold-ink text-xs">⚠️</span>}
-                    </span>
+                    프로필 설정
                   </MobileNavLink>
                   <div className="my-1.5 mx-4 border-t border-sky-line" />
                   <button

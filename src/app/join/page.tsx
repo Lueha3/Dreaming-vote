@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getGroup, normalizePhone } from "@/lib/membership";
+import { buildNickname, getGroup, normalizePhone } from "@/lib/membership";
 
 type Membership = {
   membershipStatus: "none" | "pending" | "approved" | "rejected";
+  nickname: string | null;
   realName: string | null;
   age: number | null;
   gender: string | null;
@@ -32,6 +33,9 @@ export default function JoinPage() {
 
   const ageNum = parseInt(age, 10);
   const group = !isNaN(ageNum) ? getGroup(ageNum) : null;
+  // 신청한 이름·나이로 자동 생성될 활동 닉네임 (집단-나이-이름)
+  const nicknamePreview =
+    group && realName.trim() ? buildNickname(ageNum, realName) : null;
 
   useEffect(() => {
     fetch("/api/membership", { cache: "no-store" })
@@ -80,6 +84,7 @@ export default function JoinPage() {
         // 제출한 값(서버 정규화 포함)으로 상태를 직접 구성 — 초기 조회 실패/이전 값과 무관하게 대기 화면이 뜬다
         setMembership((m) => ({
           membershipStatus: "pending",
+          nickname: m?.nickname ?? null,
           realName: realName.trim(),
           age: ageNum,
           gender,
@@ -170,7 +175,23 @@ export default function JoinPage() {
             <Row label="성별" value={membership?.gender} />
             <Row label="꿈터" value={membership?.dreamGroup} />
             <Row label="전화번호" value={membership?.phone} />
+            <div className="border-t border-sky-line pt-2">
+              <Row
+                label="승인 시 닉네임"
+                value={
+                  membership?.realName && membership?.age
+                    ? buildNickname(membership.age, membership.realName)
+                    : null
+                }
+              />
+            </div>
           </div>
+
+          <p className="mb-5 text-xs leading-relaxed text-ink-soft">
+            닉네임(집단-나이-이름)은 위 정보로 자동 설정되며, 승인 후에는 변경이 까다로워요.
+            <br />
+            <span className="font-semibold text-gold-ink">잘못 입력했다면 지금 수정해주세요.</span>
+          </p>
 
           <button
             onClick={() => setEditing(true)}
@@ -305,6 +326,27 @@ export default function JoinPage() {
                 멤버 확인 용도로만 사용하고, 다른 멤버에게 공개되지 않아요.
               </p>
             </div>
+          </div>
+
+          {/* 활동 닉네임 미리보기 — 신청 정보(이름·나이)로 자동 생성 */}
+          <div
+            className={`rounded-xl border px-4 py-3.5 text-center transition-all ${
+              nicknamePreview ? "border-teal/40 bg-teal/[0.07]" : "border-sky-line bg-white/55"
+            }`}
+          >
+            <p className="mb-1 text-[11px] uppercase tracking-widest text-ink-faint">
+              활동 닉네임 미리보기
+            </p>
+            <p className={`text-lg font-bold ${nicknamePreview ? "text-ink" : "text-ink-faint"}`}>
+              {nicknamePreview ?? "집단-나이-이름"}
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-ink-soft">
+              가입이 승인되면 이 닉네임이 자동으로 설정돼요.
+              <br />
+              <span className="font-semibold text-gold-ink">
+                ⚠️ 닉네임은 나중에 변경이 까다로우니, 이름과 나이를 정확히 입력해주세요!
+              </span>
+            </p>
           </div>
 
           {error && (
