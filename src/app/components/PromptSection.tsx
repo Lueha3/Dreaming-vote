@@ -419,7 +419,7 @@ function CardLoading() {
         <div className="h-14 w-14 animate-spin rounded-full border-2 border-violet-500/20 border-t-violet-400" />
         <div className="absolute inset-0 rounded-full bg-violet-600/5 blur-lg" />
       </div>
-      <p className="text-lg font-bold text-white">PARAN AI가 분석 중이에요...</p>
+      <p className="text-lg font-bold text-white">AI가 분석 중이에요...</p>
       <p className="mt-2 text-sm text-zinc-500">
         나만의 비즈니스 페르소나를 찾고 있습니다
       </p>
@@ -480,7 +480,7 @@ function CardResult({
         </div>
       </div>
 
-      {/* PARAN AI 추천 CTA */}
+      {/* AI 추천 CTA */}
       <div className="rounded-2xl border border-white/[0.07] bg-[#111111] px-6 py-7 text-center">
         <p className="mb-0.5 text-xs font-semibold uppercase tracking-widest text-violet-400">
           Next Step
@@ -488,7 +488,7 @@ function CardResult({
         <p className="mb-5 text-lg font-bold text-white">
           이제{" "}
           <span className="bg-gradient-to-r from-violet-300 to-blue-300 bg-clip-text text-transparent">
-            PARAN AI
+            AI
           </span>
           가 동아리를 추천해드릴게요! 🎯
         </p>
