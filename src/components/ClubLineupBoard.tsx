@@ -1,0 +1,105 @@
+"use client";
+
+import { useState } from "react";
+import { findArchetype, type BibleArchetype } from "@/lib/bibleArchetypes";
+import { ArchetypeModal } from "@/app/components/ArchetypeTags";
+import { ArchetypeMedal, LineupDefs } from "./ArchetypeMedal";
+
+export type LineupMember = {
+  nickname: string | null;
+  avatarUrl: string | null;
+  isOwner: boolean;
+  archetype: string | null; // 인물형 label (예: "누가형") | null(성향 카드 없음)
+};
+
+/**
+ * 동아리 '우리 라인업' 보드.
+ * 멤버를 대표 인물형 메달로 보여주고(클릭 시 인물 이야기 모달),
+ * 빈자리는 '함께할 자리'로 따뜻하게 표현한다. (모집·필터·경쟁 톤 없음)
+ */
+export function ClubLineupBoard({
+  lineup,
+  maxMembers,
+}: {
+  lineup: LineupMember[];
+  maxMembers: number | null;
+}) {
+  const [open, setOpen] = useState<BibleArchetype | null>(null);
+
+  const filled = lineup.length;
+  const remaining = maxMembers == null ? 2 : Math.max(0, maxMembers - filled);
+  const emptyCount = Math.min(remaining, 3);
+  const isFull = maxMembers != null && remaining === 0;
+
+  return (
+    <section className="glass-card glass-ribbon relative overflow-hidden p-6 sm:p-7">
+      <LineupDefs />
+
+      <div className="mb-1 flex items-center gap-2">
+        <h2 className="text-base font-bold text-ink">우리 라인업</h2>
+        <span className="glass-soft rounded-full px-2.5 py-0.5 text-[11px] text-teal-ink">
+          함께 세워가요
+        </span>
+      </div>
+      <p className="mb-5 text-xs text-ink-faint">서로 다른 우리가, 한 팀이 되어가요</p>
+
+      <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+        {lineup.map((m, i) => {
+          const arch = m.archetype ? findArchetype(m.archetype) : undefined;
+          const clickable = !!arch;
+          return (
+            <button
+              key={i}
+              type="button"
+              disabled={!clickable}
+              onClick={() => arch && setOpen(arch)}
+              className={`group relative rounded-2xl border border-white/95 bg-white/60 px-1.5 pb-2 pt-3 text-center transition-all ${
+                clickable ? "hover:-translate-y-1 hover:bg-white/85 hover:shadow-[0_14px_28px_-12px_rgba(74,144,194,.5)]" : "cursor-default"
+              }`}
+            >
+              <span
+                className="absolute left-1/2 top-0 h-[3px] w-7 -translate-x-1/2 rounded-b-full"
+                style={{ background: "linear-gradient(90deg,#F0B429,#35C3B4)" }}
+                aria-hidden
+              />
+              <div className="mx-auto flex justify-center">
+                <ArchetypeMedal label={m.archetype} size={56} />
+              </div>
+              <div className="mt-1 truncate text-[12px] font-bold text-ink">
+                {arch ? arch.label : "함께하는 중"}
+              </div>
+              <div className="truncate text-[10px] text-ink-faint">
+                {arch ? arch.type.replace(/.*\s/, "") : "성향 카드 준비 중"}
+              </div>
+              <div className="mt-1 truncate text-[9.5px] text-ink-soft">
+                {m.isOwner && <span className="text-gold-ink">👑 </span>}
+                {m.nickname ?? "익명"}
+              </div>
+            </button>
+          );
+        })}
+
+        {Array.from({ length: emptyCount }).map((_, i) => (
+          <div
+            key={`empty-${i}`}
+            className="rounded-2xl border-[1.5px] border-dashed border-sky-line bg-white/35 px-1.5 pb-2 pt-3 text-center"
+          >
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border-[1.5px] border-dashed border-sky-line bg-white/40 text-xl text-ink-faint">
+              🕊️
+            </div>
+            <div className="mt-1 text-[12px] font-bold text-ink-soft">함께할 자리</div>
+            <div className="text-[10px] text-ink-faint">기다리고 있어요</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-white/85 bg-gradient-to-r from-gold/10 to-teal/10 px-4 py-3 text-[11.5px] leading-relaxed text-ink">
+        💛 {isFull
+          ? "라인업이 가득 찼어요 — 모두가 한 몸으로 세워가는 중이에요."
+          : "어떤 인물형이든, 이 빈자리는 모두의 자리예요. 너의 자리가 여기 있어요."}
+      </div>
+
+      {open && <ArchetypeModal archetype={open} onClose={() => setOpen(null)} />}
+    </section>
+  );
+}

@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
+import { getPrimaryArchetype } from "@/lib/bibleArchetypes";
+
+/** 최신 공개 리포트의 coreTraits에서 대표 인물형 label을 뽑는다. 없으면 null. */
+function primaryArchetypeLabel(reports: { coreTraits: string }[]): string | null {
+  if (reports.length === 0) return null;
+  return getPrimaryArchetype(reports[0].coreTraits)?.label ?? null;
+}
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -27,7 +34,36 @@ export async function GET(req: NextRequest, { params }: Params) {
       isActive: true,
       ownerUserId: true,
       createdAt: true,
-      owner: { select: { nickname: true, avatarUrl: true } },
+      owner: {
+        select: {
+          nickname: true,
+          avatarUrl: true,
+          reports: {
+            where: { isPublic: true },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { coreTraits: true },
+          },
+        },
+      },
+      applications: {
+        where: { status: "accepted" },
+        orderBy: { createdAt: "asc" },
+        select: {
+          user: {
+            select: {
+              nickname: true,
+              avatarUrl: true,
+              reports: {
+                where: { isPublic: true },
+                orderBy: { createdAt: "desc" },
+                take: 1,
+                select: { coreTraits: true },
+              },
+            },
+          },
+        },
+      },
       _count: { select: { applications: { where: { status: "accepted" } } } },
       images: { select: { url: true, caption: true, order: true }, orderBy: { order: "asc" } },
     },
@@ -62,6 +98,22 @@ export async function GET(req: NextRequest, { params }: Params) {
     myApplicationStatus = app?.status ?? null;
   }
 
+  // 라인업 — 개설자(👑) + accepted 멤버, 각자 대표 인물형 1개
+  const lineup = [
+    {
+      nickname: club.owner?.nickname ?? null,
+      avatarUrl: club.owner?.avatarUrl ?? null,
+      isOwner: true,
+      archetype: primaryArchetypeLabel(club.owner?.reports ?? []),
+    },
+    ...club.applications.map((a) => ({
+      nickname: a.user.nickname ?? null,
+      avatarUrl: a.user.avatarUrl ?? null,
+      isOwner: false,
+      archetype: primaryArchetypeLabel(a.user.reports),
+    })),
+  ];
+
   return NextResponse.json({
     ok: true,
     isLoggedIn: !!user,
@@ -81,6 +133,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       ownerNickname: club.owner?.nickname ?? null,
       ownerAvatarUrl: club.owner?.avatarUrl ?? null,
       memberCount: club._count.applications,
+      lineup,
       images: club.images,
     },
   });

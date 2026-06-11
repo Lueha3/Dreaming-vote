@@ -54,7 +54,7 @@ export function ArchetypeTags({
   );
 }
 
-function ArchetypeModal({
+export function ArchetypeModal({
   archetype,
   onClose,
 }: {

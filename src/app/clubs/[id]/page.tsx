@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
 import { ClubImageCarousel, type CarouselImage } from "@/components/ClubImageCarousel";
+import { ClubLineupBoard, type LineupMember } from "@/components/ClubLineupBoard";
 
 type PageProps = { params: Promise<{ id: string }> | { id: string } };
 
@@ -21,6 +22,7 @@ type ClubDetail = {
   ownerNickname: string | null;
   ownerAvatarUrl: string | null;
   memberCount: number;
+  lineup: LineupMember[];
   images: CarouselImage[];
 };
 
@@ -231,6 +233,13 @@ export default function ClubDetailPage({ params }: PageProps) {
             <span>개설자 {club.ownerNickname ?? "익명"}</span>
           </div>
         </div>
+
+        {/* 우리 라인업 */}
+        {club.lineup?.length > 0 && (
+          <div className="mt-4">
+            <ClubLineupBoard lineup={club.lineup} maxMembers={club.maxMembers} />
+          </div>
+        )}
 
         {/* CTA */}
         <div className="mt-5">{renderCta()}</div>

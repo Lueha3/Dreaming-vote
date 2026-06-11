@@ -1,6 +1,9 @@
 # dev 서버 로그 / 임시 커밋 메시지
 .devserver*.log
 .commitmsg.txt
+# 메달 라인아트 시각 검증용 임시 파일 (재생성 가능)
+_medal-check*.html
+_medal-check*.png
 # 검증용 라이브 스크린샷 (재생성 가능)
 mockups/live-*.png
 # 시안 후보 raw 렌더 (HTML 소스는 보관, PNG는 재생성 가능)
