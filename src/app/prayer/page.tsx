@@ -53,6 +53,11 @@ export default function PrayerPage() {
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 인라인 응답 표시 / 삭제 확인
+  const [answeringId, setAnsweringId] = useState<string | null>(null);
+  const [answerNote, setAnswerNote] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => setLoggedIn(!!user));
@@ -115,19 +120,20 @@ export default function PrayerPage() {
     }
   }
 
-  async function markAnswered(p: PrayerItem) {
-    const note = window.prompt("응답 간증 한 줄 (선택, 비워도 됨):", "") ?? "";
+  async function markAnswered(p: PrayerItem, note: string) {
     await fetch(`/api/prayers/${p.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isAnswered: true, answeredNote: note.trim() || undefined }),
     });
+    setAnsweringId(null);
+    setAnswerNote("");
     load();
   }
 
   async function remove(p: PrayerItem) {
-    if (!window.confirm("이 기도제목을 삭제할까요?")) return;
     await fetch(`/api/prayers/${p.id}`, { method: "DELETE" });
+    setDeletingId(null);
     load();
   }
 
@@ -281,16 +287,55 @@ export default function PrayerPage() {
                   {p.isMine && (
                     <div className="flex items-center gap-2 text-xs">
                       {!p.isAnswered && (
-                        <button onClick={() => markAnswered(p)} className="text-emerald-400 hover:text-emerald-300">
+                        <button
+                          onClick={() => { setAnsweringId(p.id); setAnswerNote(""); }}
+                          className="text-emerald-400 hover:text-emerald-300"
+                        >
                           응답됨 표시
                         </button>
                       )}
-                      <button onClick={() => remove(p)} className="text-zinc-600 hover:text-red-400">
-                        삭제
-                      </button>
+                      {deletingId === p.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-zinc-400">삭제할까요?</span>
+                          <button onClick={() => remove(p)} className="font-medium text-red-400 hover:text-red-300">예</button>
+                          <button onClick={() => setDeletingId(null)} className="text-zinc-500 hover:text-zinc-300">취소</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setDeletingId(p.id)} className="text-zinc-600 hover:text-red-400">
+                          삭제
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
+
+                {/* 응답 간증 인라인 입력 */}
+                {answeringId === p.id && (
+                  <div className="mt-3 space-y-2 border-t border-white/[0.05] pt-3">
+                    <input
+                      value={answerNote}
+                      onChange={(e) => setAnswerNote(e.target.value)}
+                      maxLength={200}
+                      placeholder="응답 간증 한 줄 (선택, 비워도 됩니다)"
+                      className="w-full rounded-xl border border-white/[0.07] bg-black/30 px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 focus:border-emerald-500/50 focus:outline-none"
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => markAnswered(p, answerNote)}
+                        className="flex-1 rounded-xl bg-emerald-600 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                      >
+                        응답 표시하기
+                      </button>
+                      <button
+                        onClick={() => { setAnsweringId(null); setAnswerNote(""); }}
+                        className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200"
+                      >
+                        취소
+                      </button>
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

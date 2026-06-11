@@ -13,20 +13,20 @@ type RateLimitOptions = {
 };
 
 export function checkRateLimit(
-  ip: string,
+  key: string,
   options: RateLimitOptions = { windowMs: 60_000, max: 3 },
 ): boolean {
   const now = Date.now();
   const { windowMs, max } = options;
 
-  const timestamps = (rateLimitMap.get(ip) ?? []).filter(
+  const timestamps = (rateLimitMap.get(key) ?? []).filter(
     (ts) => now - ts < windowMs,
   );
 
   if (timestamps.length >= max) return false;
 
   timestamps.push(now);
-  rateLimitMap.set(ip, timestamps);
+  rateLimitMap.set(key, timestamps);
 
   // 메모리 누수 방지: 1000개 초과 시 오래된 IP 정리
   if (rateLimitMap.size > 1000) {

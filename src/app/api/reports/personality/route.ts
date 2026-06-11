@@ -26,17 +26,19 @@ const bodySchema = z.object({
  * - 로그인: DB 저장 + 슬러그 발급 (saved: true)
  */
 export async function POST(req: NextRequest) {
-  // 1. Rate limit
+  // 1. 현재 유저 확인 — rate limit 키 결정에 필요 (로그인: userId, 비로그인: IP)
+  const user = await getAuthUser();
+
+  // 2. Rate limit — 로그인 유저는 userId 기준, 비로그인은 IP 기준
+  //    교회 WiFi 등 단일 IP에서 여러 명이 동시에 써도 각자 개별 제한 적용
   const ip = getClientIp(req);
-  if (!checkRateLimit(ip, { windowMs: 60_000, max: 5 })) {
+  const rateLimitKey = user?.dbUserId ?? ip;
+  if (!checkRateLimit(rateLimitKey, { windowMs: 60_000, max: 5 })) {
     return NextResponse.json(
-      { ok: false, code: "RATE_LIMIT", error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
+      { ok: false, code: "RATE_LIMIT", error: "잠시 후 다시 시도해주세요 (1분이면 풀려요)." },
       { status: 429 },
     );
   }
-
-  // 2. 현재 유저 확인
-  const user = await getAuthUser();
 
   // 3. 입력 검증
   let body: unknown;
