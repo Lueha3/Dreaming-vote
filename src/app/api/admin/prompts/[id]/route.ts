@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { isAdminRequest } from "@/lib/adminAuth";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
 function requireAdmin(req: NextRequest) {
-  return req.cookies.get("admin_session")?.value === "1";
+  return isAdminRequest(req);
 }
 
 /** PUT /api/admin/prompts/[id] — 수정 */

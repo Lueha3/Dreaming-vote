@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { isAdminRequest } from "@/lib/adminAuth";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -8,7 +9,7 @@ type Params = { params: Promise<{ id: string }> | { id: string } };
  * 해당 버전을 활성화 (기존 활성 버전은 비활성화)
  */
 export async function POST(req: NextRequest, { params }: Params) {
-  if (req.cookies.get("admin_session")?.value !== "1") {
+  if (!isAdminRequest(req)) {
     return NextResponse.json({ ok: false, error: "NOT_ADMIN" }, { status: 401 });
   }
 

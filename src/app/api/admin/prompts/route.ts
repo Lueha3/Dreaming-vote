@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { isAdminRequest } from "@/lib/adminAuth";
 
 function requireAdmin(req: NextRequest) {
-  return req.cookies.get("admin_session")?.value === "1";
+  return isAdminRequest(req);
 }
 
 /** GET /api/admin/prompts — 버전 목록 */

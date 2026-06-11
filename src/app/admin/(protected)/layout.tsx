@@ -2,12 +2,13 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AdminLogoutButton } from "./AdminLogoutButton";
+import { isAdminCookieValue } from "@/lib/adminAuth";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
   const adminSession = cookieStore.get("admin_session")?.value;
 
-  if (adminSession !== "1") {
+  if (!isAdminCookieValue(adminSession)) {
     redirect("/admin/login");
   }
 
@@ -29,6 +30,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               className="text-zinc-400 hover:text-zinc-100 transition-colors"
             >
               통계
+            </Link>
+            <Link
+              href="/admin/members"
+              className="text-zinc-400 hover:text-zinc-100 transition-colors"
+            >
+              멤버 승인
             </Link>
             <Link
               href="/admin/prompts"
