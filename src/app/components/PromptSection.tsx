@@ -320,32 +320,24 @@ function CardMain({
                 : "btn-gold"
             }`}
           >
-            {copied ? "✓ 질문이 복사됐어요!" : "AI에게 보낼 질문 복사하기 →"}
+            {copied ? "✓ 질문이 복사됐어요! 자주 쓰는 AI(ChatGPT 등)에 그대로 붙여 넣어 보세요." : "AI에게 보낼 질문 복사하기 →"}
           </button>
 
           {/* 복사 후: 2버튼 / 복사 전: 안내 문구 */}
           {copied ? (
             <div className="flex gap-2">
-              <a
-                href={aiUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="glass-soft flex-1 rounded-xl py-3 text-center text-sm font-medium text-ink-soft transition-all hover:bg-white/90 hover:text-ink"
-              >
-                {aiLabel} 열기 ↗
-              </a>
               <button
                 type="button"
                 onClick={onGoToPaste}
-                className="btn-gold flex-1 rounded-xl py-3 text-sm font-bold"
+                className="btn-gold w-full rounded-xl py-3 text-sm font-bold"
               >
-                답변 붙여넣기 →
+                다음 →
               </button>
             </div>
           ) : (
             !promptError && (
               <p className="text-center text-xs text-ink-faint">
-                복사 후 {aiLabel}에 붙여넣고 답변을 받아오세요
+                복사 후 ChatGPT 등 AI에 붙여넣으세요!
               </p>
             )
           )}
@@ -441,9 +433,8 @@ function CardPaste({
       </div>
 
       <h2 className="mb-5 text-xl font-bold leading-snug text-ink">
-        {aiLabel}에서 받은 답변을{" "}
         <span className="gradient-text">
-          여기에 붙여넣어 보세요! 📋
+          답변을 받으셨나요?
         </span>
       </h2>
 
@@ -453,7 +444,7 @@ function CardPaste({
         rows={9}
         autoFocus
         className="w-full rounded-xl border border-white/95 bg-white/70 px-4 py-3 text-sm leading-relaxed text-ink placeholder:text-ink-faint transition-colors focus:border-teal focus:outline-none focus:ring-1 focus:ring-teal/30"
-        placeholder={`${aiLabel}에서 받은 분석 결과를 전체 복사해서 여기에 붙여넣으세요...`}
+        placeholder="나온 답변을 전부 복사해서 여기에 붙여 넣어 보세요!"
       />
 
       {error && (

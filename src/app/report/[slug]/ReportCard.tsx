@@ -46,6 +46,9 @@ export function ReportCard({ report }: { report: Report }) {
         <div className="pointer-events-none absolute inset-0" aria-hidden>
           <div className="absolute -top-20 left-1/2 -translate-x-1/2 h-40 w-80 rounded-full bg-gold/15 blur-[60px]" />
         </div>
+        <p className="relative mb-1 text-[11px] font-semibold text-ink-faint">
+          나와 닮은 성경 인물은!?
+        </p>
         <p className="relative mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-ink-faint">
           내 성향 카드
         </p>
@@ -60,7 +63,7 @@ export function ReportCard({ report }: { report: Report }) {
           <ArchetypeTags coreTraits={report.coreTraits} />
         </div>
         <p className="relative mt-2 text-[11px] text-ink-faint">
-          인물형을 눌러 나와 닮은 성경 인물을 확인해보세요
+          아이콘을 눌러 인물들이 나와 어떤 점이 닮아있는지 확인해볼까요?
         </p>
         <div className="relative mt-5 flex items-center justify-center gap-3">
           <span className="glass-soft rounded-full px-3 py-1 text-xs text-ink-soft">
@@ -90,20 +93,10 @@ export function ReportCard({ report }: { report: Report }) {
           {shareStatus ?? "🔗 링크 복사"}
         </button>
         <p className="mt-3 text-center text-xs text-ink-faint">
-          친구에게 공유하고 &ldquo;나도 해봐&rdquo;라고 말해보세요 🔥
+          친구에게 공유하고 &ldquo;너도 해봐&rdquo;라고 말해보세요 🔥
         </p>
       </div>
 
-      {/* CTA */}
-      <div className="glass-card p-6 text-center">
-        <p className="mb-3 text-sm text-ink-soft">나와 시너지 맞는 팀원을 찾고 싶다면?</p>
-        <a
-          href="/"
-          className="btn-gold inline-block rounded-xl px-6 py-2.5 text-sm"
-        >
-          나도 성향 카드 만들기 →
-        </a>
-      </div>
     </div>
   );
 }
