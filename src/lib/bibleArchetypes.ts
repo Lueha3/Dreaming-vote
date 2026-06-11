@@ -229,6 +229,18 @@ export function findArchetype(token: string): BibleArchetype | undefined {
   return byKey.get(t) ?? byKey.get(t.replace(/형$/, "")) ?? byKey.get(`${t}형`);
 }
 
+/**
+ * coreTraits에서 '가장 닮은'(첫 번째로 인식되는) 아키타입 1개를 뽑는다.
+ * coreTraits는 닮은 순으로 저장되므로 첫 매칭 토큰이 대표. 없으면 undefined.
+ * 라인업 보드의 '대표 메달' 1개를 결정하는 데 쓴다.
+ */
+export function getPrimaryArchetype(coreTraits: string): BibleArchetype | undefined {
+  for (const { archetype } of parseTraits(coreTraits)) {
+    if (archetype) return archetype;
+  }
+  return undefined;
+}
+
 export type TraitToken = { token: string; archetype?: BibleArchetype };
 
 /** coreTraits 문자열을 표시용 토큰으로 분해 (아키타입이면 매칭, 아니면 원문 유지). */
@@ -242,6 +254,7 @@ export function parseTraits(coreTraits: string): TraitToken[] {
 
 /**
  * coreTraits를 정규화 — 인식된 아키타입은 canonical label로, 중복 제거.
+ * 닮은 순서를 보존하되 최대 4개로 제한(약한 매치 컷). 닮은 만큼만 유동적으로 노출.
  * 하나도 인식 못하면(레거시·AI 미준수) 원문 그대로 반환해 데이터 보존.
  */
 export function normalizeTraits(coreTraits: string): string {
@@ -249,7 +262,7 @@ export function normalizeTraits(coreTraits: string): string {
     .map((t) => t.archetype?.label)
     .filter((l): l is string => Boolean(l));
   if (labels.length === 0) return coreTraits;
-  return [...new Set(labels)].join(", ");
+  return [...new Set(labels)].slice(0, 4).join(", ");
 }
 
 /**

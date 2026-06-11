@@ -51,7 +51,10 @@ const SYSTEM_INSTRUCTION = `당신은 한국 교회 청년부 청년의 협업 �
 반드시 아래 규칙을 따르세요:
 1. 오직 valid JSON만 출력. 설명, 마크다운 코드블록, 인사 일체 금지.
 2. catchphrase: 15자 이내, 시적·은유적 한 줄
-3. coreTraits: 프롬프트의 [성경 인물형 목록]에서 이 사람과 가장 닮은 인물형 3~5개의 label을 정확히 골라 쉼표로 구분. 목록에 없는 인물은 절대 만들지 말 것.
+3. coreTraits: [성경 인물형 목록]에서 이 사람과 "뚜렷하게" 닮은 인물형만 가장 닮은 순서로 골라 쉼표로 구분.
+   - 개수는 고정이 아니라 유동적이다. 닮은 인물이 2명이면 2개, 3명이면 3개로, 닮은 만큼만(보통 2~4개) 넣고 억지로 개수를 채우지 말 것.
+   - 누구에게나 해당될 막연한 장점(지혜·성실 같은 일반론)으로 고르지 말고, 그 사람의 가장 두드러진 행동·기질과 인물의 핵심 특징이 실제로 겹칠 때만 선택. 약하거나 애매하게 겹치는 인물은 제외.
+   - 목록에 없는 인물은 절대 만들지 말 것.
 4. optimalEcosystem: 이 사람이 200% 빛나는 공동체·팀 환경 (200자 이내, 중학생도 이해할 쉬운 말)
 5. corePosition: 동아리·팀에서 맡으면 좋은 역할 (100자 이내, 쉬운 말)`;
 
@@ -64,11 +67,11 @@ const buildPrompt = (rawText: string) => `
 [분석 결과]
 ${rawText}
 
-[성경 인물형 목록] — coreTraits는 반드시 이 목록의 label 중에서만 고를 것
+[성경 인물형 목록] — coreTraits는 반드시 이 목록의 label 중에서만, 닮은 만큼만(억지로 채우지 말 것) 고를 것
 ${archetypeListForPrompt()}
 
-[출력 형식]
-{"catchphrase":"...","coreTraits":"다윗형, 느헤미야형, 바울형","optimalEcosystem":"...","corePosition":"..."}
+[출력 형식] — coreTraits의 인물 수는 예시일 뿐, 실제 닮은 만큼만 (가장 닮은 순)
+{"catchphrase":"...","coreTraits":"도마형, 누가형","optimalEcosystem":"...","corePosition":"..."}
 `;
 
 // 모델 폴백 순서: 2.5-flash 과부하(503) 시 2.0-flash로 자동 전환
@@ -120,11 +123,11 @@ const buildPersonalityPrompt = (type: string) => `
 [성격 유형]
 ${type}
 
-[성경 인물형 목록] — coreTraits는 반드시 이 목록의 label 중에서만 고를 것
+[성경 인물형 목록] — coreTraits는 반드시 이 목록의 label 중에서만, 닮은 만큼만(억지로 채우지 말 것) 고를 것
 ${archetypeListForPrompt()}
 
-[출력 형식]
-{"catchphrase":"...","coreTraits":"다윗형, 느헤미야형, 바울형","optimalEcosystem":"...","corePosition":"..."}
+[출력 형식] — coreTraits의 인물 수는 예시일 뿐, 실제 닮은 만큼만 (가장 닮은 순)
+{"catchphrase":"...","coreTraits":"도마형, 누가형","optimalEcosystem":"...","corePosition":"..."}
 `;
 
 /**
