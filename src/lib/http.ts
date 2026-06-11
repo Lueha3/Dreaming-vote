@@ -5,6 +5,18 @@
  * UI가 크래시되는 것을 방지하기 위해 JSON 파싱 실패 시 원본 응답을 콘솔에 출력합니다.
  */
 
+/** 서버가 내려준 에러 code(예: membership_required)를 보존하는 에러 */
+export class ApiError extends Error {
+  code: string | null;
+  status: number;
+  constructor(message: string, code: string | null, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.code = code;
+    this.status = status;
+  }
+}
+
 /**
  * 안전한 JSON 파싱
  * 응답이 JSON이 아닌 경우(HTML 에러 페이지 등)를 감지하고 로깅합니다.
@@ -45,7 +57,7 @@ export async function fetchJson<T>(
     // 서버가 반환한 에러 메시지 사용, 없으면 기본 메시지
     const msg = data?.error || "요청 실패. 잠시 후 다시 시도해주세요.";
     console.debug("API error:", { input: String(input), status: res.status, error: msg });
-    throw new Error(msg);
+    throw new ApiError(msg, typeof data?.code === "string" ? data.code : null, res.status);
   }
   
   return data as T;

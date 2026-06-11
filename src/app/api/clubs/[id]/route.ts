@@ -119,6 +119,8 @@ export async function GET(req: NextRequest, { params }: Params) {
     isLoggedIn: !!user,
     isOwner,
     myApplicationStatus,
+    membershipStatus: user?.membershipStatus ?? null,
+    isMember: isOwner || myApplicationStatus === "accepted",
     club: {
       id: club.id,
       name: club.name,

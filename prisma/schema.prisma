@@ -8,7 +8,7 @@ datasource db {
   directUrl = env("DIRECT_URL")     // direct 5432
 }
 
-// 카카오 로그인 유저 — Supabase auth.users와 supabaseId로 연결
+// 구글 로그인 유저 — Supabase auth.users와 supabaseId로 연결
 model User {
   id         String   @id @default(cuid())
   supabaseId String   @unique
@@ -17,11 +17,24 @@ model User {
   createdAt  DateTime @default(now())
   reports    Report[]
 
+  // 2차 가입승인 — 구글 로그인(1차) 후 신청서 제출, 관리자 승인 후 공동체 활동 가능
+  membershipStatus    String    @default("none") // none | pending | approved | rejected
+  realName            String?
+  age                 Int?
+  gender              String? // 남 | 여
+  dreamGroup          String? // 소속 꿈터 이름
+  phone               String? // 관리자 화면에서만 노출 — 공개 API 포함 금지
+  membershipAppliedAt DateTime?
+  membershipDecidedAt DateTime?
+  membershipNote      String? // 거절 사유 (신청자에게 표시)
+
   ownedClubs          Club[]               @relation("OwnedClubs")
   clubApplications    ClubApplication[]
   clubRecommendations ClubRecommendation[]
   prayers             Prayer[]
   prayerIntercessions PrayerIntercession[]
+
+  @@index([membershipStatus, membershipAppliedAt])
 }
 
 // AI 대화 파싱 결과 리포트
@@ -100,9 +113,28 @@ model Club {
   recommendations ClubRecommendation[]
   images          ClubImage[]
   prayers         Prayer[]
+  meetings        ClubMeeting[]
 
   @@index([category, isApproved, isActive])
   @@index([ownerUserId])
+}
+
+// 동아리 모임 공지 — 개설자가 등록, 멤버(개설자+가입 멤버)에게만 공개
+model ClubMeeting {
+  id        String   @id @default(cuid())
+  clubId    String
+  title     String   @default("정기 모임")
+  meetsAt   DateTime // 모임 일시
+  place     String // 장소
+  items     String? // 준비물
+  fee       String? // 회비 (예: "5,000원", "없음")
+  note      String? // 일정·세부 안내
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@index([clubId, meetsAt])
 }
 
 // 기도제목 — 전체 광장 또는 집단(러비아/유디코)·동아리 단위. 응답되면 함께 기뻐함.

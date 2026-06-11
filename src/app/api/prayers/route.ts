@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, membershipGate, type AuthUser } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { getGroup } from "@/lib/membership";
 
-/** 닉네임("집단-나이-이름")에서 집단(러비아/유디코) 추출 */
-function groupOf(nickname: string | null): "러비아" | "유디코" | null {
-  if (!nickname) return null;
-  const head = nickname.split("-")[0];
-  return head === "러비아" || head === "유디코" ? head : null;
+/**
+ * 내 집단(러비아/유디코) — 가입신청서의 검증된 나이 기준.
+ * 닉네임은 자가 설정 가능해 인가 근거로 쓰지 않는다(승인 전 집단 기도 열람/집단 사칭 차단).
+ */
+function groupOfUser(user: AuthUser | null): "러비아" | "유디코" | null {
+  if (!user || user.membershipStatus !== "approved" || user.age == null) return null;
+  return getGroup(user.age);
 }
 
 const createSchema = z.object({
@@ -29,7 +32,7 @@ export async function GET(req: NextRequest) {
   const tab = searchParams.get("tab") === "group" ? "group" : "all";
 
   const user = await getAuthUser();
-  const myGroup = groupOf(user?.nickname ?? null);
+  const myGroup = groupOfUser(user);
 
   let scopeFilter: string;
   if (tab === "group") {
@@ -94,6 +97,8 @@ export async function POST(req: NextRequest) {
 
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ ok: false, error: "로그인이 필요합니다." }, { status: 401 });
+  const gate = membershipGate(user);
+  if (gate) return gate;
 
   let body: unknown;
   try {
@@ -112,12 +117,12 @@ export async function POST(req: NextRequest) {
 
   const { content, scope, isAnonymous } = parsed.data;
 
-  // 집단 기도는 본인 집단에만 올릴 수 있음
+  // 집단 기도는 본인 집단에만 올릴 수 있음 (검증된 신청서 나이 기준)
   if (scope !== "ALL") {
-    const myGroup = groupOf(user.nickname);
+    const myGroup = groupOfUser(user);
     if (myGroup !== scope) {
       return NextResponse.json(
-        { ok: false, error: "닉네임(집단-나이-이름)을 먼저 설정해주세요." },
+        { ok: false, error: "본인 집단의 기도 광장에만 올릴 수 있어요." },
         { status: 400 },
       );
     }

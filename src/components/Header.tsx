@@ -14,6 +14,7 @@ export function Header() {
   const pathname = usePathname();
   const [nickname, setNickname] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [membershipStatus, setMembershipStatus] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -22,6 +23,14 @@ export function Header() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setNickname(user?.user_metadata?.full_name ?? null);
       setLoading(false);
+      if (user) {
+        fetch("/api/membership", { cache: "no-store" })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((json) => {
+            if (json?.ok) setMembershipStatus(json.membership.membershipStatus);
+          })
+          .catch(() => {});
+      }
     });
   }, []);
 
@@ -78,6 +87,18 @@ export function Header() {
           <Link href="/" className="whitespace-nowrap rounded-full px-2.5 py-1.5 transition-colors hover:bg-white/75 hover:text-skyx-ink">홈</Link>
           <Link href="/prayer" className="whitespace-nowrap rounded-full px-2.5 py-1.5 transition-colors hover:bg-white/75 hover:text-skyx-ink">기도</Link>
           <Link href="/clubs" className="whitespace-nowrap rounded-full px-2.5 py-1.5 transition-colors hover:bg-white/75 hover:text-skyx-ink">목록</Link>
+          {!loading && nickname && membershipStatus && membershipStatus !== "approved" && (
+            <Link
+              href="/join"
+              className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-bold transition-all ${
+                membershipStatus === "pending"
+                  ? "border-skyx/45 bg-skyx/15 text-skyx-ink hover:bg-skyx/25"
+                  : "border-gold/45 bg-gold/15 text-gold-ink hover:bg-gold/25"
+              }`}
+            >
+              {membershipStatus === "pending" ? "승인 대기 중 ⏳" : "청년부 가입 신청"}
+            </Link>
+          )}
           {!loading && nickname && (
             <>
               <Link href="/my" className="whitespace-nowrap rounded-full px-2.5 py-1.5 transition-colors hover:bg-white/75 hover:text-skyx-ink">내 성향 카드</Link>
@@ -137,6 +158,14 @@ export function Header() {
               <MobileNavLink href="/" onClick={() => setMenuOpen(false)}>홈</MobileNavLink>
               <MobileNavLink href="/prayer" onClick={() => setMenuOpen(false)}>🙏 기도</MobileNavLink>
               <MobileNavLink href="/clubs" onClick={() => setMenuOpen(false)}>목록</MobileNavLink>
+              {!loading && nickname && membershipStatus && membershipStatus !== "approved" && (
+                <MobileNavLink href="/join" onClick={() => setMenuOpen(false)}>
+                  <span className="flex items-center justify-between w-full">
+                    <span>{membershipStatus === "pending" ? "가입 승인 대기 중" : "청년부 가입 신청"}</span>
+                    <span className="text-xs">{membershipStatus === "pending" ? "⏳" : "✋"}</span>
+                  </span>
+                </MobileNavLink>
+              )}
               {!loading && nickname && (
                 <>
                   <div className="my-1.5 mx-4 border-t border-sky-line" />

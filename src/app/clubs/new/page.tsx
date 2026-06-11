@@ -11,6 +11,7 @@ export default function NewClubPage() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [notLoggedIn, setNotLoggedIn] = useState(false);
+  const [membershipStatus, setMembershipStatus] = useState<string>("approved");
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -25,8 +26,19 @@ export default function NewClubPage() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) setNotLoggedIn(true);
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) {
+        setNotLoggedIn(true);
+        setChecking(false);
+        return;
+      }
+      try {
+        const res = await fetch("/api/membership", { cache: "no-store" });
+        const json = await res.json();
+        if (json?.ok) setMembershipStatus(json.membership.membershipStatus);
+      } catch {
+        /* 확인 실패 시 폼은 보여주되 제출에서 서버가 거른다 */
+      }
       setChecking(false);
     });
   }, []);
@@ -94,6 +106,31 @@ export default function NewClubPage() {
             className="btn-gold inline-block rounded-full px-6 py-3 text-sm"
           >
             로그인하기
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── 멤버 승인 전 ──────────────────────────────────────────── */
+  if (membershipStatus !== "approved") {
+    return (
+      <div className="relative min-h-screen overflow-hidden flex items-center justify-center">
+        <div className="relative text-center px-6">
+          <div className="mb-6 text-5xl">⛪</div>
+          <h2 className="mb-3 text-2xl font-bold text-ink">
+            {membershipStatus === "pending" ? "승인을 기다리는 중이에요" : "청년부 멤버 확인이 필요해요"}
+          </h2>
+          <p className="mb-8 text-sm text-ink-soft leading-relaxed">
+            {membershipStatus === "pending"
+              ? "가입 신청이 승인되면 동아리를 개설할 수 있어요."
+              : "동아리 개설은 청년부 가입 신청 후 관리자 승인을 받으면 할 수 있어요."}
+          </p>
+          <Link
+            href="/join"
+            className="btn-gold inline-block rounded-full px-6 py-3 text-sm"
+          >
+            {membershipStatus === "pending" ? "신청 현황 보기" : "청년부 가입 신청하기"}
           </Link>
         </div>
       </div>

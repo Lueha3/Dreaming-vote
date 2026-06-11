@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, membershipGate } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
@@ -31,6 +31,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!user) {
     return NextResponse.json({ ok: false, error: "로그인이 필요합니다." }, { status: 401 });
   }
+  const gate = membershipGate(user);
+  if (gate) return gate;
 
   let body: unknown;
   try {

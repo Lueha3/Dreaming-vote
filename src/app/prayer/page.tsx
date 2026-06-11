@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { fetchJson } from "@/lib/http";
+import { ApiError, fetchJson } from "@/lib/http";
 
 type PrayerItem = {
   id: string;
@@ -52,6 +52,7 @@ export default function PrayerPage() {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [needJoin, setNeedJoin] = useState(false);
 
   // 인라인 응답 표시 / 삭제 확인
   const [answeringId, setAnsweringId] = useState<string | null>(null);
@@ -85,6 +86,7 @@ export default function PrayerPage() {
     if (!content.trim() || posting) return;
     setPosting(true);
     setError(null);
+    setNeedJoin(false);
     try {
       await fetchJson("/api/prayers", {
         method: "POST",
@@ -99,9 +101,20 @@ export default function PrayerPage() {
       setIsAnonymous(false);
       await load();
     } catch (err) {
+      if (err instanceof ApiError && err.code === "membership_required") setNeedJoin(true);
       setError(err instanceof Error ? err.message : "올리지 못했어요. 다시 시도해주세요.");
     }
     setPosting(false);
+  }
+
+  /** 게이트(미승인) 등 API 에러를 작성 폼 영역에 안내 */
+  function surfaceApiError(err: unknown, fallback: string) {
+    if (err instanceof ApiError && err.code === "membership_required") {
+      setNeedJoin(true);
+      setError(err.message);
+    } else {
+      setError(err instanceof Error ? err.message : fallback);
+    }
   }
 
   async function togglePray(p: PrayerItem) {
@@ -114,21 +127,36 @@ export default function PrayerPage() {
       ),
     );
     try {
-      await fetch(`/api/prayers/${p.id}/pray`, { method: "POST" });
-    } catch {
-      load(); // 실패 시 복구
+      const data = await fetchJson<{ ok: true; iPrayed: boolean; prayCount: number }>(
+        `/api/prayers/${p.id}/pray`,
+        { method: "POST" },
+      );
+      // 서버 응답 기준으로 보정 (드리프트 방지)
+      setItems((prev) =>
+        prev.map((x) =>
+          x.id === p.id ? { ...x, iPrayed: data.iPrayed, prayCount: data.prayCount } : x,
+        ),
+      );
+    } catch (err) {
+      await load(); // 낙관적 업데이트 원복
+      surfaceApiError(err, "잠시 후 다시 시도해주세요.");
     }
   }
 
   async function markAnswered(p: PrayerItem, note: string) {
-    await fetch(`/api/prayers/${p.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isAnswered: true, answeredNote: note.trim() || undefined }),
-    });
-    setAnsweringId(null);
-    setAnswerNote("");
-    load();
+    try {
+      await fetchJson(`/api/prayers/${p.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isAnswered: true, answeredNote: note.trim() || undefined }),
+      });
+      setAnsweringId(null);
+      setAnswerNote("");
+      await load();
+    } catch (err) {
+      setAnsweringId(null);
+      surfaceApiError(err, "응답 표시에 실패했어요. 다시 시도해주세요.");
+    }
   }
 
   async function remove(p: PrayerItem) {
@@ -170,8 +198,8 @@ export default function PrayerPage() {
         {loggedIn ? (
           tab === "group" && needNickname ? (
             <div className="mb-6 rounded-2xl border border-gold/40 bg-gold/10 px-4 py-3.5 text-sm text-gold-ink">
-              집단 기도는 닉네임 설정 후 이용할 수 있어요.{" "}
-              <Link href="/my/profile" className="font-semibold underline">닉네임 설정하기 →</Link>
+              집단 기도는 청년부 가입 승인 후 함께할 수 있어요.{" "}
+              <Link href="/join" className="font-semibold underline">가입 신청하기 →</Link>
             </div>
           ) : (
             <form onSubmit={handlePost} className="glass-card mb-6 p-4">
@@ -201,7 +229,16 @@ export default function PrayerPage() {
                   {posting ? "올리는 중..." : "기도제목 올리기"}
                 </button>
               </div>
-              {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
+              {error && (
+                <p className="mt-2 text-xs text-red-500">
+                  {error}
+                  {needJoin && (
+                    <Link href="/join" className="ml-1.5 font-semibold text-gold-ink underline underline-offset-2">
+                      가입 신청하러 가기 →
+                    </Link>
+                  )}
+                </p>
+              )}
             </form>
           )
         ) : (
