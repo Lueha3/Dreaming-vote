@@ -6,6 +6,8 @@ _medal-check*.html
 _medal-check*.png
 # 검증용 라이브 스크린샷 (재생성 가능)
 mockups/live-*.png
+_smoke-*.png
+_smoke-shot.js
 # 시안 후보 raw 렌더 (HTML 소스는 보관, PNG는 재생성 가능)
 mockups/a-dawn-navy.png
 mockups/b-stained-glass.png

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
 import { ClubImageCarousel, type CarouselImage } from "@/components/ClubImageCarousel";
 import { ClubLineupBoard, type LineupMember } from "@/components/ClubLineupBoard";
+import { ClubMeetingCalendar } from "@/components/ClubMeetingCalendar";
 
 type PageProps = { params: Promise<{ id: string }> | { id: string } };
 
@@ -31,6 +32,8 @@ type DetailResponse = {
   isLoggedIn: boolean;
   isOwner: boolean;
   myApplicationStatus: string | null;
+  membershipStatus: string | null;
+  isMember: boolean;
   club: ClubDetail;
 };
 
@@ -145,7 +148,7 @@ export default function ClubDetailPage({ params }: PageProps) {
     );
   }
 
-  const { club, isOwner, isLoggedIn } = data;
+  const { club, isOwner, isLoggedIn, membershipStatus } = data;
   const tags = splitTags(club.tags);
   const pending = !club.isApproved || !club.isActive;
 
@@ -241,6 +244,16 @@ export default function ClubDetailPage({ params }: PageProps) {
           </div>
         )}
 
+        {/* 모임 일정 캘린더 — 멤버에겐 캘린더, 비멤버에겐 잠금 티저 */}
+        <div className="mt-4">
+          <ClubMeetingCalendar
+            clubId={club.id}
+            isMember={data.isMember}
+            isOwner={isOwner}
+            membershipStatus={membershipStatus}
+          />
+        </div>
+
         {/* CTA */}
         <div className="mt-5">{renderCta()}</div>
       </main>
@@ -288,6 +301,25 @@ export default function ClubDetailPage({ params }: PageProps) {
       return (
         <div className="rounded-2xl border border-teal/35 bg-teal/10 px-5 py-4 text-center text-sm font-medium text-teal-ink">
           ✓ 가입된 동아리예요!
+        </div>
+      );
+    }
+
+    // 멤버 승인 전 → 가입신청 대신 /join 안내
+    if (membershipStatus !== "approved") {
+      return (
+        <div className="glass-card p-5 text-center">
+          <p className="mb-4 text-sm leading-relaxed text-ink-soft">
+            {membershipStatus === "pending"
+              ? "청년부 가입 승인을 기다리는 중이에요. 승인되면 동아리에 신청할 수 있어요."
+              : "동아리 가입 신청은 청년부 멤버 확인 후 할 수 있어요."}
+          </p>
+          <Link
+            href="/join"
+            className="btn-gold inline-block rounded-full px-6 py-3 text-sm"
+          >
+            {membershipStatus === "pending" ? "신청 현황 보기" : "청년부 가입 신청하기"}
+          </Link>
         </div>
       );
     }
