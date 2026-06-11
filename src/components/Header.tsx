@@ -64,8 +64,8 @@ export function Header() {
         {/* 로고 */}
         <Link href="/" className="flex items-center gap-2.5">
           <span className="block text-lg font-extrabold tracking-tight sm:text-xl">
-            <span className="text-[#8B84FF]">Blue</span>
-            <span className="text-ink">Humanity</span>
+            <span className="text-ink">Blue</span>
+            <span className="bg-gradient-to-r from-[#4A90D9] to-[#3FC8B7] bg-clip-text text-transparent">Humanity</span>
           </span>
           <span className="text-ink-soft/40 text-sm font-light mt-0.5">×</span>
           <div className="bg-white rounded-md px-2 py-1 shadow-sm border border-white/80 flex items-center justify-center">
