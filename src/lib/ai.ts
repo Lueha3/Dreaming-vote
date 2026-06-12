@@ -19,6 +19,10 @@ export const reportSchema = z.object({
 
 export type ParsedReport = z.infer<typeof reportSchema>;
 
+// 일시 오류(분당/일일 한도·서버 과부하) 판정 — 입력 탓이 아니라 재시도/폴백 대상
+const isTransientError = (msg: string) =>
+  /429|quota|credit|rate limit|too many requests|resource.?exhausted|overloaded|503|unavailable/i.test(msg);
+
 /**
  * AI 호출 실패를 사용자 메시지로 분류
  * - 사용량/크레딧/429 → 일시적 한도 문제 (입력 탓 아님)
@@ -31,7 +35,7 @@ export function classifyAiError(e: unknown): {
   raw: string;
 } {
   const raw = e instanceof Error ? e.message : String(e);
-  if (/429|quota|credit|rate limit|too many requests|resource.?exhausted|overloaded|503/i.test(raw)) {
+  if (isTransientError(raw)) {
     return {
       code: "AI_QUOTA",
       status: 503,
@@ -74,19 +78,29 @@ ${archetypeListForPrompt()}
 {"catchphrase":"...","coreTraits":"도마형, 누가형","optimalEcosystem":"...","corePosition":"..."}
 `;
 
-// 모델 폴백 순서: 2.5-flash 과부하(503) 시 2.0-flash로 자동 전환
-const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"] as const;
+// 폴백 체인: 무료 등급에서 모델별 분당 한도(RPM)는 서로 독립적이므로,
+// 한 모델이 순간 한도(429)에 걸려도 다음 모델로 "즉시" 우회하면 같은 1분 안에 성공할 수 있다.
+// flash(고품질) ↔ flash-lite(여유 큰 독립 quota) 교차로 우회 → 첫 모델 재시도(한도 회복) → lite 안전망.
+// ⚠️ gemini-2.0-flash는 현재 이 키/엔드포인트(v1beta)에서 404(제거됨) — 폴백에 넣으면 무조건 죽으니 금지.
+//    체인의 모델은 반드시 200 응답을 확인하고 추가할 것.
+const MODEL_CHAIN = [
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+] as const;
 
 /**
  * 시스템 지시 + 프롬프트로 JSON을 생성하고 파싱해서 반환.
- * - 시도마다 모델을 폴백(2.5-flash → 2.0-flash)해 과부하/일시 오류에 강함
- * - 총 3회 시도, 사이에 짧은 대기
+ * - 일시 오류(429/과부하)면 다른 모델로 즉시 폴백 — 모델별 RPM이 독립적이라 우회 성공률이 높다
+ * - 파싱 실패면 같은 입력으로 다른 모델을 한 번 더 시도(모델 차이로 형식이 맞을 수 있음)
+ * - 마지막 재시도 직전에만 잠깐 대기해 첫 모델의 분당 한도가 회복되게 한다
  */
 async function generateJson(systemInstruction: string, prompt: string): Promise<unknown> {
   let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const modelName = MODELS[Math.min(attempt, MODELS.length - 1)];
+  for (let i = 0; i < MODEL_CHAIN.length; i++) {
+    const modelName = MODEL_CHAIN[i];
     try {
       const model = genAI.getGenerativeModel({ model: modelName, systemInstruction });
       const result = await model.generateContent(prompt);
@@ -98,7 +112,12 @@ async function generateJson(systemInstruction: string, prompt: string): Promise<
       return JSON.parse(jsonMatch[0]);
     } catch (e) {
       lastError = e instanceof Error ? e : new Error(String(e));
-      if (attempt < 2) await new Promise((r) => setTimeout(r, 600));
+      // 일시 오류는 다른 모델로 즉시 전환(대기 없이) — 독립 quota를 바로 활용
+      // 마지막 시도 직전에만 짧게 대기해 첫 모델 RPM 회복 여지를 준다
+      const isLastBeforeRetry = i === MODEL_CHAIN.length - 2;
+      if (isLastBeforeRetry && isTransientError(lastError.message)) {
+        await new Promise((r) => setTimeout(r, 1200));
+      }
     }
   }
 
