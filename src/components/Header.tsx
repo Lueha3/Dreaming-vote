@@ -79,8 +79,12 @@ export function Header() {
             <span className="bg-gradient-to-r from-[#4A90D9] to-[#3FC8B7] bg-clip-text text-transparent">Humanity</span>
           </span>
           <span className="text-ink-soft/40 text-sm font-light mt-0.5">×</span>
-          <div className="rounded-md border border-sky-line bg-white px-2.5 py-1.5 shadow-sm flex items-center justify-center">
-            <img src="/dreaming-church.png" alt="꿈꾸는교회" className="h-7 w-auto max-w-[88px]" />
+          <div className="rounded-md border border-sky-line bg-white px-2.5 py-1.5 shadow-sm">
+            <img
+              src="/dreaming-church.png"
+              alt="꿈꾸는교회"
+              style={{ height: 28, width: "auto", display: "block", maxWidth: 96 }}
+            />
           </div>
         </Link>
 
