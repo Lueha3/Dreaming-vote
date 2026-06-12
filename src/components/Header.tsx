@@ -60,8 +60,6 @@ export function Header() {
     router.refresh();
   }
 
-  const isNicknameSet = NICKNAME_RE.test(nickname ?? "");
-
   return (
     <header
       className="sticky top-0 z-50 border-b border-white/70"
@@ -81,56 +79,13 @@ export function Header() {
             <span className="bg-gradient-to-r from-[#4A90D9] to-[#3FC8B7] bg-clip-text text-transparent">Humanity</span>
           </span>
           <span className="text-ink-soft/40 text-sm font-light mt-0.5">×</span>
-          <div className="bg-white rounded-md px-2 py-1 shadow-sm border border-white/80 flex items-center justify-center">
-            <img src="/dreaming-church.png" alt="꿈꾸는교회" className="h-5 sm:h-6 w-auto" />
+          <div className="rounded-md border border-sky-line bg-white px-2.5 py-1.5 shadow-sm flex items-center justify-center">
+            <img src="/dreaming-church.png" alt="꿈꾸는교회" className="h-7 w-auto max-w-[88px]" />
           </div>
         </Link>
 
-        {/* 데스크톱 네비 */}
-        <nav className="hidden sm:flex items-center gap-0.5 text-sm font-semibold text-ink-soft">
-          <Link href="/" className="whitespace-nowrap rounded-full px-2.5 py-1.5 transition-colors hover:bg-white/75 hover:text-skyx-ink">홈</Link>
-          <Link href="/prayer" className="whitespace-nowrap rounded-full px-2.5 py-1.5 transition-colors hover:bg-white/75 hover:text-skyx-ink">기도</Link>
-          <Link href="/clubs" className="whitespace-nowrap rounded-full px-2.5 py-1.5 transition-colors hover:bg-white/75 hover:text-skyx-ink">목록</Link>
-          {!loading && nickname && membershipStatus && membershipStatus !== "approved" && (
-            <Link
-              href="/join"
-              className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-bold transition-all ${
-                membershipStatus === "pending"
-                  ? "border-skyx/45 bg-skyx/15 text-skyx-ink hover:bg-skyx/25"
-                  : "border-gold/45 bg-gold/15 text-gold-ink hover:bg-gold/25"
-              }`}
-            >
-              {membershipStatus === "pending" ? "승인 대기 중 ⏳" : "청년부 가입 신청"}
-            </Link>
-          )}
-          {!loading && nickname && (
-            <>
-              <Link href="/my" className="whitespace-nowrap rounded-full px-2.5 py-1.5 transition-colors hover:bg-white/75 hover:text-skyx-ink">내 성향 카드</Link>
-              <Link href="/my/clubs" className="whitespace-nowrap rounded-full px-2.5 py-1.5 transition-colors hover:bg-white/75 hover:text-skyx-ink">내 동아리</Link>
-              <Link
-                href="/my/profile"
-                className="ml-1 whitespace-nowrap rounded-full border border-white/90 bg-white/60 px-3 py-1.5 text-xs font-bold text-ink-soft transition-all hover:bg-white/90 hover:text-ink"
-              >
-                {isNicknameSet ? nickname : "프로필"}
-              </Link>
-              <span className="mx-2 h-[18px] w-px bg-sky-line" aria-hidden />
-              <button
-                onClick={handleLogout}
-                className="whitespace-nowrap rounded-full px-2.5 py-1.5 font-semibold text-ink-faint transition-colors hover:bg-white/75 hover:text-ink"
-              >
-                로그아웃
-              </button>
-            </>
-          )}
-          {!loading && !nickname && (
-            <Link href="/login" className="btn-gold whitespace-nowrap rounded-full px-4 py-1.5 text-xs">
-              로그인
-            </Link>
-          )}
-        </nav>
-
-        {/* 모바일: 로그인 버튼 or 햄버거 */}
-        <div className="flex sm:hidden items-center gap-2" ref={menuRef}>
+        {/* 햄버거 — 모든 화면 크기 공통 */}
+        <div className="relative flex items-center gap-2" ref={menuRef}>
           {!loading && !nickname && (
             <Link href="/login" className="btn-gold rounded-full px-3.5 py-1.5 text-xs">
               로그인
@@ -154,7 +109,7 @@ export function Header() {
 
           {/* 드롭다운 메뉴 */}
           {menuOpen && (
-            <div className="glass-card absolute right-4 top-[3.75rem] w-56 py-2" style={{ background: "rgba(255,255,255,.92)" }}>
+            <div className="glass-card absolute right-0 top-[calc(100%+0.5rem)] w-56 py-2" style={{ background: "rgba(255,255,255,.92)" }}>
               <MobileNavLink href="/" onClick={() => setMenuOpen(false)}>홈</MobileNavLink>
               <MobileNavLink href="/prayer" onClick={() => setMenuOpen(false)}>🙏 기도</MobileNavLink>
               <MobileNavLink href="/clubs" onClick={() => setMenuOpen(false)}>목록</MobileNavLink>
