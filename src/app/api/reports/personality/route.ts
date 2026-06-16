@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, membershipGate } from "@/lib/auth";
 import { generateUniqueSlug } from "@/lib/slug";
-import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { PERSONALITY_CARDS } from "@/data/personalityCards";
 
 const PERSONALITY_TYPES = [
@@ -20,16 +20,26 @@ const bodySchema = z.object({
 
 /**
  * POST /api/reports/personality
- * 성격 유형 선택 → Gemini 분석 → 리포트 생성
+ * 성격 유형 선택 → 사전 생성 캐시 카드 → DB 저장 + 슬러그 발급
  *
- * - 비로그인: 파싱 결과만 반환 (saved: false)
- * - 로그인: DB 저장 + 슬러그 발급 (saved: true)
+ * 정책(2026-06-16): 로그인 + 승인 멤버 전용. 익명·미승인 생성 차단.
+ *   - 비로그인        → 401 (code: login_required) → 클라이언트는 /login 유도
+ *   - 로그인·미승인   → 403 (code: membership_required) → 클라이언트는 /join(프로필 설정) 유도
+ *   - 로그인·승인     → 캐시 카드 생성 + 저장 (saved: true)
  */
 export async function POST(req: NextRequest) {
-  // 1. 현재 유저 확인 — rate limit 키 결정에 필요 (로그인: userId, 비로그인: IP)
+  // 1. 인증 게이트 — 로그인 + 승인 멤버만 (서버가 최종 경계, 클라이언트 우회 불가)
   const user = await getAuthUser();
+  if (!user) {
+    return NextResponse.json(
+      { ok: false, code: "login_required", error: "로그인 후 이용할 수 있어요." },
+      { status: 401 },
+    );
+  }
+  const gate = membershipGate(user); // 승인 멤버가 아니면 403 (code: membership_required)
+  if (gate) return gate;
 
-  // 2. 입력 검증 (캐시·레이트리밋 판단에 유형이 필요하므로 먼저)
+  // 2. 입력 검증
   let body: unknown;
   try {
     body = await req.json();
@@ -47,33 +57,27 @@ export async function POST(req: NextRequest) {
 
   const { personalityType } = parsed.data;
 
-  // 3. 사전 생성 캐시 우선 — MBTI는 입력이 16종뿐이라 라이브 Gemini 호출이 필요 없다.
-  //    (인물형/프롬프트 변경 시 npx tsx scripts/generate-personality-cards.ts 로 재생성)
-  const cached = PERSONALITY_CARDS[personalityType] ?? null;
-
-  // 4. Rate limit — "라이브 AI 호출(캐시 미스)" 또는 "DB 쓰기(로그인)"가 있을 때만 적용.
-  //    비로그인 + 캐시 히트는 AI·DB 비용이 0이라 제한하지 않는다
-  //    → 같은 교회 WiFi(공유 IP)에서 100명이 동시에 골라도 무료로 즉시 응답.
-  const ip = getClientIp(req);
-  const rateLimitKey = user?.dbUserId ?? ip;
-  const needsRateLimit = !cached || !!user;
-  if (needsRateLimit && !checkRateLimit(rateLimitKey, { windowMs: 60_000, max: 5 })) {
+  // 3. Rate limit — 로그인 유저(userId) 단위 DB 쓰기 보호.
+  //    공유 IP(교회 WiFi)와 무관하게 같은 사람만 제한된다.
+  if (!checkRateLimit(user.dbUserId, { windowMs: 60_000, max: 5 })) {
     return NextResponse.json(
       { ok: false, code: "RATE_LIMIT", error: "잠시 후 다시 시도해주세요 (1분이면 풀려요)." },
       { status: 429 },
     );
   }
 
-  // 5. 카드 데이터 — 캐시 히트 (사전 생성 데이터)
-  let reportData = cached;
-  let parsingModel = "cache:v1";
-
-  // 6. 비로그인: 파싱 결과만 반환
-  if (!user) {
-    return NextResponse.json({ ok: true, saved: false, reportData });
+  // 4. 사전 생성 캐시 — MBTI는 입력이 16종뿐이라 라이브 AI 호출이 없다.
+  //    (인물형/프롬프트 변경 시 npx tsx scripts/generate-personality-cards.ts 로 재생성)
+  const reportData = PERSONALITY_CARDS[personalityType];
+  if (!reportData) {
+    // 16종 캐시 누락 — 정상 경로에서는 도달 불가
+    return NextResponse.json(
+      { ok: false, error: "해당 유형 카드를 찾을 수 없어요. 잠시 후 다시 시도해주세요." },
+      { status: 500 },
+    );
   }
 
-  // 7. 로그인: DB 저장
+  // 5. DB 저장 + 슬러그 발급
   const shareSlug = await generateUniqueSlug();
 
   const report = await prisma.report.create({
@@ -84,14 +88,11 @@ export async function POST(req: NextRequest) {
       optimalEcosystem: reportData.optimalEcosystem,
       corePosition: reportData.corePosition,
       sourceAi: "personality",
-      parsingModel,
+      parsingModel: "cache:v1",
       parsingVersion: "v1.0",
       shareSlug,
     },
   });
-
-  // 라이브 생성만 ParsingLog에 기록(추적용). 캐시 히트는 버스트 시 DB 쓰기를 줄이려 생략.
-  // 여기서는 100% 캐시이므로 아무것도 안함.
 
   return NextResponse.json({ ok: true, saved: true, shareSlug: report.shareSlug, reportData });
 }

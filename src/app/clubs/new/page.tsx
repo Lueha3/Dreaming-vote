@@ -278,7 +278,7 @@ export default function NewClubPage() {
             <p className="mb-4 text-xs text-ink-faint">
               동아리를 소개하는 카드뉴스 이미지를 올려주세요. Canva 등으로 만든 이미지를 추천합니다.
             </p>
-            <ClubImageUploader onChange={setImages} maxImages={10} />
+            <ClubImageUploader onChange={setImages} maxImages={5} />
           </div>
 
           {error && (

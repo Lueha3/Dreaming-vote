@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import imageCompression from "browser-image-compression";
 
 export type ClubImageItem = {
   url: string;
@@ -24,7 +25,7 @@ interface Props {
   maxImages?: number;
 }
 
-export function ClubImageUploader({ onChange, maxImages = 10 }: Props) {
+export function ClubImageUploader({ onChange, maxImages = 5 }: Props) {
   const [items, setItems] = useState<UploadState[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -65,21 +66,43 @@ export function ClubImageUploader({ onChange, maxImages = 10 }: Props) {
       const file = toUpload[i];
       const item = newItems[i];
 
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > 20 * 1024 * 1024) {
         setItems((prev) =>
           prev.map((p) =>
-            p.localId === item.localId ? { ...p, uploading: false, error: "5MB 초과" } : p,
+            p.localId === item.localId ? { ...p, uploading: false, error: "20MB 초과" } : p,
           ),
         );
         continue;
       }
 
-      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+      let fileToUpload: File | Blob = file;
+      let ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+
+      try {
+        const options = {
+          maxSizeMB: 0.3,           // 최대 300KB
+          maxWidthOrHeight: 1080,   // 인스타그램 기준 가로 1080px (모바일/웹 최적화)
+          initialQuality: 0.85,     // 육안으로 구분 불가능한 수준의 초기 압축률 (용량 최적화)
+          useWebWorker: true,
+          fileType: "image/webp" as const,
+        };
+        fileToUpload = await imageCompression(file, options);
+        ext = "webp";
+      } catch (e) {
+        console.error("이미지 압축 실패:", e);
+        setItems((prev) =>
+          prev.map((p) =>
+            p.localId === item.localId ? { ...p, uploading: false, error: "압축 실패" } : p,
+          ),
+        );
+        continue;
+      }
+
       const path = `clubs/${user.id}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
 
       const { data, error } = await supabase.storage
         .from("club-images")
-        .upload(path, file, { cacheControl: "3600", upsert: false });
+        .upload(path, fileToUpload, { cacheControl: "3600", upsert: false });
 
       if (error || !data) {
         setItems((prev) =>
@@ -222,7 +245,7 @@ export function ClubImageUploader({ onChange, maxImages = 10 }: Props) {
         >
           <span className="text-xl leading-none">+</span>
           <span>
-            이미지 추가 ({activeCount}/{maxImages} · JPG·PNG·WebP · 최대 5MB)
+            이미지 추가 ({activeCount}/{maxImages} · 고화질 사진도 자동 압축됩니다)
           </span>
         </button>
       )}

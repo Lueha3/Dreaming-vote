@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { fetchJson } from "@/lib/http";
+import { useEffect, useRef, useState } from "react";
+import { fetchJson, ApiError } from "@/lib/http";
+import { createClient } from "@/lib/supabase/client";
 import { ArchetypeTags } from "@/app/components/ArchetypeTags";
 
 /* ── 타입 ─────────────────────────────────────────────────────────────────── */
@@ -21,6 +22,11 @@ type ReportResponse = {
   reportData: ReportData;
 };
 
+type MembershipResponse = {
+  ok: true;
+  membership: { membershipStatus: string };
+};
+
 /* ── 상수 ─────────────────────────────────────────────────────────────────── */
 
 const PERSONALITY_TYPES = [
@@ -30,6 +36,13 @@ const PERSONALITY_TYPES = [
   ["ISTP", "ISFP", "ESTP", "ESFP"],
 ] as const;
 
+const ALL_TYPES: string[] = PERSONALITY_TYPES.flat();
+
+// 비로그인 클릭 → 로그인 왕복 후 홈으로 돌아왔을 때, 고른 유형을 이어서 처리하기 위한 키
+const PENDING_TYPE_KEY = "bh_pending_type";
+
+type Gate = "login" | "join" | "ok";
+
 /* ── 메인 컴포넌트 ────────────────────────────────────────────────────────── */
 
 export function PromptSection() {
@@ -37,20 +50,70 @@ export function PromptSection() {
 
   const [step, setStep] = useState(0);       // 0:메인 2:로딩 3:결과 (1은 삭제됨)
   const [animKey, setAnimKey] = useState(0);
+  const [busy, setBusy] = useState(false);   // 게이트 확인~생성 진행 중 (그리드 비활성)
 
   const [error, setError] = useState<string | null>(null);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [shareSlug, setShareSlug] = useState<string | null>(null);
+
+  const busyRef = useRef(false);     // 연타 재진입 가드 (state보다 즉시 반영)
+  const resumedRef = useRef(false);  // 마운트 자동 재개 1회 가드
 
   function goTo(next: number) {
     setAnimKey((k) => k + 1);
     setStep(next);
   }
 
-  async function handlePersonalitySubmit(personalityType: string) {
-    setError(null);
-    goTo(2);
+  function stashType(type: string) {
+    try {
+      sessionStorage.setItem(PENDING_TYPE_KEY, type);
+    } catch {
+      /* 프라이빗 모드 등 sessionStorage 불가 — 자동 재개만 생략, 흐름은 계속 */
+    }
+  }
 
+  /**
+   * 게이트 사전 판정. 생성 로더("성향 카드를 만들고 있어요")를 띄우기 전에
+   * 자격을 먼저 확인해 미승인 유저에게 거짓 진행 표시가 보이지 않게 한다.
+   * 서버(/api/reports/personality)도 동일 게이트를 재검증하므로 이건 UX용 사전 판정일 뿐.
+   */
+  async function resolveGate(): Promise<Gate> {
+    try {
+      const m = await fetchJson<MembershipResponse>("/api/membership");
+      return m.membership.membershipStatus === "approved" ? "ok" : "join";
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) return "login";
+      // 네트워크 등 기타 오류 — 서버 POST가 최종 판정하도록 일단 진행
+      return "ok";
+    }
+  }
+
+  /**
+   * MBTI 선택 처리.
+   *   - 비로그인        → 고른 유형 stash 후 /login (성공 후 홈에서 자동 재개)
+   *   - 로그인·미승인   → 프로필 설정(/join)으로
+   *   - 로그인·승인     → 생성 로더 + 성향 카드
+   * 서버 응답코드(401/403)로도 동일하게 백스톱 처리한다.
+   */
+  async function handlePersonalitySubmit(personalityType: string) {
+    if (busyRef.current) return; // 연타 방지
+    busyRef.current = true;
+    setBusy(true);
+    setError(null);
+
+    const gate = await resolveGate();
+    if (gate === "login") {
+      stashType(personalityType);
+      router.push("/login?next=/");
+      return; // 이동 중 — busy 유지
+    }
+    if (gate === "join") {
+      router.push("/join");
+      return; // 이동 중 — busy 유지
+    }
+
+    // 승인 멤버(또는 사전판정 실패 → 서버가 최종 판정) — 이제 생성 로더 표시
+    goTo(2);
     try {
       const data = await fetchJson<ReportResponse>("/api/reports/personality", {
         method: "POST",
@@ -60,20 +123,56 @@ export function PromptSection() {
 
       setReportData(data.reportData);
       if (data.shareSlug) setShareSlug(data.shareSlug);
-
-      if (!data.saved) {
-        sessionStorage.setItem(
-          "bh_pending_report",
-          JSON.stringify({ reportData: data.reportData, sourceAi: "personality" }),
-        );
-      }
-
       goTo(3);
     } catch (e) {
+      // 서버 백스톱 — 사전판정을 통과했더라도 서버가 막으면 동일하게 라우팅
+      if (e instanceof ApiError && e.status === 401) {
+        stashType(personalityType);
+        router.push("/login?next=/");
+        return;
+      }
+      if (e instanceof ApiError && e.status === 403) {
+        router.push("/join");
+        return;
+      }
       setError(e instanceof Error ? e.message : "오류가 발생했습니다. 다시 시도해주세요.");
+      busyRef.current = false;
+      setBusy(false);
       goTo(0);
     }
   }
+
+  // 로그인 왕복 후 홈 복귀 시: stash된 유형이 있고 '로그인 상태'면 자동으로 이어서 처리.
+  // (로그인 취소하고 돌아온 경우엔 재개하지 않아 로그인 루프를 막는다.)
+  useEffect(() => {
+    if (resumedRef.current) return;
+    resumedRef.current = true;
+
+    let pending: string | null = null;
+    try {
+      pending = sessionStorage.getItem(PENDING_TYPE_KEY);
+      if (pending) sessionStorage.removeItem(PENDING_TYPE_KEY);
+    } catch {
+      pending = null;
+    }
+    if (!pending || !ALL_TYPES.includes(pending)) return;
+
+    const type = pending;
+    setBusy(true); // 확인 동안 그리드 비활성 (깜빡임·재클릭 방지)
+    const supabase = createClient();
+    supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        if (user) {
+          void handlePersonalitySubmit(type); // 승인 → 카드, 미승인 → /join
+        } else {
+          setBusy(false); // 로그인하지 않고 돌아옴 — 메인 그리드로
+        }
+      })
+      .catch(() => setBusy(false));
+    // 최초 마운트 1회만 실행 (resumedRef 가드)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="w-full">
@@ -81,6 +180,7 @@ export function PromptSection() {
         {step === 0 && (
           <CardMain
             onPersonalitySelect={handlePersonalitySubmit}
+            busy={busy}
             error={error}
           />
         )}
@@ -101,9 +201,11 @@ export function PromptSection() {
 
 function CardMain({
   onPersonalitySelect,
+  busy,
   error,
 }: {
   onPersonalitySelect: (type: string) => void;
+  busy: boolean;
   error: string | null;
 }) {
   return (
@@ -122,15 +224,16 @@ function CardMain({
       )}
 
       {/* MBTI 4×4 격자 */}
-      <div className="space-y-2.5">
+      <div className={`space-y-2.5 transition-opacity ${busy ? "pointer-events-none opacity-60" : ""}`}>
         {PERSONALITY_TYPES.map((row, rowIdx) => (
           <div key={rowIdx} className="grid grid-cols-4 gap-2.5">
             {row.map((type) => (
               <button
                 key={type}
                 type="button"
+                disabled={busy}
                 onClick={() => onPersonalitySelect(type)}
-                className="rounded-xl border border-white/95 bg-white/60 py-3 text-[13px] font-bold tracking-[0.07em] text-ink shadow-[0_2px_10px_-3px_rgba(74,144,194,.18)] transition-all hover:-translate-y-[3px] hover:border-transparent hover:text-teal-deep hover:shadow-[0_12px_26px_-8px_rgba(53,195,180,.45)] hover:[background:linear-gradient(#fff,#fff)_padding-box,linear-gradient(120deg,#F0B429,#35C3B4)_border-box] active:-translate-y-px"
+                className="rounded-xl border border-white/95 bg-white/60 py-3 text-[13px] font-bold tracking-[0.07em] text-ink shadow-[0_2px_10px_-3px_rgba(74,144,194,.18)] transition-all hover:-translate-y-[3px] hover:border-transparent hover:text-teal-deep hover:shadow-[0_12px_26px_-8px_rgba(53,195,180,.45)] hover:[background:linear-gradient(#fff,#fff)_padding-box,linear-gradient(120deg,#F0B429,#35C3B4)_border-box] active:-translate-y-px disabled:cursor-not-allowed"
               >
                 {type}
               </button>
@@ -233,15 +336,15 @@ function CardResult({
         ) : (
           <button
             type="button"
-            onClick={() => router.push("/login?next=/report/pending")}
+            onClick={() => router.push("/my")}
             className="btn-gold w-full rounded-xl py-4 text-sm font-bold"
           >
-            로그인하고 성향 카드 저장하기 →
+            내 성향 카드 보러가기 →
           </button>
         )}
 
         <p className="mt-3 text-xs text-ink-faint">
-          성향 카드를 저장하면 언제든 다시 볼 수 있어요
+          성향 카드는 &lsquo;내 정보&rsquo;에 저장되어 언제든 다시 볼 수 있어요
         </p>
       </div>
     </div>
