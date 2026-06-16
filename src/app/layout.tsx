@@ -15,12 +15,33 @@ export const metadata: Metadata = {
   },
 };
 
+const SUPABASE_ORIGIN = (() => {
+  try {
+    return process.env.NEXT_PUBLIC_SUPABASE_URL
+      ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).origin
+      : null;
+  } catch {
+    return null;
+  }
+})();
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ko">
       <head>
+        {/* 폰트 CDN 커넥션을 첫 페인트 이전에 미리 연다 (핸드셰이크를 크리티컬 패스에서 제거).
+            crossOrigin 필수 — 폰트 CSS는 익명 CORS 요청이라 없으면 커넥션이 재사용되지 않음. */}
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+        {/* 클라이언트 인증(로그인/세션) 호출 대상 Supabase origin도 미리 연결 */}
+        {SUPABASE_ORIGIN && (
+          <>
+            <link rel="preconnect" href={SUPABASE_ORIGIN} crossOrigin="anonymous" />
+            <link rel="dns-prefetch" href={SUPABASE_ORIGIN} />
+          </>
+        )}
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"

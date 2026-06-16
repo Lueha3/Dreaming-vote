@@ -1,6 +1,17 @@
+import { cache } from "react";
 import { NextResponse } from "next/server";
 import { createClient } from "./supabase/server";
 import { prisma } from "./db";
+
+// getAuthUser가 조회하는 User 필드 — 읽기/생성 경로에서 공유
+const AUTH_USER_SELECT = {
+  id: true,
+  nickname: true,
+  avatarUrl: true,
+  supabaseId: true,
+  membershipStatus: true,
+  age: true,
+} as const;
 
 export type AuthUser = {
   supabaseId: string;
@@ -13,10 +24,14 @@ export type AuthUser = {
 
 /**
  * 서버 컴포넌트 / API Route에서 현재 로그인 유저 반환
- * - 카카오 첫 로그인 시 Prisma User 자동 생성 (upsert)
+ * - 카카오 첫 로그인 시 Prisma User 자동 생성
  * - 비로그인이면 null 반환 (에러가 아님 — 익명 허용 흐름)
+ *
+ * 성능: 기존 유저는 findUnique(읽기)로만 처리하고, 없을 때(첫 로그인)만
+ * upsert로 멱등 생성한다. 매 요청 no-op 쓰기 트랜잭션을 없애기 위함.
+ * React cache()로 감싸 한 요청 내 중복 호출(미들웨어/라우트/레이아웃)을 1회로 합친다.
  */
-export async function getAuthUser(): Promise<AuthUser | null> {
+export const getAuthUser = cache(async (): Promise<AuthUser | null> => {
   try {
     const supabase = await createClient();
     const {
@@ -26,28 +41,30 @@ export async function getAuthUser(): Promise<AuthUser | null> {
 
     if (error || !user) return null;
 
-    const fallbackNickname =
-      user.user_metadata?.full_name ??
-      user.email?.split("@")[0] ??
-      null;
-
-    const dbUser = await prisma.user.upsert({
+    // 읽기 우선 — 기존 유저는 쓰기 없이 조회만
+    let dbUser = await prisma.user.findUnique({
       where: { supabaseId: user.id },
-      update: {},
-      create: {
-        supabaseId: user.id,
-        nickname: fallbackNickname,
-        avatarUrl: user.user_metadata?.avatar_url ?? null,
-      },
-      select: {
-        id: true,
-        nickname: true,
-        avatarUrl: true,
-        supabaseId: true,
-        membershipStatus: true,
-        age: true,
-      },
+      select: AUTH_USER_SELECT,
     });
+
+    // 첫 로그인 — 멱등 생성 (동시 첫로그인 race 안전을 위해 upsert)
+    if (!dbUser) {
+      const fallbackNickname =
+        user.user_metadata?.full_name ??
+        user.email?.split("@")[0] ??
+        null;
+
+      dbUser = await prisma.user.upsert({
+        where: { supabaseId: user.id },
+        update: {},
+        create: {
+          supabaseId: user.id,
+          nickname: fallbackNickname,
+          avatarUrl: user.user_metadata?.avatar_url ?? null,
+        },
+        select: AUTH_USER_SELECT,
+      });
+    }
 
     return {
       supabaseId: user.id,
@@ -60,7 +77,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   } catch {
     return null;
   }
-}
+});
 
 /**
  * 공동체 활동(동아리 개설·가입신청, 기도 올리기 등 쓰기)은 관리자 승인 멤버만.

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { NICKNAME_RE } from "@/lib/membership";
 
 
 
@@ -18,24 +17,28 @@ export function Header() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setNickname(user?.user_metadata?.full_name ?? null);
-      setLoading(false);
-      if (user) {
-        fetch("/api/membership", { cache: "no-store" })
-          .then((r) => (r.ok ? r.json() : null))
-          .then((json) => {
-            if (json?.ok) {
-              setMembershipStatus(json.membership.membershipStatus);
-              // 승인 시 자동 생성되는 Prisma 닉네임이 진실 — 형식 통과한 값만 표시 교체
-              const raw = json.membership.nickname;
-              if (raw && NICKNAME_RE.test(raw)) setNickname(raw);
-            }
-          })
-          .catch(() => {});
-      }
-    });
+    // 로그인 여부·닉네임·멤버십 상태를 /api/membership 한 번으로 확정한다.
+    // (예전: 클라 supabase.auth.getUser() → /api/membership 직렬 2왕복.
+    //  membership 응답이 로그인 여부와 Prisma 닉네임을 모두 담으므로 클라 getUser 홉 제거.)
+    let alive = true;
+    fetch("/api/membership", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (!alive) return;
+        if (json?.ok) {
+          setMembershipStatus(json.membership.membershipStatus);
+          // 닉네임은 가입 승인 시 자동 생성되는 Prisma 값이 진실.
+          // 미승인 유저의 Prisma 닉네임은 첫 로그인 시 저장된 표시명(full_name) 폴백.
+          setNickname(json.membership.nickname ?? null);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
   }, []);
 
   // 페이지 이동 시 메뉴 닫기

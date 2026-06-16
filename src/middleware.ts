@@ -2,6 +2,20 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
+  const supabaseResponse = NextResponse.next({ request });
+
+  // 인증 쿠키가 전혀 없으면(비로그인·외부 첫 유입) 갱신할 세션도, 검증할 토큰도 없다.
+  // 이 경우 getUser()는 어차피 null을 반환하므로 Supabase Auth 왕복을 생략해
+  // 모든 공개 페이지의 TTFB에서 불필요한 네트워크 홉을 제거한다.
+  const hasSessionCookie = request.cookies
+    .getAll()
+    .some((c) => c.name.startsWith("sb-"));
+  if (!hasSessionCookie) return supabaseResponse;
+
+  return refreshSession(request);
+}
+
+async function refreshSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
