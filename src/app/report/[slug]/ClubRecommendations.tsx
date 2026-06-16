@@ -66,7 +66,7 @@ export function ClubRecommendations({ reportId, shareSlug }: { reportId: string;
     return (
       <div className="glass-card p-8 text-center">
         <div className="mx-auto mb-4 h-9 w-9 animate-spin rounded-full border-2 border-teal/25 border-t-teal-deep" />
-        <p className="text-sm text-ink">AI가 어울리는 동아리를 찾고 있어요...</p>
+        <p className="text-sm text-ink">어울리는 동아리를 찾고 있어요...</p>
         <p className="mt-1 text-xs text-ink-faint">잠시만 기다려주세요</p>
       </div>
     );
@@ -158,7 +158,7 @@ export function ClubRecommendations({ reportId, shareSlug }: { reportId: string;
               </div>
               <div className="glass-soft mb-3 rounded-xl px-3 py-2.5">
                 <p className="text-xs leading-relaxed text-ink-soft">
-                  <span className="font-medium text-ink">AI </span>
+                  <span className="font-medium text-ink">💡 </span>
                   {item.reason}
                 </p>
               </div>
@@ -193,7 +193,7 @@ export function ClubRecommendations({ reportId, shareSlug }: { reportId: string;
         <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 h-32 w-72 rounded-full bg-teal/15 blur-[60px]" />
       </div>
       <p className="relative mb-1 text-base font-semibold text-ink">나와 맞는 동아리는?</p>
-      <p className="relative mb-5 text-sm text-ink-soft">AI가 내 기질·역할에 어울리는 동아리를 추천해드려요.</p>
+      <p className="relative mb-5 text-sm text-ink-soft">내 기질·역할에 어울리는 동아리를 찾아드려요.</p>
       <button
         onClick={getRecommendations}
         className="btn-gold relative inline-block rounded-full px-7 py-3 text-sm"

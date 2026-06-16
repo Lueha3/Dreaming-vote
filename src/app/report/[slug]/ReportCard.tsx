@@ -21,6 +21,7 @@ const SOURCE_LABEL: Record<string, string> = {
   chatgpt: "ChatGPT",
   claude: "Claude",
   gemini: "Gemini",
+  personality: "성격유형",
   other: "AI",
 };
 

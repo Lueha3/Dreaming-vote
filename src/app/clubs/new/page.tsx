@@ -237,11 +237,11 @@ export default function NewClubPage() {
               <p className="mt-1.5 text-right text-xs text-ink-faint">{description.length}/2000</p>
             </div>
 
-            {/* 키워드 (AI 매칭용) */}
+            {/* 키워드 (동아리 추천 매칭용) */}
             <div>
               <label className="mb-1.5 block text-xs font-medium text-ink-soft">
                 키워드{" "}
-                <span className="font-normal text-ink-faint">(쉼표로 구분 · AI 추천에 활용)</span>
+                <span className="font-normal text-ink-faint">(쉼표로 구분 · 동아리 추천에 활용)</span>
               </label>
               <input
                 value={tags}

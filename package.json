@@ -10,7 +10,6 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^5.22.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.4",
@@ -21,6 +20,7 @@
     "zod": "^4.2.0"
   },
   "devDependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

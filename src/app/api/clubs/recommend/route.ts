@@ -3,8 +3,8 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
-import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
-import { recommendClubs, type ClubCandidate } from "@/lib/ai";
+import { checkRateLimit } from "@/lib/rateLimit";
+import { recommendClubs, type ClubCandidate } from "@/lib/clubMatch";
 
 const bodySchema = z.object({ reportId: z.string().min(1) });
 
@@ -13,22 +13,23 @@ const TOP_N = 5;
 
 /**
  * POST /api/clubs/recommend
- * 리포트 페르소나 기반 AI 동아리 추천 (로그인 필요).
+ * 리포트(성경 인물형) 기반 동아리 추천 (로그인 필요, 로컬 결정론적 매칭 — AI 미사용).
  * - 추천 결과를 ClubRecommendation에 저장(기존 결과 갱신)
  * - body: { reportId }
  */
 export async function POST(req: NextRequest) {
-  const ip = getClientIp(req);
-  if (!checkRateLimit(ip, { windowMs: 60_000, max: 5 })) {
+  const user = await getAuthUser();
+  if (!user) {
+    return NextResponse.json({ ok: false, error: "로그인이 필요합니다." }, { status: 401 });
+  }
+
+  // 추천은 로그인 필수 + 비용 0(로컬 매칭) → userId 기준 레이트리밋.
+  // 같은 교회 WiFi(단일 IP)에서 여러 명이 동시에 눌러도 서로 막지 않는다.
+  if (!checkRateLimit(user.dbUserId, { windowMs: 60_000, max: 10 })) {
     return NextResponse.json(
       { ok: false, code: "RATE_LIMIT", error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
       { status: 429 },
     );
-  }
-
-  const user = await getAuthUser();
-  if (!user) {
-    return NextResponse.json({ ok: false, error: "로그인이 필요합니다." }, { status: 401 });
   }
 
   let body: unknown;
@@ -74,24 +75,17 @@ export async function POST(req: NextRequest) {
   const candidates: ClubCandidate[] = candidatesRaw;
   const validIds = new Set(candidatesRaw.map((c) => c.id));
 
-  let matches;
-  try {
-    matches = await recommendClubs(
-      {
-        catchphrase: report.catchphrase,
-        coreTraits: report.coreTraits,
-        optimalEcosystem: report.optimalEcosystem,
-        corePosition: report.corePosition,
-      },
-      candidates,
-      TOP_N,
-    );
-  } catch {
-    return NextResponse.json(
-      { ok: false, error: "추천 생성에 실패했습니다. 잠시 후 다시 시도해주세요." },
-      { status: 502 },
-    );
-  }
+  // 로컬 결정론적 매칭 — AI 호출 없음, 예외 없이 항상 결과 반환
+  const matches = recommendClubs(
+    {
+      catchphrase: report.catchphrase,
+      coreTraits: report.coreTraits,
+      optimalEcosystem: report.optimalEcosystem,
+      corePosition: report.corePosition,
+    },
+    candidates,
+    TOP_N,
+  );
 
   // 환각 clubId 제거 + 중복 제거 + 점수순 정렬
   const seen = new Set<string>();

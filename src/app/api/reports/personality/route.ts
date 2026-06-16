@@ -3,7 +3,6 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
-import { parsePersonalityReport, classifyAiError } from "@/lib/ai";
 import { generateUniqueSlug } from "@/lib/slug";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { PERSONALITY_CARDS } from "@/data/personalityCards";
@@ -65,33 +64,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 5. 카드 데이터 — 캐시 히트면 그대로, 미스(이론상 없음, 방어적)면 라이브 생성
+  // 5. 카드 데이터 — 캐시 히트 (사전 생성 데이터)
   let reportData = cached;
   let parsingModel = "cache:v1";
-  if (!reportData) {
-    try {
-      reportData = await parsePersonalityReport(personalityType);
-      parsingModel = "gemini-2.5-flash";
-    } catch (e) {
-      const c = classifyAiError(e);
-      console.error("POST /api/reports/personality failed:", c.raw);
-
-      await prisma.parsingLog.create({
-        data: {
-          userId: user?.dbUserId ?? null,
-          status: c.code === "AI_QUOTA" ? "api_error" : "parse_failed",
-          sourceAi: "personality",
-          inputLength: personalityType.length,
-          errorMessage: c.raw.slice(0, 200),
-        },
-      }).catch(() => {});
-
-      return NextResponse.json(
-        { ok: false, code: c.code, error: c.error },
-        { status: c.status },
-      );
-    }
-  }
 
   // 6. 비로그인: 파싱 결과만 반환
   if (!user) {
@@ -116,16 +91,7 @@ export async function POST(req: NextRequest) {
   });
 
   // 라이브 생성만 ParsingLog에 기록(추적용). 캐시 히트는 버스트 시 DB 쓰기를 줄이려 생략.
-  if (!cached) {
-    await prisma.parsingLog.create({
-      data: {
-        userId: user.dbUserId,
-        status: "success",
-        sourceAi: "personality",
-        inputLength: personalityType.length,
-      },
-    }).catch(() => {});
-  }
+  // 여기서는 100% 캐시이므로 아무것도 안함.
 
   return NextResponse.json({ ok: true, saved: true, shareSlug: report.shareSlug, reportData });
 }

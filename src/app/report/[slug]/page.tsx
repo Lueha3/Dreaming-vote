@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `"${report.catchphrase}" — BlueHumanity`,
     openGraph: {
       title: report.catchphrase,
-      description: "AI가 찾아준 나의 성향 카드",
+      description: "나와 닮은 성경 인물로 보는 나의 성향 카드",
       images: [`/api/og/${slug}`],
     },
     twitter: { card: "summary_large_image" },

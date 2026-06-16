@@ -25,7 +25,7 @@ export default function Home() {
             찾아보세요
           </h1>
           <p className="text-[15px] sm:text-base text-ink-soft font-medium leading-relaxed">
-            AI가 내 성향에 맞는 동아리를 추천해드려요.
+            내 성향에 꼭 맞는 동아리를 찾아드려요.
           </p>
         </div>
 
