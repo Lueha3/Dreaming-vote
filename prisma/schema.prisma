@@ -36,6 +36,7 @@ model User {
   clubRecommendations ClubRecommendation[]
   prayers             Prayer[]
   prayerIntercessions PrayerIntercession[]
+  announcements       Announcement[]       @relation("AuthoredAnnouncements")
 
   @@index([membershipStatus, membershipAppliedAt])
 }
@@ -205,6 +206,22 @@ model ClubApplication {
   @@unique([clubId, userId]) // 중복 신청 방지
   @@index([userId, status])
   @@index([clubId, status])
+}
+
+// 전체 공지 — 운영진+ 작성, 모든 방문자에게 공개(홈 배너 최신 1건 + /notices 목록)
+model Announcement {
+  id          String   @id @default(cuid())
+  title       String
+  body        String
+  isPublished Boolean  @default(true)  // false면 비공개 초안 — 공개 표면에 노출 안 됨
+  isPinned    Boolean  @default(false) // 상단 고정 — 배너·목록에서 우선 노출
+  authorId    String?                  // 작성자 삭제돼도 공지는 보존(SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author User? @relation("AuthoredAnnouncements", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([isPublished, isPinned, createdAt])
 }
 
 // AI 동아리 추천 결과 — 리포트 페르소나 기반

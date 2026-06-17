@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getAuthUser } from "@/lib/auth";
 import { canManage } from "@/lib/roles";
+import { ManageNav } from "@/components/ManageNav";
 
 /**
  * /manage — 역할 기반 운영 영역(운영진 이상). 공유 비밀번호 /admin과 별개로,
@@ -15,12 +16,13 @@ export default async function ManageLayout({ children }: { children: React.React
   return (
     <div className="relative min-h-screen overflow-hidden">
       <main className="relative mx-auto max-w-2xl px-4 py-10">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-5 flex items-center justify-between">
           <h1 className="text-xl font-bold text-ink">🛠 운영 관리</h1>
           <Link href="/" className="text-xs text-ink-faint transition-colors hover:text-ink">
             ← 홈
           </Link>
         </div>
+        <ManageNav />
         {children}
       </main>
     </div>

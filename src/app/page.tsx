@@ -1,9 +1,13 @@
 import { PromptSection } from "./components/PromptSection";
+import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 
 export default function Home() {
   return (
     <div className="relative min-h-screen overflow-hidden">
       <main className="relative mx-auto max-w-2xl px-4 py-12">
+        {/* 전체 공지 배너 (최신 게시 1건, 닫기 가능) */}
+        <AnnouncementBanner />
+
         {/* 뱃지 */}
         <div className="mb-6 flex justify-center">
           <span className="glass-soft inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-skyx-ink shadow-[0_8px_24px_-8px_rgba(74,144,194,.22)]">

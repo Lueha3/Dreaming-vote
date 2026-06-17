@@ -132,6 +132,7 @@ export function Header() {
                 </div>
               )}
               <MobileNavLink href="/" onClick={() => setMenuOpen(false)}>홈</MobileNavLink>
+              <MobileNavLink href="/notices" onClick={() => setMenuOpen(false)}>📢 공지</MobileNavLink>
               <MobileNavLink href="/prayer" onClick={() => setMenuOpen(false)}>🙏 기도</MobileNavLink>
               <MobileNavLink href="/clubs" onClick={() => setMenuOpen(false)}>목록</MobileNavLink>
               {!loading && nickname && membershipStatus && membershipStatus !== "approved" && (
