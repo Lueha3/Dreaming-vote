@@ -47,6 +47,10 @@ export function PlazaImageUploader({
   }
 
   async function handleAdd(files: FileList) {
+    // ⚠️ FileList는 input에 대한 라이브 참조다. onChange가 await 도중 e.target.value=""로
+    // 입력을 리셋하면 이 FileList가 즉시 비워진다. 어떤 await보다 먼저 File 객체를 스냅샷한다.
+    const picked = Array.from(files);
+
     const supabase = createClient();
 
     // getUser()는 네트워크 검증(토큰 재발급 포함) — getSession()보다 안정적
@@ -62,7 +66,7 @@ export function PlazaImageUploader({
     const slots = maxImages - active.length;
     if (slots <= 0) return;
 
-    const toUpload = Array.from(files).slice(0, slots);
+    const toUpload = picked.slice(0, slots);
     const newItems: Slot[] = toUpload.map((file) => ({
       localId: crypto.randomUUID(),
       previewUrl: URL.createObjectURL(file),
@@ -200,7 +204,7 @@ export function PlazaImageUploader({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/*"
         multiple
         className="hidden"
         onChange={(e) => {
