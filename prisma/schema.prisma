@@ -37,6 +37,7 @@ model User {
   clubRecommendations ClubRecommendation[]
   prayers             Prayer[]
   prayerIntercessions PrayerIntercession[]
+  prayerComments      PrayerComment[]
   announcements       Announcement[]       @relation("AuthoredAnnouncements")
   meetingReviews      ClubMeetingReview[]
   meetingImages       ClubMeetingImage[]   @relation("MeetingImageUploader")
@@ -176,15 +177,19 @@ model ClubMeetingImage {
   @@index([meetingId, order])
 }
 
-// 기도제목 — 전체 광장 또는 집단(러비아/유디코)·동아리 단위. 응답되면 함께 기뻐함.
+// 광장(커뮤니티) 글 — 레거시 명칭 Prayer를 카테고리로 일반화.
+// category로 일상 / 기도해주세요 / 동아리광고를 구분한다.
+// 기도해주세요만 응답됨(isAnswered)·간증을 쓰고, 반응(intercessions)은 카테고리에 따라
+// "기도할게요"(기도) / "공감"(일상·광고)으로 라벨만 달리 보여준다.
 model Prayer {
   id           String    @id @default(cuid())
   userId       String
+  category     String    @default("기도해주세요") // 일상 | 기도해주세요 | 동아리광고
   content      String
-  scope        String    @default("ALL") // ALL | 러비아 | 유디코 (clubId 있으면 동아리 기도)
-  clubId       String?   // null이면 광장/집단 기도, 값 있으면 동아리 기도 코너 (Phase 2)
+  scope        String    @default("ALL") // 레거시(집단 구분 폐기) — 항상 ALL
+  clubId       String?   // 레거시 — 동아리 기도 코너용(현재 미사용)
   isAnonymous  Boolean   @default(false) // 익명으로 올리기 (민감한 기도제목 보호)
-  isAnswered   Boolean   @default(false)
+  isAnswered   Boolean   @default(false) // 기도해주세요 전용
   answeredNote String?   // 응답 간증 한 줄 (선택)
   answeredAt   DateTime?
   createdAt    DateTime  @default(now())
@@ -192,13 +197,15 @@ model Prayer {
   user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   club          Club?                @relation(fields: [clubId], references: [id], onDelete: Cascade)
   intercessions PrayerIntercession[]
+  images        PrayerImage[]
+  comments      PrayerComment[]
 
-  @@index([scope, createdAt])
+  @@index([category, isAnswered, createdAt])
   @@index([userId])
   @@index([clubId])
 }
 
-// "기도했어요" — 한 사람이 한 기도제목에 한 번만
+// "기도했어요"/"공감" — 한 사람이 한 글에 한 번만 (카테고리 무관 단일 반응)
 model PrayerIntercession {
   id        String   @id @default(cuid())
   prayerId  String
@@ -210,6 +217,34 @@ model PrayerIntercession {
 
   @@unique([prayerId, userId])
   @@index([prayerId])
+}
+
+// 광장 글 첨부 이미지 — 글당 최대 3장(서버 검증). 클라에서 압축 후 plaza-images 버킷 업로드.
+model PrayerImage {
+  id        String   @id @default(cuid())
+  prayerId  String
+  url       String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  prayer Prayer @relation(fields: [prayerId], references: [id], onDelete: Cascade)
+
+  @@index([prayerId, order])
+}
+
+// 광장 글 댓글 — 승인 멤버만 작성. 작성자·글쓴이·운영진+가 삭제 가능.
+model PrayerComment {
+  id        String   @id @default(cuid())
+  prayerId  String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  prayer Prayer @relation(fields: [prayerId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([prayerId, createdAt])
+  @@index([userId])
 }
 
 // 동아리 카드뉴스 이미지 — 개설 시 등록, 순서 보존
