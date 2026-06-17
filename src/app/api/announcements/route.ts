@@ -5,14 +5,16 @@ export const dynamic = "force-dynamic";
 
 /**
  * GET /api/announcements — 공개 공지(게시된 것만). 인증 불필요.
- * 홈 배너(?limit=1)와 /notices 목록에서 사용. 정렬: 고정 우선 → 최신순.
+ * ?pinned=1 → 고정 공지만 (배너용). 미지정 → 전체 게시 공지 (/notices 목록용).
+ * 정렬: 고정 우선 → 최신순.
  */
 export async function GET(req: NextRequest) {
   const limitRaw = req.nextUrl.searchParams.get("limit");
   const limit = limitRaw ? Math.min(Math.max(parseInt(limitRaw, 10) || 1, 1), 50) : undefined;
+  const pinnedOnly = req.nextUrl.searchParams.get("pinned") === "1";
 
   const rows = await prisma.announcement.findMany({
-    where: { isPublished: true },
+    where: { isPublished: true, ...(pinnedOnly ? { isPinned: true } : {}) },
     orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
     take: limit,
     select: {

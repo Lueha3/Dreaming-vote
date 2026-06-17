@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { fetchJson } from "@/lib/http";
 import { CLUB_CATEGORIES, CLUB_CATEGORY_META } from "@/lib/clubCategories";
+import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 
 type ClubItem = {
   id: string;
@@ -61,6 +62,9 @@ export default function ClubsPage() {
   return (
     <div className="relative min-h-screen overflow-hidden">
       <main className="relative mx-auto max-w-4xl px-4 py-12">
+        {/* 전체 공지 배너 */}
+        <AnnouncementBanner />
+
         {/* 헤더 */}
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>

@@ -8,8 +8,8 @@ type Banner = { id: string; title: string };
 const DISMISS_KEY = "bh_dismissed_announcement";
 
 /**
- * 홈 상단 공지 배너 — 최신 게시 공지 1건을 노출.
- * 정적 홈을 유지하기 위해 클라이언트에서 지연 로드한다(첫 페인트 비차단).
+ * 홈·동아리 목록 상단 공지 배너 — 고정(isPinned) 공지 최신 1건만 노출.
+ * 정적 페이지를 유지하기 위해 클라이언트에서 지연 로드한다(첫 페인트 비차단).
  * 닫으면 해당 공지 id를 localStorage에 저장해 같은 공지는 다시 띄우지 않는다.
  */
 export function AnnouncementBanner() {
@@ -17,7 +17,7 @@ export function AnnouncementBanner() {
 
   useEffect(() => {
     let alive = true;
-    fetch("/api/announcements?limit=1", { cache: "no-store" })
+    fetch("/api/announcements?limit=1&pinned=1", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
         if (!alive || !j?.ok || !j.items?.length) return;
