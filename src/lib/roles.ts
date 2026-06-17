@@ -43,21 +43,14 @@ export function canAdminister(role: Role | null | undefined): boolean {
  * actor가 target의 역할을 next로 바꿀 수 있는지 — 권한 상승/탈취 방지의 핵심 게이트.
  * 규칙:
  * - next는 지정 가능 등급(member|staff|admin)만. superadmin·club_leader는 절대 지정 불가.
- * - superadmin: member/staff/admin 자유 지정(단 대상이 superadmin이면 불가).
- * - admin: member↔staff만. 대상이 admin/superadmin이면 불가(동급·상위 보호, 관리자 생성 불가).
+ * - admin/superadmin: 동일 권한 — member/staff/admin 자유 지정(대상이 superadmin이면 불가).
  * - staff 이하: 변경 권한 없음.
  * (본인 대상 차단은 호출부에서 별도 처리)
  */
 export function canAssignRole(actor: Role, targetCurrent: Role, next: Role): boolean {
   if (!ASSIGNABLE_ROLES.includes(next as AssignableRole)) return false;
-  if (actor === "superadmin") {
+  if (actor === "admin" || actor === "superadmin") {
     return targetCurrent !== "superadmin";
-  }
-  if (actor === "admin") {
-    return (
-      (targetCurrent === "member" || targetCurrent === "staff") &&
-      (next === "member" || next === "staff")
-    );
   }
   return false;
 }
