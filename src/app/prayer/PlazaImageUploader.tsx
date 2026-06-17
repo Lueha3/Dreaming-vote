@@ -49,9 +49,14 @@ export function PlazaImageUploader({
   async function handleAdd(files: FileList) {
     const supabase = createClient();
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
+      data: { session },
+    } = await supabase.auth.getSession();
+    const user = session?.user ?? null;
+    if (!user) {
+      // 세션이 없으면 명시적 에러 표시 (기존 조용한 종료 제거)
+      alert("로그인 세션이 만료됐어요. 페이지를 새로고침하고 다시 시도해주세요.");
+      return;
+    }
 
     const active = items.filter((i) => !i.error);
     const slots = maxImages - active.length;
@@ -95,10 +100,11 @@ export function PlazaImageUploader({
       const path = `plaza/${user.id}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.webp`;
       const { data, error } = await supabase.storage
         .from("plaza-images")
-        .upload(path, blob, { cacheControl: "3600", upsert: false });
+        .upload(path, blob, { cacheControl: "3600", upsert: false, contentType: "image/webp" });
 
       if (error || !data) {
-        markError(item.localId, "업로드 실패");
+        console.error("plaza upload error:", error);
+        markError(item.localId, error?.message?.slice(0, 20) ?? "업로드 실패");
         continue;
       }
 
