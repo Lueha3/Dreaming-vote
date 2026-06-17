@@ -1,35 +1,66 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RoleBadge } from "@/components/RoleBadge";
 import { displayRoles } from "@/lib/roles";
 import { timeAgo } from "@/lib/time";
 import { PlazaComments } from "./PlazaComments";
 import type { PlazaPost } from "./types";
 
-/** 글당 1~3장 이미지 그리드 — 클릭 시 라이트박스 */
-function ImageGrid({ images, onOpen }: { images: string[]; onOpen: (url: string) => void }) {
+/** 글당 1~3장 이미지 — 가로 스와이프 캐러셀 */
+function ImageCarousel({ images, onOpen }: { images: string[]; onOpen: (index: number) => void }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
   if (images.length === 0) return null;
-  const cols = images.length === 1 ? "grid-cols-1" : images.length === 2 ? "grid-cols-2" : "grid-cols-3";
+
+  if (images.length === 1) {
+    return (
+      <button
+        type="button"
+        onClick={() => onOpen(0)}
+        className="mt-3 block w-full overflow-hidden rounded-xl border border-sky-line bg-white/55"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={images[0]} alt="" className="w-full max-h-96 object-contain" />
+      </button>
+    );
+  }
+
   return (
-    <div className={`mt-3 grid gap-1.5 ${cols}`}>
-      {images.map((url) => (
-        <button
-          key={url}
-          type="button"
-          onClick={() => onOpen(url)}
-          className={`overflow-hidden rounded-xl border border-sky-line bg-white/55 ${
-            images.length === 1 ? "max-h-96" : "aspect-square"
-          }`}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={url}
-            alt=""
-            className={`w-full ${images.length === 1 ? "max-h-96 object-contain" : "h-full object-cover"}`}
+    <div className="mt-3">
+      <div
+        ref={scrollRef}
+        className="flex snap-x snap-mandatory overflow-x-auto rounded-xl"
+        style={{ scrollbarWidth: "none" }}
+        onScroll={() => {
+          const el = scrollRef.current;
+          if (!el) return;
+          setActiveIndex(Math.round(el.scrollLeft / el.clientWidth));
+        }}
+      >
+        {images.map((url, i) => (
+          <button
+            key={url}
+            type="button"
+            onClick={() => onOpen(i)}
+            className="aspect-square w-full flex-none snap-start overflow-hidden border border-sky-line bg-white/55 first:rounded-l-xl last:rounded-r-xl"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url} alt="" className="h-full w-full object-cover" />
+          </button>
+        ))}
+      </div>
+      <div className="mt-1.5 flex justify-center gap-1">
+        {images.map((_, i) => (
+          <div
+            key={i}
+            className={`rounded-full transition-all duration-200 ${
+              i === activeIndex ? "h-1.5 w-4 bg-skyx-deep" : "h-1.5 w-1.5 bg-ink-faint"
+            }`}
           />
-        </button>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
@@ -55,7 +86,22 @@ export function PlazaPostCard({
   const [answering, setAnswering] = useState(false);
   const [answerNote, setAnswerNote] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const touchStartX = useRef<number>(0);
+
+  // 라이트박스 키보드 탐색
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "ArrowLeft")
+        setLightboxIndex((i) => (i !== null && i > 0 ? i - 1 : i));
+      if (e.key === "ArrowRight")
+        setLightboxIndex((i) => (i !== null && i < post.images.length - 1 ? i + 1 : i));
+      if (e.key === "Escape") setLightboxIndex(null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxIndex, post.images.length]);
 
   return (
     <li className={`glass-card p-5 transition-all ${post.isAnswered ? "border-teal/45!" : ""}`}>
@@ -88,8 +134,8 @@ export function PlazaPostCard({
         <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink">{post.content}</p>
       )}
 
-      {/* 이미지 */}
-      <ImageGrid images={post.images} onOpen={setLightbox} />
+      {/* 이미지 캐러셀 */}
+      <ImageCarousel images={post.images} onOpen={setLightboxIndex} />
 
       {/* 응답 간증 */}
       {isPrayer && post.isAnswered && post.answeredNote && (
@@ -198,21 +244,68 @@ export function PlazaPostCard({
         />
       )}
 
-      {/* 이미지 라이트박스 */}
-      {lightbox && (
+      {/* 이미지 라이트박스 (캐러셀) */}
+      {lightboxIndex !== null && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4"
-          onClick={() => setLightbox(null)}
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-4"
+          onClick={() => setLightboxIndex(null)}
+          onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+          onTouchEnd={(e) => {
+            const dx = e.changedTouches[0].clientX - touchStartX.current;
+            if (dx < -50 && lightboxIndex < post.images.length - 1) {
+              e.stopPropagation();
+              setLightboxIndex(lightboxIndex + 1);
+            } else if (dx > 50 && lightboxIndex > 0) {
+              e.stopPropagation();
+              setLightboxIndex(lightboxIndex - 1);
+            }
+          }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={lightbox} alt="" className="max-h-[90vh] max-w-full rounded-lg object-contain" />
+          <img
+            src={post.images[lightboxIndex]}
+            alt=""
+            className="max-h-[90vh] max-w-full rounded-lg object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {/* 닫기 */}
           <button
-            onClick={(e) => { e.stopPropagation(); setLightbox(null); }}
+            onClick={(e) => { e.stopPropagation(); setLightboxIndex(null); }}
             className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-lg text-white backdrop-blur-sm hover:bg-white/30"
             aria-label="닫기"
           >
             ✕
           </button>
+
+          {/* 이전 */}
+          {lightboxIndex > 0 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex - 1); }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-2xl text-white backdrop-blur-sm hover:bg-white/35"
+              aria-label="이전"
+            >
+              ‹
+            </button>
+          )}
+
+          {/* 다음 */}
+          {lightboxIndex < post.images.length - 1 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex + 1); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-2xl text-white backdrop-blur-sm hover:bg-white/35"
+              aria-label="다음"
+            >
+              ›
+            </button>
+          )}
+
+          {/* 페이지 표시 */}
+          {post.images.length > 1 && (
+            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-xs text-white/80 backdrop-blur-sm">
+              {lightboxIndex + 1} / {post.images.length}
+            </div>
+          )}
         </div>
       )}
     </li>
