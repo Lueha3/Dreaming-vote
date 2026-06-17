@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { buildNickname } from "@/lib/membership";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { hasAdminAreaAccess } from "@/lib/manageAuth";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -10,8 +10,8 @@ type Params = { params: Promise<{ id: string }> | { id: string } };
  * 가입 승인 — 닉네임을 신청서의 검증된 나이·이름으로 무조건 재생성.
  * (승인 전 자가 설정한 위조 형식 닉네임이 '검증된 신원'으로 굳는 것을 차단)
  */
-export async function POST(req: NextRequest, { params }: Params) {
-  if (!isAdminRequest(req)) {
+export async function POST(_req: NextRequest, { params }: Params) {
+  if (!(await hasAdminAreaAccess("staff"))) {
     return NextResponse.json({ ok: false, error: "NOT_ADMIN" }, { status: 401 });
   }
 

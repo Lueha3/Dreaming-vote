@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -70,6 +71,14 @@ export default function AdminLoginPage() {
             {loading ? "확인 중..." : "로그인"}
           </button>
         </form>
+
+        {/* 운영진·관리자는 비밀번호 없이 계정 권한으로 입장 (RBAC) */}
+        <p className="mt-5 text-center text-xs text-zinc-500">
+          운영진·관리자 계정으로 로그인되어 있다면{" "}
+          <Link href="/admin" className="text-violet-400 underline-offset-2 hover:underline">
+            바로 입장하기 →
+          </Link>
+        </p>
       </div>
     </div>
   );

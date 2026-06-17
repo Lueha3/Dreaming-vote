@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { hasAdminAreaAccess } from "@/lib/manageAuth";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
-function requireAdmin(req: NextRequest) {
-  return isAdminRequest(req);
-}
-
 /** PUT /api/admin/prompts/[id] — 수정 */
 export async function PUT(req: NextRequest, { params }: Params) {
-  if (!requireAdmin(req)) return NextResponse.json({ ok: false, error: "NOT_ADMIN" }, { status: 401 });
+  if (!(await hasAdminAreaAccess("admin"))) return NextResponse.json({ ok: false, error: "NOT_ADMIN" }, { status: 401 });
 
   const { id } = params instanceof Promise ? await params : params;
   let body: unknown;
@@ -30,8 +26,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
 }
 
 /** DELETE /api/admin/prompts/[id] — 삭제 (비활성 버전만) */
-export async function DELETE(req: NextRequest, { params }: Params) {
-  if (!requireAdmin(req)) return NextResponse.json({ ok: false, error: "NOT_ADMIN" }, { status: 401 });
+export async function DELETE(_req: NextRequest, { params }: Params) {
+  if (!(await hasAdminAreaAccess("admin"))) return NextResponse.json({ ok: false, error: "NOT_ADMIN" }, { status: 401 });
 
   const { id } = params instanceof Promise ? await params : params;
   const item = await prisma.promptVersion.findUnique({ where: { id } });

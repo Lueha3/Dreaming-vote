@@ -1,17 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
-
-function requireAdmin(req: NextRequest) {
-  return isAdminRequest(req);
-}
+import { hasAdminAreaAccess } from "@/lib/manageAuth";
 
 /**
  * GET /api/admin/stats
  * 운영 지표 집계 (관리자 전용)
  */
-export async function GET(req: NextRequest) {
-  if (!requireAdmin(req)) {
+export async function GET() {
+  if (!(await hasAdminAreaAccess("staff"))) {
     return NextResponse.json({ ok: false, error: "NOT_ADMIN" }, { status: 401 });
   }
 

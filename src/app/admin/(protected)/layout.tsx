@@ -1,16 +1,15 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AdminLogoutButton } from "./AdminLogoutButton";
-import { isAdminCookieValue } from "@/lib/adminAuth";
+import { hasAdminAreaAccess } from "@/lib/manageAuth";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = await cookies();
-  const adminSession = cookieStore.get("admin_session")?.value;
-
-  if (!isAdminCookieValue(adminSession)) {
+  // 운영진 이상(또는 레거시 비번)만 접근. 미인가는 로그인/비번 화면으로.
+  if (!(await hasAdminAreaAccess("staff"))) {
     redirect("/admin/login");
   }
+  // 프롬프트 관리는 관리자 이상(또는 레거시 비번)만 메뉴 노출.
+  const showPrompts = await hasAdminAreaAccess("admin");
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
@@ -37,12 +36,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             >
               멤버 승인
             </Link>
-            <Link
-              href="/admin/prompts"
-              className="text-zinc-400 hover:text-zinc-100 transition-colors"
-            >
-              프롬프트 관리
-            </Link>
+            {showPrompts && (
+              <Link
+                href="/admin/prompts"
+                className="text-zinc-400 hover:text-zinc-100 transition-colors"
+              >
+                프롬프트 관리
+              </Link>
+            )}
             <Link
               href="/admin/clubs"
               className="text-zinc-400 hover:text-zinc-100 transition-colors"

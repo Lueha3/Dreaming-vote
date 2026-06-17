@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { hasAdminAreaAccess } from "@/lib/manageAuth";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -9,7 +9,7 @@ type Params = { params: Promise<{ id: string }> | { id: string } };
  * 가입 거절 — body.reason(선택)이 신청자에게 표시된다. 재신청 가능.
  */
 export async function POST(req: NextRequest, { params }: Params) {
-  if (!isAdminRequest(req)) {
+  if (!(await hasAdminAreaAccess("staff"))) {
     return NextResponse.json({ ok: false, error: "NOT_ADMIN" }, { status: 401 });
   }
 

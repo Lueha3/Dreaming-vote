@@ -1,10 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
-
-function requireAdmin(req: NextRequest) {
-  return isAdminRequest(req);
-}
+import { hasAdminAreaAccess } from "@/lib/manageAuth";
 
 const STATUS_ORDER: Record<string, number> = { pending: 0, rejected: 1, approved: 2, none: 3 };
 
@@ -13,8 +9,8 @@ const STATUS_ORDER: Record<string, number> = { pending: 0, rejected: 1, approved
  * 전체 사용자 목록 — 승인 대기 먼저, 그 다음 신청일/가입일 최신순.
  * 전화번호는 이 API(관리자 전용)에서만 노출된다.
  */
-export async function GET(req: NextRequest) {
-  if (!requireAdmin(req)) {
+export async function GET() {
+  if (!(await hasAdminAreaAccess("staff"))) {
     return NextResponse.json({ ok: false, error: "NOT_ADMIN" }, { status: 401 });
   }
 
