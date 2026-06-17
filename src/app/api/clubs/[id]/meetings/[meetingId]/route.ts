@@ -3,10 +3,98 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/db";
 import { getAuthUser, membershipGate } from "@/lib/auth";
+import { getClubMembership } from "@/lib/clubAccess";
+import type { Role } from "@/lib/roles";
 
 type Params = {
   params: Promise<{ id: string; meetingId: string }> | { id: string; meetingId: string };
 };
+
+/**
+ * GET /api/clubs/[id]/meetings/[meetingId]
+ * 모임 상세(일정 + 후기 + 갤러리) — 동아리 멤버에게만 공개.
+ * 각 후기/사진의 canDelete는 작성자/업로더 또는 개설자 여부로 서버에서 판정(PII 미노출).
+ */
+export async function GET(_req: NextRequest, { params }: Params) {
+  const { id, meetingId } = params instanceof Promise ? await params : params;
+
+  const user = await getAuthUser();
+  const { club, isOwner, isMember } = await getClubMembership(id, user?.dbUserId ?? null);
+
+  if (!club) {
+    return NextResponse.json({ ok: false, error: "동아리를 찾을 수 없습니다." }, { status: 404 });
+  }
+  if (!isMember) {
+    return NextResponse.json(
+      { ok: false, code: "member_only", error: "모임 상세는 동아리 멤버에게만 공개돼요." },
+      { status: 403 },
+    );
+  }
+
+  const meeting = await prisma.clubMeeting.findUnique({
+    where: { id: meetingId },
+    select: {
+      id: true,
+      clubId: true,
+      title: true,
+      meetsAt: true,
+      place: true,
+      items: true,
+      fee: true,
+      note: true,
+      reviews: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          userId: true,
+          user: { select: { nickname: true, avatarUrl: true, role: true } },
+        },
+      },
+      images: {
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+        select: { id: true, url: true, caption: true, userId: true },
+      },
+    },
+  });
+
+  if (!meeting || meeting.clubId !== id) {
+    return NextResponse.json({ ok: false, error: "모임을 찾을 수 없습니다." }, { status: 404 });
+  }
+
+  const me = user?.dbUserId ?? null;
+
+  return NextResponse.json({
+    ok: true,
+    isOwner,
+    isMember,
+    meeting: {
+      id: meeting.id,
+      title: meeting.title,
+      meetsAt: meeting.meetsAt,
+      place: meeting.place,
+      items: meeting.items,
+      fee: meeting.fee,
+      note: meeting.note,
+    },
+    reviews: meeting.reviews.map((r) => ({
+      id: r.id,
+      content: r.content,
+      createdAt: r.createdAt,
+      authorNickname: r.user?.nickname ?? null,
+      authorAvatarUrl: r.user?.avatarUrl ?? null,
+      authorRole: (r.user?.role ?? null) as Role | null,
+      canDelete: isOwner || (!!me && r.userId === me),
+    })),
+    images: meeting.images.map((img) => ({
+      id: img.id,
+      url: img.url,
+      caption: img.caption,
+      canDelete: isOwner || (!!me && img.userId === me),
+    })),
+  });
+}
 
 const patchSchema = z.object({
   title: z.string().trim().min(1).max(60).optional(),

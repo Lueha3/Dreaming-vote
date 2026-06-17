@@ -12,10 +12,14 @@ interface Props {
   fullBleed?: boolean;
   /** 캡션 오버레이 표시 여부. 히어로(이름 오버레이)에서는 false로 끈다. */
   showCaption?: boolean;
+  /** 시작 인덱스 — 갤러리에서 특정 사진을 눌러 라이트박스를 열 때 사용. */
+  initialIndex?: number;
 }
 
-export function ClubImageCarousel({ images, fullBleed, showCaption = true }: Props) {
-  const [current, setCurrent] = useState(0);
+export function ClubImageCarousel({ images, fullBleed, showCaption = true, initialIndex = 0 }: Props) {
+  const [current, setCurrent] = useState(
+    initialIndex >= 0 && initialIndex < images.length ? initialIndex : 0,
+  );
 
   if (!images.length) return null;
 

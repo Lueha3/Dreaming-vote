@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export type ClubMeeting = {
   id: string;
@@ -11,6 +12,9 @@ export type ClubMeeting = {
   items: string | null;
   fee: string | null;
   note: string | null;
+  reviewCount?: number;
+  imageCount?: number;
+  coverImage?: string | null;
 };
 
 type Props = {
@@ -36,26 +40,18 @@ function fmtDateShort(iso: string): string {
   return `${d.getMonth() + 1}/${d.getDate()}(${DAY_LABELS[d.getDay()]})`;
 }
 
-/** Date → datetime-local input 값 (로컬 기준 YYYY-MM-DDTHH:mm) */
-function toLocalInput(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 export function ClubMeetingCalendar({ clubId, isMember, isOwner, membershipStatus }: Props) {
+  const router = useRouter();
   const [meetings, setMeetings] = useState<ClubMeeting[]>([]);
   const [loading, setLoading] = useState(isMember);
   const today = useMemo(() => new Date(), []);
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth()); // 0-based
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [previewKey, setPreviewKey] = useState<string | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
-  // 개설자 폼
+  // 개설자 모임 생성 폼
   const [formOpen, setFormOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState("정기 모임");
   const [meetsAt, setMeetsAt] = useState("");
   const [place, setPlace] = useState("");
@@ -81,6 +77,15 @@ export function ClubMeetingCalendar({ clubId, isMember, isOwner, membershipStatu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clubId, isMember]);
 
+  // 바깥 클릭 시 미리보기 닫기
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setPreviewKey(null);
+    }
+    if (previewKey) document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [previewKey]);
+
   /* ── 비멤버: 잠금 티저 ─────────────────────────────────── */
   if (!isMember) {
     return (
@@ -88,7 +93,7 @@ export function ClubMeetingCalendar({ clubId, isMember, isOwner, membershipStatu
         <div className="mb-2 text-2xl">🗓️</div>
         <p className="text-sm font-semibold text-ink">모임 일정은 멤버에게 공개돼요</p>
         <p className="mt-1 text-xs text-ink-faint">
-          가입하면 모임 시간·장소·준비물을 볼 수 있어요.
+          가입하면 모임 시간·장소·후기·사진을 함께 볼 수 있어요.
         </p>
       </div>
     );
@@ -114,11 +119,28 @@ export function ClubMeetingCalendar({ clubId, isMember, isOwner, membershipStatu
     const d = new Date(viewYear, viewMonth + delta, 1);
     setViewYear(d.getFullYear());
     setViewMonth(d.getMonth());
-    setSelectedKey(null);
+    setPreviewKey(null);
+  }
+
+  function goToMeeting(id: string) {
+    router.push(`/clubs/${clubId}/meetings/${id}`);
+  }
+
+  // 날짜 클릭: 1번째 = 미리보기, 같은 날 2번째 = 상세 이동(단일 모임일 때)
+  function handleDayClick(k: string) {
+    const ms = byDay.get(k) ?? [];
+    if (ms.length === 0) {
+      setPreviewKey(null);
+      return;
+    }
+    if (previewKey === k) {
+      if (ms.length === 1) goToMeeting(ms[0].id);
+    } else {
+      setPreviewKey(k);
+    }
   }
 
   function openCreateForm() {
-    setEditingId(null);
     setTitle("정기 모임");
     setMeetsAt("");
     setPlace("");
@@ -126,19 +148,6 @@ export function ClubMeetingCalendar({ clubId, isMember, isOwner, membershipStatu
     setFee("");
     setNote("");
     setFormError(null);
-    setFormOpen(true);
-  }
-
-  function openEditForm(m: ClubMeeting) {
-    setEditingId(m.id);
-    setTitle(m.title);
-    setMeetsAt(toLocalInput(m.meetsAt));
-    setPlace(m.place);
-    setItems(m.items ?? "");
-    setFee(m.fee ?? "");
-    setNote(m.note ?? "");
-    setFormError(null);
-    setSelectedKey(null);
     setFormOpen(true);
   }
 
@@ -159,20 +168,14 @@ export function ClubMeetingCalendar({ clubId, isMember, isOwner, membershipStatu
       note: note.trim() || null,
     };
     try {
-      const res = await fetch(
-        editingId
-          ? `/api/clubs/${clubId}/meetings/${editingId}`
-          : `/api/clubs/${clubId}/meetings`,
-        {
-          method: editingId ? "PATCH" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
-      );
+      const res = await fetch(`/api/clubs/${clubId}/meetings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
       const json = await res.json();
       if (json.ok) {
         setFormOpen(false);
-        // 등록한 모임의 달로 이동
         const d = new Date(meetsAt);
         setViewYear(d.getFullYear());
         setViewMonth(d.getMonth());
@@ -186,39 +189,11 @@ export function ClubMeetingCalendar({ clubId, isMember, isOwner, membershipStatu
     setSaving(false);
   }
 
-  function openDay(k: string) {
-    setDeletingId(null);
-    setDeleteError(null);
-    setSelectedKey(k);
-  }
-
-  function closeModal() {
-    setDeletingId(null);
-    setDeleteError(null);
-    setSelectedKey(null);
-  }
-
-  async function handleDelete(m: ClubMeeting) {
-    setDeleteError(null);
-    try {
-      const res = await fetch(`/api/clubs/${clubId}/meetings/${m.id}`, { method: "DELETE" });
-      const json = await res.json().catch(() => null);
-      if (!res.ok || !json?.ok) {
-        setDeleteError(json?.error ?? "삭제에 실패했어요. 다시 시도해주세요.");
-        return;
-      }
-      closeModal();
-      await load();
-    } catch {
-      setDeleteError("네트워크 오류. 잠시 후 다시 시도해주세요.");
-    }
-  }
-
-  const selectedMeetings = selectedKey ? (byDay.get(selectedKey) ?? []) : [];
+  const previewMeetings = previewKey ? (byDay.get(previewKey) ?? []) : [];
   const todayKey = dateKey(today);
 
   return (
-    <div className="glass-card glass-ribbon relative overflow-hidden p-5 sm:p-6">
+    <div ref={rootRef} className="glass-card glass-ribbon relative overflow-hidden p-5 sm:p-6">
       {/* 헤더 */}
       <div className="mb-1 flex items-center justify-between">
         <h2 className="text-sm font-bold text-ink">🗓️ 모임 일정</h2>
@@ -242,13 +217,16 @@ export function ClubMeetingCalendar({ clubId, isMember, isOwner, membershipStatu
 
       {/* 다음 모임 스트립 */}
       {nextMeeting ? (
-        <p className="mb-4 text-xs text-ink-soft">
+        <Link
+          href={`/clubs/${clubId}/meetings/${nextMeeting.id}`}
+          className="mb-4 block text-xs text-ink-soft transition-colors hover:text-skyx-ink"
+        >
           다음 모임 ·{" "}
           <span className="font-semibold text-ink">
             {fmtDateShort(nextMeeting.meetsAt)} {fmtTime(nextMeeting.meetsAt)}
           </span>{" "}
-          · {nextMeeting.place}
-        </p>
+          · {nextMeeting.place} <span className="text-skyx-ink">→</span>
+        </Link>
       ) : (
         <p className="mb-4 text-xs text-ink-faint">
           {isOwner ? "예정된 모임이 없어요. 첫 모임을 공지해볼까요?" : "아직 예정된 모임이 없어요."}
@@ -258,9 +236,7 @@ export function ClubMeetingCalendar({ clubId, isMember, isOwner, membershipStatu
       {/* 개설자 폼 */}
       {formOpen && (
         <form onSubmit={handleSave} className="glass-soft mb-5 space-y-3 rounded-xl p-4">
-          <p className="text-xs font-semibold text-ink">
-            {editingId ? "모임 공지 수정" : "새 모임 공지"}
-          </p>
+          <p className="text-xs font-semibold text-ink">새 모임 공지</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-[11px] text-ink-soft">모임명</label>
@@ -332,7 +308,7 @@ export function ClubMeetingCalendar({ clubId, isMember, isOwner, membershipStatu
             disabled={saving}
             className="btn-gold w-full rounded-lg py-2.5 text-sm font-semibold disabled:opacity-40"
           >
-            {saving ? "저장 중..." : editingId ? "수정 저장" : "공지 올리기"}
+            {saving ? "저장 중..." : "공지 올리기"}
           </button>
         </form>
       )}
@@ -366,9 +342,7 @@ export function ClubMeetingCalendar({ clubId, isMember, isOwner, membershipStatu
           {DAY_LABELS.map((d, i) => (
             <div
               key={d}
-              className={`pb-1 text-[11px] font-semibold ${
-                i === 0 ? "text-red-400/80" : "text-ink-faint"
-              }`}
+              className={`pb-1 text-[11px] font-semibold ${i === 0 ? "text-red-400/80" : "text-ink-faint"}`}
             >
               {d}
             </div>
@@ -379,124 +353,68 @@ export function ClubMeetingCalendar({ clubId, isMember, isOwner, membershipStatu
             const dayMeetings = byDay.get(k) ?? [];
             const hasMeeting = dayMeetings.length > 0;
             const isToday = k === todayKey;
+            const isActive = previewKey === k;
             return (
               <button
                 key={k}
-                onClick={() => hasMeeting && openDay(k)}
+                onClick={() => handleDayClick(k)}
+                // 마우스 hover로만 미리보기 — 터치는 합성 hover로 1탭이 곧장 이동하는 걸 막기 위해 제외(터치는 click 2단계).
+                onPointerEnter={(e) => {
+                  if (e.pointerType === "mouse" && hasMeeting) setPreviewKey(k);
+                }}
                 disabled={!hasMeeting}
                 className={`relative mx-auto flex h-9 w-9 flex-col items-center justify-center rounded-xl text-sm transition-all ${
                   hasMeeting
                     ? "cursor-pointer border border-gold/40 bg-gold/10 font-bold text-gold-ink hover:bg-gold/20"
                     : "text-ink-soft"
-                } ${isToday ? "ring-2 ring-teal/45" : ""}`}
+                } ${isToday ? "ring-2 ring-teal/45" : ""} ${isActive ? "ring-2 ring-gold/70" : ""}`}
               >
                 {day}
-                {hasMeeting && (
-                  <span className="absolute bottom-1 h-1 w-1 rounded-full bg-gold" />
-                )}
+                {hasMeeting && <span className="absolute bottom-1 h-1 w-1 rounded-full bg-gold" />}
               </button>
             );
           })}
         </div>
       )}
 
-      {/* 날짜 클릭 모달 */}
-      {selectedKey && selectedMeetings.length > 0 && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/25 px-4 backdrop-blur-[2px]"
-          onClick={closeModal}
-        >
-          <div
-            className="glass-card max-h-[80vh] w-full max-w-sm overflow-y-auto p-6"
-            style={{ background: "rgba(255,255,255,.94)" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm font-bold text-ink">
-                {fmtDateShort(selectedMeetings[0].meetsAt)} 모임
-              </p>
-              <button
-                onClick={closeModal}
-                className="text-ink-faint transition-colors hover:text-ink"
-                aria-label="닫기"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {selectedMeetings.map((m) => (
-                <div key={m.id} className="glass-soft rounded-xl p-4">
-                  <p className="mb-2 font-bold text-ink">{m.title}</p>
-                  <dl className="space-y-1.5 text-sm">
-                    <MeetingRow icon="🕐" label="시간" value={fmtTime(m.meetsAt)} />
-                    <MeetingRow icon="📍" label="장소" value={m.place} />
-                    {m.items && <MeetingRow icon="🎒" label="준비물" value={m.items} />}
-                    {m.fee && <MeetingRow icon="💰" label="회비" value={m.fee} />}
-                  </dl>
-                  {m.note && (
-                    <p className="mt-2.5 whitespace-pre-wrap border-t border-sky-line pt-2.5 text-xs leading-relaxed text-ink-soft">
-                      {m.note}
-                    </p>
-                  )}
-                  {isOwner &&
-                    (deletingId === m.id ? (
-                      <div className="mt-3 flex items-center justify-between gap-2 text-xs">
-                        <span className="text-ink-soft">공지를 삭제할까요?</span>
-                        <div className="flex gap-3">
-                          <button
-                            onClick={() => handleDelete(m)}
-                            className="font-semibold text-red-500 transition-colors hover:text-red-400"
-                          >
-                            예
-                          </button>
-                          <button
-                            onClick={() => {
-                              setDeletingId(null);
-                              setDeleteError(null);
-                            }}
-                            className="text-ink-faint transition-colors hover:text-ink"
-                          >
-                            취소
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="mt-3 flex gap-2">
-                        <button
-                          onClick={() => openEditForm(m)}
-                          className="flex-1 rounded-lg border border-white/95 bg-white/70 px-3 py-1.5 text-xs font-medium text-ink-soft transition-all hover:text-ink"
-                        >
-                          수정
-                        </button>
-                        <button
-                          onClick={() => setDeletingId(m.id)}
-                          className="flex-1 rounded-lg border border-red-300/50 bg-red-500/[0.06] px-3 py-1.5 text-xs font-medium text-red-500 transition-all hover:bg-red-500/10"
-                        >
-                          삭제
-                        </button>
-                      </div>
-                    ))}
-                  {deletingId === m.id && deleteError && (
-                    <p className="mt-2 text-xs text-red-500">{deleteError}</p>
-                  )}
+      {/* 날짜 미리보기 — 한 번 더 누르면 상세로 이동 */}
+      {previewMeetings.length > 0 && (
+        <div className="mt-4 space-y-2 border-t border-sky-line pt-4">
+          <p className="px-0.5 text-[11px] font-medium text-ink-faint">
+            {fmtDateShort(previewMeetings[0].meetsAt)} · 눌러서 상세 보기
+          </p>
+          {previewMeetings.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => goToMeeting(m.id)}
+              className="glass-soft flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all hover:bg-white/85"
+            >
+              {m.coverImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={m.coverImage}
+                  alt=""
+                  className="h-12 w-12 shrink-0 rounded-lg border border-sky-line object-cover"
+                />
+              ) : (
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-skyx/15 text-lg">
+                  🗓️
                 </div>
-              ))}
-            </div>
-          </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-ink">{m.title}</p>
+                <p className="truncate text-[11px] text-ink-soft">
+                  {fmtTime(m.meetsAt)} · {m.place}
+                </p>
+                <p className="mt-0.5 text-[10px] text-ink-faint">
+                  💬 {m.reviewCount ?? 0} · 📸 {m.imageCount ?? 0}
+                </p>
+              </div>
+              <span className="shrink-0 text-skyx-ink">→</span>
+            </button>
+          ))}
         </div>
       )}
-    </div>
-  );
-}
-
-function MeetingRow({ icon, label, value }: { icon: string; label: string; value: string }) {
-  return (
-    <div className="flex gap-2">
-      <dt className="shrink-0 text-ink-faint">
-        {icon} {label}
-      </dt>
-      <dd className="text-ink">{value}</dd>
     </div>
   );
 }

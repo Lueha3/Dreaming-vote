@@ -56,7 +56,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     );
   }
 
-  const meetings = await prisma.clubMeeting.findMany({
+  const rows = await prisma.clubMeeting.findMany({
     where: { clubId: id },
     orderBy: { meetsAt: "asc" },
     select: {
@@ -67,8 +67,23 @@ export async function GET(req: NextRequest, { params }: Params) {
       items: true,
       fee: true,
       note: true,
+      _count: { select: { reviews: true, images: true } },
+      images: { take: 1, orderBy: [{ order: "asc" }, { createdAt: "asc" }], select: { url: true } },
     },
   });
+
+  const meetings = rows.map((m) => ({
+    id: m.id,
+    title: m.title,
+    meetsAt: m.meetsAt,
+    place: m.place,
+    items: m.items,
+    fee: m.fee,
+    note: m.note,
+    reviewCount: m._count.reviews,
+    imageCount: m._count.images,
+    coverImage: m.images[0]?.url ?? null,
+  }));
 
   return NextResponse.json({ ok: true, isOwner, meetings });
 }

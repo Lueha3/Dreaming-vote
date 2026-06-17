@@ -37,6 +37,8 @@ model User {
   prayers             Prayer[]
   prayerIntercessions PrayerIntercession[]
   announcements       Announcement[]       @relation("AuthoredAnnouncements")
+  meetingReviews      ClubMeetingReview[]
+  meetingImages       ClubMeetingImage[]   @relation("MeetingImageUploader")
 
   @@index([membershipStatus, membershipAppliedAt])
 }
@@ -136,9 +138,41 @@ model ClubMeeting {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  club    Club                @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  reviews ClubMeetingReview[]
+  images  ClubMeetingImage[]
 
   @@index([clubId, meetsAt])
+}
+
+// 모임 후기 — 멤버 누구나 댓글 형식으로 작성. 작성자·개설자가 삭제 가능.
+model ClubMeetingReview {
+  id        String   @id @default(cuid())
+  meetingId String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  meeting ClubMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId, createdAt])
+}
+
+// 모임 갤러리 사진 — 멤버 누구나 업로드. 업로더·개설자가 삭제 가능. 업로더 삭제돼도 사진 보존(SetNull).
+model ClubMeetingImage {
+  id        String   @id @default(cuid())
+  meetingId String
+  url       String
+  caption   String   @default("")
+  order     Int      @default(0)
+  userId    String?
+  createdAt DateTime @default(now())
+
+  meeting  ClubMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  uploader User?       @relation("MeetingImageUploader", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([meetingId, order])
 }
 
 // 기도제목 — 전체 광장 또는 집단(러비아/유디코)·동아리 단위. 응답되면 함께 기뻐함.

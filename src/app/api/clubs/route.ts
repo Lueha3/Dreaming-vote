@@ -5,9 +5,7 @@ import { prisma } from "@/lib/db";
 import { getAuthUser, membershipGate } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { CLUB_CATEGORIES, isClubCategory } from "@/lib/clubCategories";
-
-const SUPABASE_STORAGE_PREFIX =
-  "https://owrvsqzlyjeylutwbdpi.supabase.co/storage/v1/object/public/club-images/";
+import { SUPABASE_STORAGE_PREFIX } from "@/lib/storage";
 
 const imageSchema = z.object({
   url: z.string().url().startsWith(SUPABASE_STORAGE_PREFIX),
