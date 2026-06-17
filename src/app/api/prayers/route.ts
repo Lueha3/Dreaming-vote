@@ -38,7 +38,13 @@ export async function GET(req: NextRequest) {
   if (tab === "group") {
     if (!myGroup) {
       // 집단 미설정 → 빈 목록 + 안내
-      return NextResponse.json({ ok: true, items: [], myGroup: null, needNickname: true });
+      return NextResponse.json({
+        ok: true,
+        items: [],
+        myGroup: null,
+        needNickname: true,
+        loggedIn: !!user,
+      });
     }
     scopeFilter = myGroup;
   } else {
@@ -84,7 +90,7 @@ export async function GET(req: NextRequest) {
     iPrayed: Array.isArray(p.intercessions) ? p.intercessions.length > 0 : false,
   }));
 
-  return NextResponse.json({ ok: true, items, myGroup, needNickname: false });
+  return NextResponse.json({ ok: true, items, myGroup, needNickname: false, loggedIn: !!user });
 }
 
 /** POST /api/prayers — 기도제목 올리기 */

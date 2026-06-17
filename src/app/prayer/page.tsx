@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { ApiError, fetchJson } from "@/lib/http";
 import { RoleBadge } from "@/components/RoleBadge";
 import { displayRoles, type Role } from "@/lib/roles";
@@ -28,6 +27,7 @@ type ListResponse = {
   items: PrayerItem[];
   myGroup: "러비아" | "유디코" | null;
   needNickname: boolean;
+  loggedIn: boolean;
 };
 
 function timeAgo(iso: string): string {
@@ -62,11 +62,13 @@ export default function PrayerPage() {
   const [answerNote, setAnswerNote] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // 목록 페치가 실패해도 로그인 UI가 어긋나지 않도록 쿠키로 초기 힌트만 시드(서버가 최종 집행).
+  // 정상 응답 시 아래 load()의 data.loggedIn이 권위 있는 값으로 덮어쓴다.
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => setLoggedIn(!!user));
+    if (/sb-[a-z0-9-]+-auth-token/i.test(document.cookie)) setLoggedIn(true);
   }, []);
 
+  // 로그인 여부는 목록 응답(loggedIn)에서 함께 받는다 — 별도 클라 getUser() 네트워크 홉 제거.
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -74,6 +76,7 @@ export default function PrayerPage() {
       setItems(data.items ?? []);
       setMyGroup(data.myGroup);
       setNeedNickname(data.needNickname);
+      setLoggedIn(data.loggedIn);
     } catch {
       setItems([]);
     }

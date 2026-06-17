@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { CLUB_CATEGORIES, CLUB_CATEGORY_META } from "@/lib/clubCategories";
 import { ClubImageUploader, type ClubImageItem } from "@/components/ClubImageUploader";
 
@@ -25,22 +24,23 @@ export default function NewClubPage() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) {
-        setNotLoggedIn(true);
-        setChecking(false);
-        return;
-      }
-      try {
-        const res = await fetch("/api/membership", { cache: "no-store" });
-        const json = await res.json();
+    // 로그인+멤버십을 /api/membership 한 번으로 확정(401=비로그인).
+    // 기존: 클라 getUser()(네트워크) → /api/membership(서버 getUser 재실행) 2왕복 → 1왕복.
+    fetch("/api/membership", { cache: "no-store" })
+      .then((res) => {
+        if (res.status === 401) {
+          setNotLoggedIn(true);
+          return null;
+        }
+        return res.ok ? res.json() : null;
+      })
+      .then((json) => {
         if (json?.ok) setMembershipStatus(json.membership.membershipStatus);
-      } catch {
+      })
+      .catch(() => {
         /* 확인 실패 시 폼은 보여주되 제출에서 서버가 거른다 */
-      }
-      setChecking(false);
-    });
+      })
+      .finally(() => setChecking(false));
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {

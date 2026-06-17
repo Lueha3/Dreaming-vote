@@ -21,6 +21,12 @@ export function Header() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // 인증 쿠키(sb-<ref>-auth-token[.n])가 전혀 없으면 비로그인 — 서버 왕복 없이 즉시 확정.
+    // 비로그인 유저(외부 첫 유입 다수)의 모든 페이지에서 /api/membership 네트워크 홉을 제거한다.
+    if (!/sb-[a-z0-9-]+-auth-token/i.test(document.cookie)) {
+      setLoading(false);
+      return;
+    }
     // 로그인 여부·닉네임·멤버십 상태를 /api/membership 한 번으로 확정한다.
     // (예전: 클라 supabase.auth.getUser() → /api/membership 직렬 2왕복.
     //  membership 응답이 로그인 여부와 Prisma 닉네임을 모두 담으므로 클라 getUser 홉 제거.)

@@ -32,6 +32,9 @@ const SUPABASE_ORIGIN = (() => {
   }
 })();
 
+const FONT_CSS =
+  "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css";
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -49,10 +52,27 @@ export default function RootLayout({
             <link rel="dns-prefetch" href={SUPABASE_ORIGIN} />
           </>
         )}
+        {/* 폰트 CSS를 첫 페인트 비차단으로 로드: print 미디어로 받아 렌더를 막지 않고,
+            로드 완료 후 인라인 스크립트로 all 승격(시스템 폰트 → Pretendard swap).
+            preload로 페치를 일찍 시작하고, 무JS 환경은 noscript 폴백으로 보장. */}
+        <link rel="preload" as="style" href={FONT_CSS} crossOrigin="anonymous" />
         <link
+          id="pretendard-css"
           rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+          href={FONT_CSS}
+          media="print"
+          crossOrigin="anonymous"
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){var l=document.getElementById('pretendard-css');if(!l)return;if(l.sheet){l.media='all';}else{l.addEventListener('load',function(){l.media='all';});}})();",
+          }}
+        />
+        <noscript>
+          {/* eslint-disable-next-line @next/next/no-css-tags */}
+          <link rel="stylesheet" href={FONT_CSS} crossOrigin="anonymous" />
+        </noscript>
       </head>
       <body className="antialiased">
         <SkyBackdrop />
