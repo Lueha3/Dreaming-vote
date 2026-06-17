@@ -152,11 +152,7 @@ export function Header() {
               {!loading && nickname && (
                 <>
                   <div className="my-1.5 mx-4 border-t border-sky-line" />
-                  <MobileNavLink href="/my" onClick={() => setMenuOpen(false)}>내 성향 카드</MobileNavLink>
-                  <MobileNavLink href="/my/clubs" onClick={() => setMenuOpen(false)}>내 동아리</MobileNavLink>
-                  <MobileNavLink href="/my/profile" onClick={() => setMenuOpen(false)}>
-                    프로필 설정
-                  </MobileNavLink>
+                  <MobileNavLink href="/my" onClick={() => setMenuOpen(false)}>🪪 내 정보</MobileNavLink>
                   {canManage(role) && (
                     <MobileNavLink href="/manage" onClick={() => setMenuOpen(false)}>
                       🛠 운영 관리

@@ -119,7 +119,7 @@ export function ProfileForm({
 
   if (success)
     return (
-      <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center text-center">
+      <div className="flex items-center justify-center py-20 text-center">
         <div>
           <div className="mb-4 text-4xl">✅</div>
           <p className="text-lg font-bold text-ink">저장됐습니다!</p>
@@ -129,13 +129,8 @@ export function ProfileForm({
     );
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)]">
-      <div className="mx-auto max-w-sm px-4 py-12">
-        <Link href="/my" className="mb-6 inline-block text-xs text-ink-soft hover:text-ink">
-          ← 내 정보
-        </Link>
-        <h1 className="mb-8 text-xl font-bold text-ink">프로필 수정</h1>
-
+    <div className="mx-auto max-w-2xl px-4 pt-6 pb-12">
+      <div className="max-w-sm">
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* 프로필 사진 */}
           <div className="flex flex-col items-center gap-3">

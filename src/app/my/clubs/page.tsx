@@ -105,16 +105,9 @@ export default async function MyClubsPage() {
 
   /* ── 메인 ─────────────────────────────────────────────────── */
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <main className="relative mx-auto max-w-2xl px-4 py-14">
+    <main className="mx-auto max-w-2xl px-4 pt-6 pb-16">
         {/* 헤더 */}
-        <div className="mb-8 flex items-end justify-between">
-          <div>
-            <Link href="/my" className="text-xs text-ink-soft transition-colors hover:text-ink">
-              ← 내 정보
-            </Link>
-            <h1 className="mt-3 text-2xl font-bold text-ink">내 동아리</h1>
-          </div>
+        <div className="mb-6 flex justify-end">
           <Link href="/clubs/new" className="btn-gold btn-glow rounded-full px-4 py-2 text-xs font-semibold">
             + 동아리 개설
           </Link>
@@ -171,8 +164,7 @@ export default async function MyClubsPage() {
             </ul>
           )}
         </section>
-      </main>
-    </div>
+    </main>
   );
 }
 
