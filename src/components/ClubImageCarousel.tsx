@@ -9,9 +9,10 @@ export type CarouselImage = {
 
 interface Props {
   images: CarouselImage[];
+  fullBleed?: boolean;
 }
 
-export function ClubImageCarousel({ images }: Props) {
+export function ClubImageCarousel({ images, fullBleed }: Props) {
   const [current, setCurrent] = useState(0);
 
   if (!images.length) return null;
@@ -20,9 +21,9 @@ export function ClubImageCarousel({ images }: Props) {
   const next = () => setCurrent((c) => Math.min(images.length - 1, c + 1));
 
   return (
-    <div className="glass-card mb-6 overflow-hidden">
+    <div className={`${fullBleed ? "w-full" : "glass-card mb-6 overflow-hidden"}`}>
       {/* 이미지 영역 */}
-      <div className="relative bg-skyx/15">
+      <div className={`relative bg-skyx/15 ${fullBleed ? "w-full" : ""}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={images[current].url}
