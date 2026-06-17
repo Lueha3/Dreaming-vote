@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
+import { hasAtLeast } from "@/lib/roles";
 import { getPrimaryArchetype } from "@/lib/bibleArchetypes";
 
 /** 최신 공개 리포트의 coreTraits에서 대표 인물형 label을 뽑는다. 없으면 null. */
@@ -123,7 +124,12 @@ export async function GET(req: NextRequest, { params }: Params) {
     isLoggedIn: !!user,
     isOwner,
     myApplicationStatus,
-    membershipStatus: user?.membershipStatus ?? null,
+    // staff 이상 역할이면 membershipStatus를 "approved"로 노출 — 모임 공지 폼 표시용
+    membershipStatus: user
+      ? hasAtLeast(user.role, "staff")
+        ? "approved"
+        : (user.membershipStatus ?? null)
+      : null,
     isMember: isOwner || myApplicationStatus === "accepted",
     club: {
       id: club.id,

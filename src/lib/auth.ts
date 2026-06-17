@@ -92,6 +92,7 @@ export const getAuthUser = cache(async (): Promise<AuthUser | null> => {
  * 미승인이면 403 응답을 반환 — 클라이언트는 code로 /join 안내.
  */
 export function membershipGate(user: AuthUser): NextResponse | null {
+  if (hasAtLeast(user.role, "staff")) return null; // 운영진 이상은 멤버십 상태와 무관하게 통과
   if (user.membershipStatus === "approved") return null;
   return NextResponse.json(
     {
