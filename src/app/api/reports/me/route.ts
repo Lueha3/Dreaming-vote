@@ -15,6 +15,7 @@ export async function GET() {
   const reports = await prisma.report.findMany({
     where: { userId: user.dbUserId },
     orderBy: { createdAt: "desc" },
+    take: 1, // 최신 1장만 노출
     select: {
       shareSlug: true,
       catchphrase: true,

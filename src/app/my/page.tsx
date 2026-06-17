@@ -42,6 +42,7 @@ export default async function MyPage() {
     prisma.report.findMany({
       where: { userId: user.dbUserId },
       orderBy: { createdAt: "desc" },
+      take: 1, // 최신 1장만 노출
       select: {
         shareSlug: true,
         catchphrase: true,
@@ -132,7 +133,7 @@ export default async function MyPage() {
                     <RoleBadge key={r} role={r} size="sm" />
                   ))}
                 </div>
-                <p className="text-xs text-ink-soft">성향 카드 {items.length}개</p>
+                <p className="text-xs text-ink-soft">{items.length > 0 ? "성향 카드 1개" : "성향 카드 없음"}</p>
               </div>
             </div>
 

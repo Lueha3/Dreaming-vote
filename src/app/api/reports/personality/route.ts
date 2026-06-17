@@ -77,7 +77,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 5. DB 저장 + 슬러그 발급
+  // 5. 기존 성향 카드 전부 삭제 → 항상 최신 1장만 유지
+  //    (ShareEvent·ClubRecommendation은 onDelete: Cascade로 함께 정리됨)
+  await prisma.report.deleteMany({ where: { userId: user.dbUserId } });
+
+  // 6. 새 카드 저장 + 슬러그 발급
   const shareSlug = await generateUniqueSlug();
 
   const report = await prisma.report.create({
