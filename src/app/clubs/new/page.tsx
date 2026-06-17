@@ -26,7 +26,8 @@ export default function NewClubPage() {
   useEffect(() => {
     // 로그인+멤버십을 /api/membership 한 번으로 확정(401=비로그인).
     // 기존: 클라 getUser()(네트워크) → /api/membership(서버 getUser 재실행) 2왕복 → 1왕복.
-    fetch("/api/membership", { cache: "no-store" })
+    // membershipStatus만 쓰므로 summary 응답(PII 미포함)으로 충분.
+    fetch("/api/membership?fields=summary", { cache: "no-store" })
       .then((res) => {
         if (res.status === 401) {
           setNotLoggedIn(true);
@@ -70,7 +71,12 @@ export default function NewClubPage() {
       if (data.ok) {
         setDone(true);
       } else {
-        setError(data.error ?? "개설에 실패했어요. 잠시 후 다시 시도해주세요.");
+        // fieldErrors가 있으면 첫 번째 오류 메시지를 구체적으로 표시
+        const fieldErrors = data.fieldErrors as Record<string, string[]> | undefined;
+        const firstFieldError = fieldErrors
+          ? Object.values(fieldErrors).flat()[0]
+          : undefined;
+        setError(firstFieldError ?? data.error ?? "개설에 실패했어요. 잠시 후 다시 시도해주세요.");
         setSaving(false);
       }
     } catch {
