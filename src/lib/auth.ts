@@ -14,6 +14,7 @@ const AUTH_USER_SELECT = {
   membershipStatus: true,
   age: true,
   role: true,
+  deletedAt: true,
 } as const;
 
 export type AuthUser = {
@@ -51,6 +52,20 @@ export const getAuthUser = cache(async (): Promise<AuthUser | null> => {
       where: { supabaseId: user.id },
       select: AUTH_USER_SELECT,
     });
+
+    // 탈퇴 후 재로그인 — 쿨다운 기간(7일) 체크
+    if (dbUser?.deletedAt) {
+      const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+      if (Date.now() - dbUser.deletedAt.getTime() < SEVEN_DAYS_MS) {
+        return null; // 재가입 차단 — 7일 경과 후 복구 가능
+      }
+      // 7일 경과 — 탈퇴 해제 후 정상 복구
+      dbUser = await prisma.user.update({
+        where: { id: dbUser.id },
+        data: { deletedAt: null },
+        select: AUTH_USER_SELECT,
+      });
+    }
 
     // 첫 로그인 — 멱등 생성 (동시 첫로그인 race 안전을 위해 upsert)
     if (!dbUser) {

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { fetchJson } from "@/lib/http";
 
 /**
  * 프로필 수정 폼 (프로필 사진 전용) — 클라이언트.
@@ -31,6 +32,11 @@ export function ProfileForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawConfirm, setWithdrawConfirm] = useState("");
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -92,6 +98,21 @@ export function ProfileForm({
     setSuccess(true);
     setSaving(false);
     setTimeout(() => router.push("/my"), 1500);
+  }
+
+  async function handleWithdraw() {
+    if (withdrawConfirm !== "탈퇴") return;
+    setWithdrawing(true);
+    setWithdrawError(null);
+    try {
+      await fetchJson("/api/my/withdraw", { method: "POST" });
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push("/");
+    } catch {
+      setWithdrawError("탈퇴 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      setWithdrawing(false);
+    }
   }
 
   const displayAvatar = avatarPreview ?? currentAvatar;
@@ -183,6 +204,59 @@ export function ProfileForm({
             {saving ? "저장 중..." : "사진 저장하기"}
           </button>
         </form>
+
+        {/* 회원 탈퇴 */}
+        <div className="mt-12 border-t border-sky-line pt-8">
+          {!withdrawOpen ? (
+            <button
+              onClick={() => setWithdrawOpen(true)}
+              className="text-xs text-ink-faint hover:text-red-500 transition-colors"
+            >
+              회원 탈퇴
+            </button>
+          ) : (
+            <div className="rounded-2xl border border-red-200 bg-red-50/60 p-5 space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-red-600 mb-1">정말 탈퇴하시겠어요?</p>
+                <ul className="text-xs text-red-500 space-y-1 list-disc list-inside leading-relaxed">
+                  <li>탈퇴 후 7일 이내 재가입이 불가합니다.</li>
+                  <li>프로필·가입 정보(실명·연락처 등)가 즉시 삭제됩니다.</li>
+                  <li>개설한 동아리는 자동으로 비공개 처리됩니다.</li>
+                </ul>
+              </div>
+              <div>
+                <p className="mb-1.5 text-xs text-red-500">
+                  확인을 위해 아래 칸에 <strong>탈퇴</strong>를 입력해주세요.
+                </p>
+                <input
+                  value={withdrawConfirm}
+                  onChange={(e) => setWithdrawConfirm(e.target.value)}
+                  placeholder="탈퇴"
+                  className="w-full rounded-xl border border-red-200 bg-white/80 px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-red-400 focus:outline-none"
+                  autoFocus
+                />
+              </div>
+              {withdrawError && (
+                <p className="text-xs text-red-600">{withdrawError}</p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleWithdraw}
+                  disabled={withdrawConfirm !== "탈퇴" || withdrawing}
+                  className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white transition-all hover:bg-red-600 disabled:opacity-40"
+                >
+                  {withdrawing ? "처리 중..." : "탈퇴 확인"}
+                </button>
+                <button
+                  onClick={() => { setWithdrawOpen(false); setWithdrawConfirm(""); setWithdrawError(null); }}
+                  className="glass-soft rounded-xl px-4 py-2.5 text-sm text-ink-soft hover:bg-white/90 hover:text-ink"
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
