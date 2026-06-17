@@ -4,12 +4,11 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ### Environment Setup
 
-1. 프로젝트 루트에 `.env.local` 파일을 생성하세요
-2. 필수 환경 변수를 설정하세요:
+1. 루트의 `.env.local.example`를 복사해 `.env.local`을 만드세요:
    ```bash
-   ADMIN_SECRET=your-admin-secret-here
-   CHURCH_CODE=your-church-code-here
+   cp .env.local.example .env.local
    ```
+2. Supabase·DB·AI·관리자 값을 채우세요 (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `DATABASE_URL`, `DIRECT_URL`, `GOOGLE_AI_API_KEY`, `ADMIN_SECRET` 등)
 3. 자세한 환경 변수 설명은 [ENV_EXAMPLE.md](./ENV_EXAMPLE.md)를 참고하세요
 
 ### Development

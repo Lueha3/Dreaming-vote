@@ -18,63 +18,93 @@ This guide covers deploying the application to Vercel with Supabase Postgres.
    - **Region**: Choose closest to your users
 4. Wait for project creation (2-3 minutes)
 
-## Step 2: Get Database URL
+## Step 2: Get the Connection Strings
 
-1. In Supabase project, go to **Settings** → **Database**
-2. Scroll to **Connection string**
-3. Select **URI** tab
-4. Copy the connection string (looks like: `postgresql://postgres:[YOUR-PASSWORD]@db.[project-ref].supabase.co:5432/postgres`)
-5. Replace `[YOUR-PASSWORD]` with your actual database password
-6. This is your `DATABASE_URL`
+Prisma needs **two** Postgres URLs (see `prisma/schema.prisma`):
 
-## Step 3: Run Prisma Migrations
+- `DATABASE_URL` — the **pooled** connection (PgBouncer, port `6543`), used by the app at runtime.
+- `DIRECT_URL` — the **direct** connection (port `5432`), used for schema changes (`prisma db push`, `prisma generate` introspection).
 
-On your local machine:
+To get them:
+
+1. In your Supabase project, go to **Settings** → **Database** → **Connection string**.
+2. **Pooled** (Transaction mode): copy the URI and append `?pgbouncer=true`. This is your `DATABASE_URL`:
+   ```
+   postgresql://postgres.[project-ref]:[PASSWORD]@aws-0-[region].pooler.supabase.com:6543/postgres?pgbouncer=true
+   ```
+3. **Direct** connection: copy the `5432` URI. This is your `DIRECT_URL`:
+   ```
+   postgresql://postgres:[PASSWORD]@db.[project-ref].supabase.co:5432/postgres
+   ```
+4. Replace `[PASSWORD]` with your database password (URL-encode any special characters).
+
+## Step 3: Apply the Database Schema
+
+This project does **not** keep a Prisma migration history (`prisma/migrations/` does not exist). The schema is applied by syncing `prisma/schema.prisma` directly. Do **not** run `prisma migrate dev` — without a migrations folder it expects a shadow database and will fail.
+
+Pick one of the following on your local machine:
 
 ```bash
-# Generate Prisma Client for PostgreSQL
+# Generate the Prisma Client (also runs automatically via postinstall)
 npx prisma generate
 
-# Run migrations to create tables in Supabase
-npx prisma migrate dev --name init_pg
+# Option A — push the schema straight to Supabase (uses DIRECT_URL)
+npx prisma db push
 ```
 
-**Note**: This will create all tables in your Supabase database. Make sure you're using the production `DATABASE_URL` in your `.env.local` for this step, or set it temporarily:
+**Option B — Supabase MCP**: apply the equivalent DDL with the Supabase MCP `apply_migration` tool against the target project. Use this when you want the change recorded on the Supabase side.
+
+`prisma db push` reads `DIRECT_URL`, so make sure both `DATABASE_URL` and `DIRECT_URL` for the target project are present in your `.env.local` (or exported) before running it:
 
 ```bash
-# Temporarily set DATABASE_URL for migration
-export DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[project-ref].supabase.co:5432/postgres"
-npx prisma migrate dev --name init_pg
+# Example: target a specific Supabase project for the push
+export DIRECT_URL="postgresql://postgres:[PASSWORD]@db.[project-ref].supabase.co:5432/postgres"
+export DATABASE_URL="postgresql://postgres.[project-ref]:[PASSWORD]@aws-0-[region].pooler.supabase.com:6543/postgres?pgbouncer=true"
+npx prisma db push
 ```
+
+> Row Level Security policies live in `prisma/rls.sql` and are not managed by Prisma. Apply that SQL separately (Supabase SQL editor or MCP) if you rely on RLS.
 
 ## Step 4: Set Vercel Environment Variables
 
 1. Go to your Vercel project dashboard
 2. Navigate to **Settings** → **Environment Variables**
-3. Add the following variables:
+3. Add the following variables (mirror your local `.env.local` — see [ENV_EXAMPLE.md](./ENV_EXAMPLE.md)):
 
 ### Required Variables
 
+- **`NEXT_PUBLIC_SUPABASE_URL`** / **`NEXT_PUBLIC_SUPABASE_ANON_KEY`**
+  - Value: from Supabase **Settings** → **API**. Safe to expose to the browser.
+  - Environment: Production, Preview, Development (all)
+
 - **`DATABASE_URL`**
-  - Value: Your Supabase connection string from Step 2
+  - Value: the **pooled** connection string from Step 2 (port `6543`, `?pgbouncer=true`).
+  - Environment: Production, Preview, Development (all)
+
+- **`DIRECT_URL`**
+  - Value: the **direct** connection string from Step 2 (port `5432`).
+  - Environment: Production, Preview, Development (all)
+
+- **`GOOGLE_AI_API_KEY`**
+  - Value: Google AI Studio key used for AI parsing. Server-only — never prefix with `NEXT_PUBLIC_`.
   - Environment: Production, Preview, Development (all)
 
 - **`ADMIN_SECRET`**
-  - Value: Your admin authentication secret (use a strong random string)
+  - Value: Your admin authentication secret (use a strong random string).
   - Environment: Production, Preview, Development (all)
 
 - **`SUPERADMIN_EMAILS`**
   - Value: Comma-separated Google login emails granted the top `superadmin` role (RBAC bootstrap). Leave empty for none. Server-only — never prefix with `NEXT_PUBLIC_`.
   - Environment: Production, Preview, Development (all)
 
-- **`CHURCH_CODE`**
-  - Value: Your church/organization code
+- **`NEXT_PUBLIC_APP_URL`**
+  - Value: The app's public base URL (e.g. `https://your-app.vercel.app`).
   - Environment: Production, Preview, Development (all)
 
 ### Optional Variables
 
 - **`NODE_ENV`**
-  - Value: `production` (automatically set by Vercel, but you can override)
+  - Value: `production` (automatically set by Vercel, but you can override).
   - Environment: Production only
 
 ## Step 5: Deploy to Vercel
@@ -89,7 +119,7 @@ npx prisma migrate dev --name init_pg
    - Configure:
      - **Framework Preset**: Next.js
      - **Root Directory**: `./` (default)
-     - **Build Command**: `npm run build` (default)
+     - **Build Command**: `npm run build` (default — `prisma generate` runs via `postinstall`)
      - **Output Directory**: `.next` (default)
 3. Deploy
 
@@ -103,65 +133,65 @@ npx prisma migrate dev --name init_pg
 After deployment, verify the following URLs:
 
 1. **Homepage**: `https://your-app.vercel.app/`
-   - Should show recruitment list
+   - Should load and show the club list
 
-2. **Admin Gate**: `https://your-app.vercel.app/admin`
-   - Should show admin secret input form
-
-3. **API Health**: `https://your-app.vercel.app/api/recruitments`
+2. **Clubs API**: `https://your-app.vercel.app/api/clubs`
    - Should return JSON: `{ "ok": true, "items": [...] }`
 
+3. **Admin Gate**: `https://your-app.vercel.app/admin`
+   - Should show the admin secret input form
+
 4. **Admin API** (with secret):
-   - Test via admin UI or curl with `x-admin-secret` header
+   - Test via the admin UI, or send the `x-admin-secret` header to an admin endpoint
 
 ## Local Development
 
-For local development, keep using SQLite:
+The project targets Supabase Postgres in every environment — there is no SQLite path.
 
-1. Create `.env.local` with:
+1. Copy the template and fill in the values:
    ```bash
-   DATABASE_URL="file:./dev.db"
-   ADMIN_SECRET=your-local-secret
-   CHURCH_CODE=your-local-code
+   cp .env.local.example .env.local
+   ```
+   At minimum set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `DATABASE_URL`, `DIRECT_URL`, `GOOGLE_AI_API_KEY`, `ADMIN_SECRET`, and (optionally) `SUPERADMIN_EMAILS`.
+
+2. Point `DATABASE_URL` / `DIRECT_URL` at a Supabase project (a separate dev/preview project is recommended) and sync the schema:
+   ```bash
+   npx prisma db push
    ```
 
-2. Run migrations for SQLite:
+3. Start the dev server:
    ```bash
-   npx prisma migrate dev
+   npm run dev
    ```
-
-3. The Prisma schema uses `env("DATABASE_URL")`, so:
-   - Local: `.env.local` with `file:./dev.db` → SQLite
-   - Production: Vercel env var with Postgres URL → PostgreSQL
 
 ## Troubleshooting
 
-### Migration Issues
+### Schema Sync Issues
 
-If migrations fail:
-- Check `DATABASE_URL` is correct
-- Ensure database password is URL-encoded if it contains special characters
-- Verify Supabase project is active
+If `prisma db push` fails:
+- Check that `DIRECT_URL` (port `5432`, not the pooler) is set and correct — `db push` uses the direct connection.
+- Ensure the database password is URL-encoded if it contains special characters.
+- Verify the Supabase project is active (not paused).
 
 ### Connection Issues
 
-- Check Vercel environment variables are set correctly
-- Verify `DATABASE_URL` includes the password
-- Check Supabase project is not paused
+- Check Vercel environment variables are set correctly.
+- Confirm `DATABASE_URL` is the pooled URL (`6543`, `?pgbouncer=true`) and `DIRECT_URL` is the direct URL (`5432`).
+- Check the Supabase project is not paused.
 
 ### Build Failures
 
-- Ensure `prisma generate` runs during build (should be automatic)
-- Check all environment variables are set in Vercel
-- Review build logs in Vercel dashboard
+- Ensure `prisma generate` runs during install (it is wired as `postinstall`).
+- Check all environment variables are set in Vercel.
+- Review build logs in Vercel dashboard.
 
 ## Security Notes
 
-- Never commit `.env.local` or `.env` files
-- Use strong, random values for `ADMIN_SECRET`
-- Rotate `ADMIN_SECRET` periodically
-- Keep Supabase database password secure
-- Enable Supabase Row Level Security (RLS) if needed for additional security
+- Never commit `.env.local` or `.env` files.
+- Use strong, random values for `ADMIN_SECRET`, and rotate it periodically.
+- Keep the Supabase database password and `GOOGLE_AI_API_KEY` secure (server-only).
+- Keep `SUPERADMIN_EMAILS` accurate — every listed email always holds the top role.
+- Row Level Security policies are in `prisma/rls.sql`; apply and review them if you rely on RLS.
 
 ## Rollback
 
@@ -177,4 +207,3 @@ If deployment fails:
 - Configure Supabase backups
 - Set up monitoring/alerts
 - Review and enable Supabase security features
-
