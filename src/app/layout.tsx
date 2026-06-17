@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 import { Header } from "@/components/Header";
@@ -13,6 +13,13 @@ export const metadata: Metadata = {
     description: "내 성향에 맞는 동아리 찾기 · 꿈꾸는교회 청년부",
     siteName: "BlueHumanity",
   },
+};
+
+// 하단 고정 CTA가 iOS 홈 인디케이터 영역까지 safe-area 인셋을 확보하려면 필요.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 const SUPABASE_ORIGIN = (() => {

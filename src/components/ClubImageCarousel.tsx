@@ -10,9 +10,11 @@ export type CarouselImage = {
 interface Props {
   images: CarouselImage[];
   fullBleed?: boolean;
+  /** 캡션 오버레이 표시 여부. 히어로(이름 오버레이)에서는 false로 끈다. */
+  showCaption?: boolean;
 }
 
-export function ClubImageCarousel({ images, fullBleed }: Props) {
+export function ClubImageCarousel({ images, fullBleed, showCaption = true }: Props) {
   const [current, setCurrent] = useState(0);
 
   if (!images.length) return null;
@@ -33,7 +35,7 @@ export function ClubImageCarousel({ images, fullBleed }: Props) {
         />
 
         {/* 캡션 오버레이 */}
-        {images[current].caption && (
+        {showCaption && images[current].caption && (
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-white/95 via-white/75 to-transparent px-4 pb-4 pt-8">
             <p className="text-sm font-medium leading-relaxed text-ink">{images[current].caption}</p>
           </div>
