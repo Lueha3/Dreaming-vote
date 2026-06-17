@@ -28,8 +28,8 @@ export function ClubImageCarousel({ images, fullBleed }: Props) {
         <img
           src={images[current].url}
           alt={images[current].caption || `카드 ${current + 1}`}
-          className="w-full object-contain"
-          style={{ maxHeight: 420 }}
+          className={`w-full ${fullBleed ? "object-cover aspect-[4/3] sm:aspect-[16/9]" : "object-contain"}`}
+          style={fullBleed ? {} : { maxHeight: 420 }}
         />
 
         {/* 캡션 오버레이 */}

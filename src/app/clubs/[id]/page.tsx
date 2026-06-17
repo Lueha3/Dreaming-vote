@@ -167,8 +167,8 @@ export default function ClubDetailPage({ params }: PageProps) {
       {/* Sticky Header */}
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'glass-card rounded-none border-t-0 border-x-0 shadow-sm' : 'bg-transparent border-transparent'}`}>
         <div className="mx-auto max-w-2xl flex items-center h-14 px-4">
-          <Link href="/clubs" className="flex items-center justify-center h-9 w-9 rounded-full bg-white/70 backdrop-blur-md shadow-sm transition-all hover:bg-white/90">
-            <span className="text-xl leading-none text-ink pb-0.5">←</span>
+          <Link href="/clubs" className={`flex items-center justify-center h-9 w-9 rounded-full transition-all ${scrolled ? 'hover:bg-black/5 text-ink' : 'bg-white/70 backdrop-blur-md shadow-sm hover:bg-white/90 text-ink'}`}>
+            <span className="text-xl leading-none pb-0.5">←</span>
           </Link>
           <div className={`ml-3 flex-1 text-lg font-bold text-ink transition-opacity duration-300 ${scrolled ? 'opacity-100' : 'opacity-0'}`}>
             {club.name}
