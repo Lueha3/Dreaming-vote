@@ -2,6 +2,8 @@ import { cache } from "react";
 import { NextResponse } from "next/server";
 import { createClient } from "./supabase/server";
 import { prisma } from "./db";
+import type { Role } from "./roles";
+import { isSuperadminEmail } from "./superadmin";
 
 // getAuthUser가 조회하는 User 필드 — 읽기/생성 경로에서 공유
 const AUTH_USER_SELECT = {
@@ -11,15 +13,18 @@ const AUTH_USER_SELECT = {
   supabaseId: true,
   membershipStatus: true,
   age: true,
+  role: true,
 } as const;
 
 export type AuthUser = {
   supabaseId: string;
   dbUserId: string;
+  email: string | null; // Supabase 세션 이메일 — superadmin 부트스트랩 판정에 사용
   nickname: string | null;
   avatarUrl: string | null;
   membershipStatus: string; // none | pending | approved | rejected
   age: number | null; // 가입신청서의 검증된 나이 — 집단(러비아/유디코) 판정의 유일한 근거
+  role: Role; // 전역 등급. 동아리장은 여기 없음(소유 동아리에서 파생). superadmin은 env로 승격
 };
 
 /**
@@ -69,10 +74,13 @@ export const getAuthUser = cache(async (): Promise<AuthUser | null> => {
     return {
       supabaseId: user.id,
       dbUserId: dbUser.id,
+      email: user.email ?? null,
       nickname: dbUser.nickname,
       avatarUrl: dbUser.avatarUrl,
       membershipStatus: dbUser.membershipStatus,
       age: dbUser.age,
+      // 슈퍼관리자 이메일은 DB 값과 무관하게 항상 superadmin으로 승격(첫 로그인 부트스트랩 포함).
+      role: isSuperadminEmail(user.email) ? "superadmin" : (dbUser.role as Role),
     };
   } catch {
     return null;

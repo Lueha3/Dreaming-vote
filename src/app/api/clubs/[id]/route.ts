@@ -38,6 +38,7 @@ export async function GET(req: NextRequest, { params }: Params) {
         select: {
           nickname: true,
           avatarUrl: true,
+          role: true,
           reports: {
             where: { isPublic: true },
             orderBy: { createdAt: "desc" },
@@ -54,6 +55,7 @@ export async function GET(req: NextRequest, { params }: Params) {
             select: {
               nickname: true,
               avatarUrl: true,
+              role: true,
               reports: {
                 where: { isPublic: true },
                 orderBy: { createdAt: "desc" },
@@ -104,12 +106,14 @@ export async function GET(req: NextRequest, { params }: Params) {
       nickname: club.owner?.nickname ?? null,
       avatarUrl: club.owner?.avatarUrl ?? null,
       isOwner: true,
+      role: club.owner?.role ?? null,
       archetype: primaryArchetypeLabel(club.owner?.reports ?? []),
     },
     ...club.applications.map((a) => ({
       nickname: a.user.nickname ?? null,
       avatarUrl: a.user.avatarUrl ?? null,
       isOwner: false,
+      role: a.user.role ?? null,
       archetype: primaryArchetypeLabel(a.user.reports),
     })),
   ];

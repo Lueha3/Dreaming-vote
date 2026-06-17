@@ -15,6 +15,9 @@ DATABASE_URL="file:./dev.db"
 # 관리자 인증 비밀번호
 ADMIN_SECRET=your-admin-secret-here
 
+# 슈퍼관리자 이메일 (쉼표로 구분) — RBAC 최초 관리자 부트스트랩. 서버 전용(NEXT_PUBLIC_ 금지).
+SUPERADMIN_EMAILS=you@example.com
+
 # 교회 코드 (모집글 생성 시 사용)
 CHURCH_CODE=your-church-code-here
 ```
@@ -46,6 +49,12 @@ CHURCH_CODE=your-church-code-here
 - **위치**: `.env.local`
 - **필수**: 예
 - **설명**: 새 모집글을 생성할 때 이 값이 `churchCode` 필드에 저장됩니다.
+
+### `SUPERADMIN_EMAILS`
+- **용도**: RBAC 최초 관리자(superadmin) 부트스트랩
+- **위치**: `.env.local` (로컬), Vercel 환경 변수 (프로덕션)
+- **필수**: 아니오 (비우면 superadmin 없음 — fail-closed)
+- **설명**: 쉼표로 구분한 Google 로그인 이메일 목록. 여기 적힌 이메일은 DB `role` 값과 무관하게 항상 최고 권한을 갖습니다. 민감 정보이므로 절대 `NEXT_PUBLIC_` 접두사를 붙이지 마세요.
 
 ### `NODE_ENV`
 - **용도**: 실행 환경 구분 (development/production)

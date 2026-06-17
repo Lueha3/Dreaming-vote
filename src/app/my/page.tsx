@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { parseTraits } from "@/lib/bibleArchetypes";
 import { NICKNAME_RE } from "@/lib/membership";
+import { RoleBadge } from "@/components/RoleBadge";
+import { displayRoles, type Role } from "@/lib/roles";
 
 type ReportItem = {
   shareSlug: string;
@@ -32,6 +34,8 @@ export default function MyPage() {
   const [notLoggedIn, setNotLoggedIn] = useState(false);
   // null = 아직 조회 전(배너 미표시) — 깜빡임 방지
   const [membershipStatus, setMembershipStatus] = useState<string | null>(null);
+  const [role, setRole] = useState<Role | null>(null);
+  const [isClubLeader, setIsClubLeader] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -52,6 +56,8 @@ export default function MyPage() {
         .then((json) => {
           if (json?.ok) {
             setMembershipStatus(json.membership.membershipStatus ?? "none");
+            setRole(json.membership.role ?? null);
+            setIsClubLeader(!!json.membership.isClubLeader);
             const raw = json.membership.nickname ?? null;
             if (raw && NICKNAME_RE.test(raw)) setNickname(raw);
           }
@@ -159,7 +165,12 @@ export default function MyPage() {
                 </div>
               )}
               <div>
-                <p className="font-semibold text-ink">{nickname ?? "나"}</p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <p className="font-semibold text-ink">{nickname ?? "나"}</p>
+                  {displayRoles(role, { isClubLeader }).map((r) => (
+                    <RoleBadge key={r} role={r} size="sm" />
+                  ))}
+                </div>
                 <p className="text-xs text-ink-soft">성향 카드 {items.length}개</p>
               </div>
             </div>

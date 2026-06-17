@@ -63,6 +63,10 @@ npx prisma migrate dev --name init_pg
   - Value: Your admin authentication secret (use a strong random string)
   - Environment: Production, Preview, Development (all)
 
+- **`SUPERADMIN_EMAILS`**
+  - Value: Comma-separated Google login emails granted the top `superadmin` role (RBAC bootstrap). Leave empty for none. Server-only — never prefix with `NEXT_PUBLIC_`.
+  - Environment: Production, Preview, Development (all)
+
 - **`CHURCH_CODE`**
   - Value: Your church/organization code
   - Environment: Production, Preview, Development (all)

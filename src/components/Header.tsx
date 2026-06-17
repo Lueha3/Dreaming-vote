@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { RoleBadge } from "@/components/RoleBadge";
+import { displayRoles, type Role } from "@/lib/roles";
 
 
 
@@ -13,6 +15,8 @@ export function Header() {
   const [nickname, setNickname] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [membershipStatus, setMembershipStatus] = useState<string | null>(null);
+  const [role, setRole] = useState<Role | null>(null);
+  const [isClubLeader, setIsClubLeader] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -27,6 +31,8 @@ export function Header() {
         if (!alive) return;
         if (json?.ok) {
           setMembershipStatus(json.membership.membershipStatus);
+          setRole(json.membership.role ?? null);
+          setIsClubLeader(!!json.membership.isClubLeader);
           // 닉네임은 가입 승인 시 자동 생성되는 Prisma 값이 진실.
           // 미승인 유저의 Prisma 닉네임은 첫 로그인 시 저장된 표시명(full_name) 폴백.
           setNickname(json.membership.nickname ?? null);
@@ -117,6 +123,14 @@ export function Header() {
           {/* 드롭다운 메뉴 */}
           {menuOpen && (
             <div className="glass-card absolute right-0 top-[calc(100%+0.5rem)] w-56 py-2" style={{ background: "rgba(255,255,255,.92)" }}>
+              {!loading && nickname && (
+                <div className="mb-1 flex flex-wrap items-center gap-1.5 border-b border-sky-line px-4 pb-2">
+                  <span className="truncate text-sm font-semibold text-ink">{nickname}</span>
+                  {displayRoles(role, { isClubLeader }).map((r) => (
+                    <RoleBadge key={r} role={r} size="sm" />
+                  ))}
+                </div>
+              )}
               <MobileNavLink href="/" onClick={() => setMenuOpen(false)}>홈</MobileNavLink>
               <MobileNavLink href="/prayer" onClick={() => setMenuOpen(false)}>🙏 기도</MobileNavLink>
               <MobileNavLink href="/clubs" onClick={() => setMenuOpen(false)}>목록</MobileNavLink>

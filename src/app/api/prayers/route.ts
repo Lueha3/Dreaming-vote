@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
       answeredAt: true,
       createdAt: true,
       userId: true,
-      user: { select: { nickname: true, avatarUrl: true } },
+      user: { select: { nickname: true, avatarUrl: true, role: true } },
       _count: { select: { intercessions: true } },
       intercessions: user
         ? { where: { userId: user.dbUserId }, select: { id: true } }
@@ -78,6 +78,8 @@ export async function GET(req: NextRequest) {
     isMine: !!user && p.userId === user.dbUserId,
     authorName: p.isAnonymous ? "익명" : p.user?.nickname ?? "익명",
     authorAvatar: p.isAnonymous ? null : p.user?.avatarUrl ?? null,
+    // 익명 기도는 작성자 배지도 숨긴다(관리자/운영진 신원 노출 방지)
+    authorRole: p.isAnonymous ? null : p.user?.role ?? null,
     prayCount: p._count.intercessions,
     iPrayed: Array.isArray(p.intercessions) ? p.intercessions.length > 0 : false,
   }));

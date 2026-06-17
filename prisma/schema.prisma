@@ -14,6 +14,9 @@ model User {
   supabaseId String   @unique
   nickname   String?
   avatarUrl  String?
+  // RBAC 전역 등급: member | staff | admin | superadmin
+  // (동아리장은 저장하지 않고 Club.ownerUserId로 파생, superadmin은 SUPERADMIN_EMAILS로만 부여)
+  role       String   @default("member")
   createdAt  DateTime @default(now())
   reports    Report[]
 

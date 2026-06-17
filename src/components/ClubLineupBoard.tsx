@@ -4,11 +4,13 @@ import { useState } from "react";
 import { findArchetype, type BibleArchetype } from "@/lib/bibleArchetypes";
 import { ArchetypeModal } from "@/app/components/ArchetypeTags";
 import { ArchetypeMedal, LineupDefs } from "./ArchetypeMedal";
+import { displayRoles, roleBadge, type Role } from "@/lib/roles";
 
 export type LineupMember = {
   nickname: string | null;
   avatarUrl: string | null;
   isOwner: boolean;
+  role: Role | null; // 전역 등급(운영진/관리자). 동아리장은 isOwner로 파생
   archetype: string | null; // 인물형 label (예: "누가형") | null(성향 카드 없음)
 };
 
@@ -71,9 +73,13 @@ export function ClubLineupBoard({
               <div className="truncate text-[10px] text-ink-faint">
                 {arch ? arch.type.replace(/.*\s/, "") : "성향 카드 준비 중"}
               </div>
-              <div className="mt-1 truncate text-[9.5px] text-ink-soft">
-                {m.isOwner && <span className="text-gold-ink">👑 </span>}
-                {m.nickname ?? "익명"}
+              <div className="mt-1 flex items-center justify-center gap-0.5 truncate text-[9.5px] text-ink-soft">
+                {displayRoles(m.role, { isClubLeader: m.isOwner }).map((r) => (
+                  <span key={r} className="leading-none" title={roleBadge(r)?.label}>
+                    {roleBadge(r)?.emoji}
+                  </span>
+                ))}
+                <span className="truncate">{m.nickname ?? "익명"}</span>
               </div>
             </button>
           );

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ApiError, fetchJson } from "@/lib/http";
+import { RoleBadge } from "@/components/RoleBadge";
+import { displayRoles, type Role } from "@/lib/roles";
 
 type PrayerItem = {
   id: string;
@@ -16,6 +18,7 @@ type PrayerItem = {
   isMine: boolean;
   authorName: string;
   authorAvatar: string | null;
+  authorRole: Role | null;
   prayCount: number;
   iPrayed: boolean;
 };
@@ -281,6 +284,9 @@ export default function PrayerPage() {
                       </div>
                     )}
                     <span className="text-xs text-ink-soft">{p.authorName}</span>
+                    {displayRoles(p.authorRole).map((r) => (
+                      <RoleBadge key={r} role={r} size="sm" />
+                    ))}
                     <span className="text-xs text-ink-faint">· {timeAgo(p.createdAt)}</span>
                   </div>
                   {p.isAnswered && (
