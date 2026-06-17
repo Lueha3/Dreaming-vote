@@ -62,6 +62,7 @@ export default function RootLayout({
           href={FONT_CSS}
           media="print"
           crossOrigin="anonymous"
+          suppressHydrationWarning
         />
         <script
           dangerouslySetInnerHTML={{
