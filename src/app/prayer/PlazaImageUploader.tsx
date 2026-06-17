@@ -48,12 +48,12 @@ export function PlazaImageUploader({
 
   async function handleAdd(files: FileList) {
     const supabase = createClient();
+
+    // getUser()는 네트워크 검증(토큰 재발급 포함) — getSession()보다 안정적
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    const user = session?.user ?? null;
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
-      // 세션이 없으면 명시적 에러 표시 (기존 조용한 종료 제거)
       alert("로그인 세션이 만료됐어요. 페이지를 새로고침하고 다시 시도해주세요.");
       return;
     }
@@ -85,36 +85,47 @@ export function PlazaImageUploader({
       let blob: Blob;
       try {
         blob = await imageCompression(file, {
-          maxSizeMB: 0.3, // 최대 300KB
+          maxSizeMB: 0.3,
           maxWidthOrHeight: 1080,
           initialQuality: 0.85,
           useWebWorker: true,
           fileType: "image/webp",
         });
       } catch (e) {
-        console.error("이미지 압축 실패:", e);
+        console.error("plaza 이미지 압축 실패:", e);
         markError(item.localId, "압축 실패");
         continue;
       }
 
       const path = `plaza/${user.id}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.webp`;
-      const { data, error } = await supabase.storage
-        .from("plaza-images")
-        .upload(path, blob, { cacheControl: "3600", upsert: false, contentType: "image/webp" });
 
-      if (error || !data) {
-        console.error("plaza upload error:", error);
-        markError(item.localId, error?.message?.slice(0, 20) ?? "업로드 실패");
+      let uploadData: { path: string } | null = null;
+      let uploadError: { message: string } | null = null;
+      try {
+        const result = await supabase.storage
+          .from("plaza-images")
+          .upload(path, blob, { cacheControl: "3600", upsert: false });
+        uploadData = result.data;
+        uploadError = result.error;
+      } catch (e) {
+        console.error("plaza 업로드 예외:", e);
+        markError(item.localId, "업로드 실패");
+        continue;
+      }
+
+      if (uploadError || !uploadData) {
+        console.error("plaza upload error:", uploadError);
+        markError(item.localId, uploadError?.message?.slice(0, 20) ?? "업로드 실패");
         continue;
       }
 
       const {
         data: { publicUrl },
-      } = supabase.storage.from("plaza-images").getPublicUrl(data.path);
+      } = supabase.storage.from("plaza-images").getPublicUrl(uploadData.path);
 
       setItems((prev) => {
         const next = prev.map((p) =>
-          p.localId === item.localId ? { ...p, path: data.path, url: publicUrl, uploading: false } : p,
+          p.localId === item.localId ? { ...p, path: uploadData!.path, url: publicUrl, uploading: false } : p,
         );
         notify(next);
         return next;
