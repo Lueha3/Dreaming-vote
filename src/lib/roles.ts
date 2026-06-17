@@ -39,6 +39,29 @@ export function canAdminister(role: Role | null | undefined): boolean {
   return hasAtLeast(role, "admin");
 }
 
+/**
+ * actor가 target의 역할을 next로 바꿀 수 있는지 — 권한 상승/탈취 방지의 핵심 게이트.
+ * 규칙:
+ * - next는 지정 가능 등급(member|staff|admin)만. superadmin·club_leader는 절대 지정 불가.
+ * - superadmin: member/staff/admin 자유 지정(단 대상이 superadmin이면 불가).
+ * - admin: member↔staff만. 대상이 admin/superadmin이면 불가(동급·상위 보호, 관리자 생성 불가).
+ * - staff 이하: 변경 권한 없음.
+ * (본인 대상 차단은 호출부에서 별도 처리)
+ */
+export function canAssignRole(actor: Role, targetCurrent: Role, next: Role): boolean {
+  if (!ASSIGNABLE_ROLES.includes(next as AssignableRole)) return false;
+  if (actor === "superadmin") {
+    return targetCurrent !== "superadmin";
+  }
+  if (actor === "admin") {
+    return (
+      (targetCurrent === "member" || targetCurrent === "staff") &&
+      (next === "member" || next === "staff")
+    );
+  }
+  return false;
+}
+
 // 인증마크(배지) — 3종만 운영: 관리자 · 운영진 · 동아리장.
 // member는 배지 없음. superadmin은 외부 표기상 admin과 동일("관리자").
 export type BadgeMeta = { label: string; emoji: string };

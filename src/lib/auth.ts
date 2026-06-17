@@ -2,7 +2,7 @@ import { cache } from "react";
 import { NextResponse } from "next/server";
 import { createClient } from "./supabase/server";
 import { prisma } from "./db";
-import type { Role } from "./roles";
+import { hasAtLeast, type Role } from "./roles";
 import { isSuperadminEmail } from "./superadmin";
 
 // getAuthUser가 조회하는 User 필드 — 읽기/생성 경로에서 공유
@@ -105,6 +105,20 @@ export function membershipGate(user: AuthUser): NextResponse | null {
     },
     { status: 403 },
   );
+}
+
+/**
+ * 역할 게이트 — API Route에서 최소 등급(min) 미만이면 401/403 반환, 충족하면 null.
+ * membershipGate와 같은 모양. 사용: const gate = roleGate(user, "admin"); if (gate) return gate;
+ */
+export function roleGate(user: AuthUser | null, min: Role): NextResponse | null {
+  if (!user) {
+    return NextResponse.json({ ok: false, error: "로그인이 필요합니다." }, { status: 401 });
+  }
+  if (!hasAtLeast(user.role, min)) {
+    return NextResponse.json({ ok: false, error: "권한이 없습니다." }, { status: 403 });
+  }
+  return null;
 }
 
 /**

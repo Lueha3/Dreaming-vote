@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { RoleBadge } from "@/components/RoleBadge";
-import { displayRoles, type Role } from "@/lib/roles";
+import { canManage, displayRoles, type Role } from "@/lib/roles";
 
 
 
@@ -150,6 +150,11 @@ export function Header() {
                   <MobileNavLink href="/my/profile" onClick={() => setMenuOpen(false)}>
                     프로필 설정
                   </MobileNavLink>
+                  {canManage(role) && (
+                    <MobileNavLink href="/manage" onClick={() => setMenuOpen(false)}>
+                      🛠 운영 관리
+                    </MobileNavLink>
+                  )}
                   <div className="my-1.5 mx-4 border-t border-sky-line" />
                   <button
                     onClick={handleLogout}
