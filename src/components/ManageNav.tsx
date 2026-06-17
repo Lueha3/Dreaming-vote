@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const TABS = [
   { href: "/manage", label: "멤버 역할", emoji: "🧑‍🤝‍🧑" },
+  { href: "/manage/membership", label: "가입 신청", emoji: "📋" },
   { href: "/manage/announcements", label: "전체 공지", emoji: "📢" },
   { href: "/manage/clubs", label: "동아리 관리", emoji: "🎯" },
 ] as const;
