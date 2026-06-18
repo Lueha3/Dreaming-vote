@@ -28,6 +28,7 @@ export function ProfileForm({
   const [currentAvatar] = useState<string | null>(initialAvatar);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initialAvatar);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [newNickname, setNewNickname] = useState(nickname ?? "");
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,33 +68,57 @@ export function ProfileForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!avatarFile) return;
     setError(null);
     setSaving(true);
 
-    const newAvatarUrl = await uploadAvatar();
-    if (!newAvatarUrl) {
-      setError("사진 업로드에 실패했습니다. 다시 시도해주세요.");
+    const body: Record<string, unknown> = {};
+
+    // 사진 변경 여부 확인
+    if (avatarFile) {
+      const newAvatarUrl = await uploadAvatar();
+      if (!newAvatarUrl) {
+        setError("사진 업로드에 실패했습니다. 다시 시도해주세요.");
+        setSaving(false);
+        return;
+      }
+
+      // Supabase 메타데이터 + Prisma 양쪽 동기화
+      const supabase = createClient();
+      const { error: supaErr } = await supabase.auth.updateUser({
+        data: { avatar_url: newAvatarUrl },
+      });
+      if (supaErr) {
+        setError("저장에 실패했습니다.");
+        setSaving(false);
+        return;
+      }
+
+      body.avatarUrl = newAvatarUrl;
+    }
+
+    // 닉네임 변경 여부 확인
+    if (newNickname !== nickname) {
+      body.nickname = newNickname;
+    }
+
+    // 변경사항이 없으면 조기 종료
+    if (Object.keys(body).length === 0) {
       setSaving(false);
       return;
     }
 
-    // Supabase 메타데이터 + Prisma 양쪽 동기화
-    const supabase = createClient();
-    const { error: supaErr } = await supabase.auth.updateUser({
-      data: { avatar_url: newAvatarUrl },
-    });
-    if (supaErr) {
-      setError("저장에 실패했습니다.");
-      setSaving(false);
-      return;
-    }
-
-    await fetch("/api/my/profile", {
+    const res = await fetch("/api/my/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ avatarUrl: newAvatarUrl }),
+      body: JSON.stringify(body),
     });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      setError(errData.error || "저장에 실패했습니다.");
+      setSaving(false);
+      return;
+    }
 
     setSuccess(true);
     setSaving(false);
@@ -155,25 +180,24 @@ export function ProfileForm({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept="image/*"
               className="hidden"
               onChange={handleFileSelect}
             />
           </div>
 
-          {/* 활동 닉네임 — 읽기 전용 (가입 신청 폼에 종속) */}
+          {/* 활동 닉네임 — 편집 가능 */}
           <div className="glass-card p-5">
-            <p className="mb-2 text-xs font-semibold text-ink">
-              활동 닉네임 <span className="font-normal text-ink-faint">(집단-나이-이름)</span>
-            </p>
-            <p className={`text-lg font-bold ${nickname ? "text-ink" : "text-ink-faint"}`}>
-              {nickname ?? "가입 승인 후 자동 설정돼요"}
-            </p>
-            <p className="mt-2.5 border-t border-sky-line pt-2.5 text-xs leading-relaxed text-ink-soft">
-              닉네임은 청년부 가입 신청서의 이름·나이로 자동 설정되고, 변경이 까다로워요.
-              {nickname
-                ? " 수정이 필요하면 관리자에게 문의해주세요."
-                : " 신청서를 작성할 때 이름과 나이를 정확히 입력해주세요!"}
+            <label className="mb-2 block text-xs font-semibold text-ink">활동 닉네임</label>
+            <input
+              value={newNickname}
+              onChange={(e) => setNewNickname(e.target.value)}
+              maxLength={50}
+              className="w-full rounded-xl border border-white/95 bg-white/70 px-4 py-3 text-sm text-ink placeholder:text-ink-faint focus:border-teal focus:outline-none"
+              placeholder={nickname ?? "닉네임 입력"}
+            />
+            <p className="mt-2.5 text-xs leading-relaxed text-ink-soft">
+              자유롭게 설정할 수 있는 활동 닉네임이에요.
             </p>
             {membershipStatus !== "approved" && (
               <Link
@@ -193,10 +217,10 @@ export function ProfileForm({
 
           <button
             type="submit"
-            disabled={!avatarFile || saving}
+            disabled={(avatarFile === null && newNickname === nickname) || saving}
             className="btn-gold btn-glow w-full rounded-xl py-3 text-sm font-semibold disabled:opacity-40"
           >
-            {saving ? "저장 중..." : "사진 저장하기"}
+            {saving ? "저장 중..." : "저장하기"}
           </button>
         </form>
 
