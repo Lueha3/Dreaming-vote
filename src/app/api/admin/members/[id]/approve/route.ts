@@ -41,6 +41,8 @@ export async function POST(_req: NextRequest, { params }: Params) {
       membershipStatus: "approved",
       membershipDecidedAt: new Date(),
       membershipNote: null,
+      // 승인 시점 나이를 불변 스냅샷으로 고정 — 이후 닉네임 집단/나이 검증의 기준.
+      approvedAge: user.age,
       ...(autoNickname ? { nickname: autoNickname } : {}),
     },
   });

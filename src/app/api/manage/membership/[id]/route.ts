@@ -28,7 +28,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const target = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, membershipStatus: true, nickname: true },
+    select: { id: true, membershipStatus: true, nickname: true, age: true },
   });
 
   if (!target) {
@@ -48,6 +48,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       membershipStatus: action === "approve" ? "approved" : "rejected",
       membershipDecidedAt: new Date(),
       membershipNote: action === "reject" && note?.trim() ? note.trim() : null,
+      // 승인 시점 나이를 불변 스냅샷으로 고정 — 이후 닉네임 집단/나이 검증의 기준.
+      ...(action === "approve" ? { approvedAge: target.age } : {}),
     },
   });
 

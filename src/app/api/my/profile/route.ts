@@ -39,10 +39,12 @@ export async function PATCH(req: NextRequest) {
         { status: 400 },
       );
     }
+    // 집단·나이는 '승인 시점 고정 나이(approvedAge)' 기준 — pending 중 age 재제출로 위조 불가.
+    const verifiedAge = user.approvedAge;
     const claimedGroup = match[1];
     const claimedAge = parseInt(match[2], 10);
-    const verifiedGroup = user.age != null ? getGroup(user.age) : null;
-    if (!user.age || !verifiedGroup || claimedAge !== user.age || claimedGroup !== verifiedGroup) {
+    const verifiedGroup = verifiedAge != null ? getGroup(verifiedAge) : null;
+    if (!verifiedAge || !verifiedGroup || claimedAge !== verifiedAge || claimedGroup !== verifiedGroup) {
       return NextResponse.json(
         { ok: false, error: "집단과 나이는 가입 신청서 정보와 일치해야 해요. 이름 부분만 바꿀 수 있어요." },
         { status: 400 },

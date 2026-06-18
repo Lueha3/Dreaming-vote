@@ -13,6 +13,7 @@ const AUTH_USER_SELECT = {
   supabaseId: true,
   membershipStatus: true,
   age: true,
+  approvedAge: true,
   role: true,
   deletedAt: true,
 } as const;
@@ -24,7 +25,8 @@ export type AuthUser = {
   nickname: string | null;
   avatarUrl: string | null;
   membershipStatus: string; // none | pending | approved | rejected
-  age: number | null; // 가입신청서의 검증된 나이 — 집단(러비아/유디코) 판정의 유일한 근거
+  age: number | null; // 가입신청서의 나이 — pending 중 재제출로 변경 가능(미확정)
+  approvedAge: number | null; // 승인 시점 고정 나이 — 집단(러비아/유디코) 판정의 불변 근거
   role: Role; // 전역 등급. 동아리장은 여기 없음(소유 동아리에서 파생). superadmin은 env로 승격
 };
 
@@ -94,6 +96,7 @@ export const getAuthUser = cache(async (): Promise<AuthUser | null> => {
       avatarUrl: dbUser.avatarUrl,
       membershipStatus: dbUser.membershipStatus,
       age: dbUser.age,
+      approvedAge: dbUser.approvedAge,
       // 슈퍼관리자 이메일은 DB 값과 무관하게 항상 superadmin으로 승격(첫 로그인 부트스트랩 포함).
       role: isSuperadminEmail(user.email) ? "superadmin" : (dbUser.role as Role),
     };

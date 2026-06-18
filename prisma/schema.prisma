@@ -24,6 +24,9 @@ model User {
   membershipStatus    String    @default("none") // none | pending | approved | rejected
   realName            String?
   age                 Int?
+  // 승인 시점에 고정되는 나이 스냅샷 — 닉네임 집단/나이 검증의 불변 기준.
+  // age는 pending 중 재제출로 바뀔 수 있으나, approvedAge는 관리자가 승인한 나이로 굳는다.
+  approvedAge         Int?
   gender              String? // 남 | 여
   dreamGroup          String? // 소속 꿈터 이름
   phone               String? // 관리자 화면에서만 노출 — 공개 API 포함 금지
