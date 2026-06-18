@@ -122,6 +122,7 @@ export function ProfileForm({
 
     setSuccess(true);
     setSaving(false);
+    router.refresh();
     setTimeout(() => router.push("/my"), 1500);
   }
 
