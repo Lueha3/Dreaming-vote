@@ -30,8 +30,9 @@ export function Header() {
     // 로그인 여부·닉네임·멤버십 상태를 /api/membership 한 번으로 확정한다.
     // (예전: 클라 supabase.auth.getUser() → /api/membership 직렬 2왕복.
     //  membership 응답이 로그인 여부와 Prisma 닉네임을 모두 담으므로 클라 getUser 홉 제거.)
+    // Header는 PII가 필요 없으므로 summary 응답(4필드)만 받는다 — 본인 PII 미전송.
     let alive = true;
-    fetch("/api/membership", { cache: "no-store" })
+    fetch("/api/membership?fields=summary", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
         if (!alive) return;
@@ -71,6 +72,10 @@ export function Header() {
     const supabase = createClient();
     await supabase.auth.signOut();
     setMenuOpen(false);
+    setNickname(null);
+    setMembershipStatus(null);
+    setRole(null);
+    setIsClubLeader(false);
     router.push("/");
     router.refresh();
   }
