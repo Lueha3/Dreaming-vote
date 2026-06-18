@@ -218,27 +218,17 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
 
   return (
     <div className="relative min-h-screen bg-transparent pb-[120px]">
-      {/* ① 스티키 헤더 */}
+      {/* ① 스티키 헤더 — 스크롤 전에는 pointer-events-none으로 메인 Header 클릭 보장 */}
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
             ? "glass-card rounded-none border-t-0 border-x-0 shadow-sm"
-            : "bg-transparent border-transparent"
+            : "pointer-events-none bg-transparent border-transparent"
         }`}
       >
         <div className="mx-auto flex h-14 max-w-2xl items-center px-4">
-          <Link
-            href="/clubs"
-            className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ${
-              scrolled
-                ? "text-ink hover:bg-black/5"
-                : "bg-white/70 text-ink shadow-sm backdrop-blur-md hover:bg-white/90"
-            }`}
-          >
-            <span className="pb-0.5 text-xl leading-none">←</span>
-          </Link>
           <div
-            className={`ml-3 flex-1 truncate text-lg font-bold text-ink transition-opacity duration-300 ${
+            className={`flex-1 truncate text-lg font-bold text-ink transition-opacity duration-300 ${
               scrolled ? "opacity-100" : "opacity-0"
             }`}
           >
@@ -247,7 +237,7 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
           {/* 스크롤 시 사회적 증거 칩 */}
           <span
             className={`glass-soft flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-ink-soft transition-opacity duration-300 ${
-              scrolled ? "opacity-100" : "pointer-events-none opacity-0"
+              scrolled ? "opacity-100" : "opacity-0"
             }`}
           >
             🤝 {club.memberCount}
