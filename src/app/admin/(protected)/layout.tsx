@@ -4,11 +4,11 @@ import { AdminLogoutButton } from "./AdminLogoutButton";
 import { hasAdminAreaAccess } from "@/lib/manageAuth";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  // 운영진 이상(또는 레거시 비번)만 접근. 미인가는 로그인/비번 화면으로.
+  // 운영진 이상(role 기반)만 접근. 미인가는 안내 화면으로.
   if (!(await hasAdminAreaAccess("staff"))) {
     redirect("/admin/login");
   }
-  // 프롬프트 관리는 관리자 이상(또는 레거시 비번)만 메뉴 노출.
+  // 프롬프트 관리는 관리자 이상만 메뉴 노출.
   const showPrompts = await hasAdminAreaAccess("admin");
 
   return (
