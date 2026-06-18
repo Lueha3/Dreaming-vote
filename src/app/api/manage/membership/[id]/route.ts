@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { getAuthUser, roleGate } from "@/lib/auth";
+import { createMembershipNotification } from "@/lib/notifications";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -49,6 +50,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       membershipNote: action === "reject" && note?.trim() ? note.trim() : null,
     },
   });
+
+  // 본인에게 결과 알림 — 실패해도 승인/거절 처리는 유효(best-effort).
+  try {
+    await createMembershipNotification(id, action, note);
+  } catch (e) {
+    console.error("[membership-notify] 알림 생성 실패:", e);
+  }
 
   console.log(
     `[membership-${action}] actor=${user!.dbUserId}(${user!.role}) target=${id}(${target.nickname ?? "no-nickname"})`,

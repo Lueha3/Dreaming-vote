@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hasAdminAreaAccess } from "@/lib/manageAuth";
+import { createMembershipNotification } from "@/lib/notifications";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -36,6 +37,13 @@ export async function POST(req: NextRequest, { params }: Params) {
       membershipNote: reason,
     },
   });
+
+  // 본인에게 결과 알림 — 실패해도 거절 처리는 유효(best-effort).
+  try {
+    await createMembershipNotification(id, "reject", reason);
+  } catch (e) {
+    console.error("[membership-notify] 알림 생성 실패:", e);
+  }
 
   return NextResponse.json({ ok: true });
 }

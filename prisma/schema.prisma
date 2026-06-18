@@ -41,8 +41,25 @@ model User {
   announcements       Announcement[]       @relation("AuthoredAnnouncements")
   meetingReviews      ClubMeetingReview[]
   meetingImages       ClubMeetingImage[]   @relation("MeetingImageUploader")
+  notifications       Notification[]
 
   @@index([membershipStatus, membershipAppliedAt])
+}
+
+// 유저 개인 알림 — 가입 승인/거절 등 본인에게만 표시되는 인앱 알림.
+// 다음 방문 시 NotificationCenter가 미읽음 알림을 모달로 띄우고, 확인하면 isRead 처리.
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // membership_approved | membership_rejected
+  title     String
+  body      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
 }
 
 // AI 대화 파싱 결과 리포트

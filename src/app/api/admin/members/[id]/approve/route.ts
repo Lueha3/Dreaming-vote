@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { buildNickname } from "@/lib/membership";
 import { hasAdminAreaAccess } from "@/lib/manageAuth";
+import { createMembershipNotification } from "@/lib/notifications";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -43,6 +44,13 @@ export async function POST(_req: NextRequest, { params }: Params) {
       ...(autoNickname ? { nickname: autoNickname } : {}),
     },
   });
+
+  // 본인에게 결과 알림 — 실패해도 승인 처리는 유효(best-effort).
+  try {
+    await createMembershipNotification(id, "approve");
+  } catch (e) {
+    console.error("[membership-notify] 알림 생성 실패:", e);
+  }
 
   return NextResponse.json({ ok: true, nickname: autoNickname ?? user.nickname });
 }
