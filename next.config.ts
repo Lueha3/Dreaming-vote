@@ -2,22 +2,16 @@ import type { NextConfig } from "next";
 
 // 우리 앱이 실제로 의존하는 외부 출처만 화이트리스트한다.
 // - 폰트(Pretendard CSS+woff2): cdn.jsdelivr.net
-// - 인증/DB/스토리지/Realtime: Supabase 프로젝트 origin (+ wss)
+// - 인증/DB/스토리지/Realtime: Supabase (*.supabase.co + wss)
+// 주의: 빌드 env(NEXT_PUBLIC_SUPABASE_URL)에 의존하면 일부 빌드 환경에서 값이 비어
+// connect-src에서 Supabase가 누락→로그인/세션이 CSP에 차단된다. 와일드카드로 하드코딩한다.
 const FONT_CDN = "https://cdn.jsdelivr.net";
-const SUPABASE_ORIGIN = (() => {
-  try {
-    return process.env.NEXT_PUBLIC_SUPABASE_URL
-      ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).origin
-      : "";
-  } catch {
-    return "";
-  }
-})();
-const SUPABASE_WS = SUPABASE_ORIGIN.replace(/^https:/, "wss:");
-
-const connectSrc = ["'self'", SUPABASE_ORIGIN, SUPABASE_WS, FONT_CDN]
-  .filter(Boolean)
-  .join(" ");
+const connectSrc = [
+  "'self'",
+  "https://*.supabase.co",
+  "wss://*.supabase.co",
+  FONT_CDN,
+].join(" ");
 
 // 주의: script-src의 'unsafe-inline'/'unsafe-eval'은 Next 하이드레이션 인라인 스크립트,
 // layout.tsx 폰트 swap 스크립트, browser-image-compression(eval) 때문에 현재 필요하다.
