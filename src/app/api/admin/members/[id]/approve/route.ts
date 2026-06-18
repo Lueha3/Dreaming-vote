@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { buildNickname } from "@/lib/membership";
 import { hasAdminAreaAccess } from "@/lib/manageAuth";
 import { createMembershipNotification } from "@/lib/notifications";
+import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -11,10 +12,13 @@ type Params = { params: Promise<{ id: string }> | { id: string } };
  * 가입 승인 — 닉네임을 신청서의 검증된 나이·이름으로 무조건 재생성.
  * (승인 전 자가 설정한 위조 형식 닉네임이 '검증된 신원'으로 굳는 것을 차단)
  */
-export async function POST(_req: NextRequest, { params }: Params) {
+export async function POST(req: NextRequest, { params }: Params) {
   if (!(await hasAdminAreaAccess("staff"))) {
     return NextResponse.json({ ok: false, error: "NOT_ADMIN" }, { status: 401 });
   }
+
+  const rl = rateLimitResponse(`admin-mutate:${getClientIp(req)}`, { windowMs: 60_000, max: 30 });
+  if (rl) return rl;
 
   const { id } = params instanceof Promise ? await params : params;
 

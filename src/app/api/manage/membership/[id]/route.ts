@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthUser, roleGate } from "@/lib/auth";
 import { createMembershipNotification } from "@/lib/notifications";
+import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -10,6 +11,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const user = await getAuthUser();
   const gate = roleGate(user, "staff");
   if (gate) return gate;
+
+  const rl = rateLimitResponse(`membership-decide:${getClientIp(req)}`, { windowMs: 60_000, max: 30 });
+  if (rl) return rl;
 
   const { id } = params instanceof Promise ? await params : params;
 

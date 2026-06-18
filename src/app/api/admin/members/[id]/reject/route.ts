@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hasAdminAreaAccess } from "@/lib/manageAuth";
 import { createMembershipNotification } from "@/lib/notifications";
+import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -13,6 +14,9 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!(await hasAdminAreaAccess("staff"))) {
     return NextResponse.json({ ok: false, error: "NOT_ADMIN" }, { status: 401 });
   }
+
+  const rl = rateLimitResponse(`admin-mutate:${getClientIp(req)}`, { windowMs: 60_000, max: 30 });
+  if (rl) return rl;
 
   const { id } = params instanceof Promise ? await params : params;
 

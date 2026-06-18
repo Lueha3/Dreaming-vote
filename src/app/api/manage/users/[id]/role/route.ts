@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getAuthUser, roleGate } from "@/lib/auth";
 import { canAssignRole, type Role } from "@/lib/roles";
+import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -17,6 +18,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const actor = await getAuthUser();
   const gate = roleGate(actor, "admin");
   if (gate) return gate;
+
+  const rl = rateLimitResponse(`role-change:${getClientIp(req)}`, { windowMs: 60_000, max: 30 });
+  if (rl) return rl;
 
   const { id } = params instanceof Promise ? await params : params;
 
