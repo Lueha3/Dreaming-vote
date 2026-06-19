@@ -158,7 +158,7 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
       );
     }
 
-    // null 또는 rejected → 신청 가능
+    // null(첫 신청) 또는 rejected/left/removed(재신청) → 신청 가능
     return (
       <div className="w-full">
         {applyOpen ? (
@@ -208,7 +208,7 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
               onClick={() => setApplyOpen(true)}
               className="btn-gold block w-full rounded-xl px-6 py-3.5 text-sm font-bold shadow-[0_4px_14px_-4px_rgba(240,180,41,0.5)]"
             >
-              {status === "rejected" ? "다시 함께하기" : "나도 함께하기"}
+              {status ? "다시 함께하기" : "나도 함께하기"}
             </button>
           </>
         )}

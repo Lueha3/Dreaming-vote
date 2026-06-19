@@ -3,17 +3,22 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/db";
 import { getAuthUser, membershipGate } from "@/lib/auth";
+import { hasAtLeast } from "@/lib/roles";
+import { getClientIp } from "@/lib/rateLimit";
 import { createNotification } from "@/lib/notifications";
+import { recordAudit } from "@/lib/audit";
 
 type Params = {
   params: Promise<{ id: string; appId: string }> | { id: string; appId: string };
 };
 
-const actionSchema = z.object({ action: z.enum(["accept", "reject"]) });
+const actionSchema = z.object({ action: z.enum(["accept", "reject", "remove"]) });
 
 /**
  * POST /api/clubs/[id]/applications/[appId]
- * 가입 신청 수락/반려 (개설자 본인만). body: { action: "accept" | "reject" }
+ * body: { action: "accept" | "reject" | "remove" }
+ * - accept/reject: 가입 신청 수락/반려 (개설자 본인만)
+ * - remove: 가입된 멤버 강퇴 (개설자 또는 운영진 staff+). accepted → "removed".
  */
 export async function POST(req: NextRequest, { params }: Params) {
   const { id, appId } = params instanceof Promise ? await params : params;
@@ -50,7 +55,12 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!club) {
     return NextResponse.json({ ok: false, error: "동아리를 찾을 수 없습니다." }, { status: 404 });
   }
-  if (club.ownerUserId !== user.dbUserId) {
+
+  const isOwner = club.ownerUserId === user.dbUserId;
+  const isStaff = hasAtLeast(user.role, "staff");
+  // accept/reject는 개설자만, remove(강퇴)는 개설자 또는 운영진(모더레이션).
+  const allowed = action === "remove" ? isOwner || isStaff : isOwner;
+  if (!allowed) {
     return NextResponse.json({ ok: false, error: "권한이 없습니다." }, { status: 403 });
   }
 
@@ -62,6 +72,42 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: false, error: "신청을 찾을 수 없습니다." }, { status: 404 });
   }
 
+  /* ── 강퇴(remove) ─────────────────────────────────────────── */
+  if (action === "remove") {
+    if (app.status !== "accepted") {
+      return NextResponse.json({ ok: false, error: "가입된 멤버가 아니에요." }, { status: 400 });
+    }
+    await prisma.clubApplication.update({ where: { id: appId }, data: { status: "removed" } });
+
+    // 당사자 알림 (best-effort)
+    try {
+      await createNotification({
+        userId: app.userId,
+        type: "club_member_removed",
+        title: "동아리에서 내보내졌어요",
+        body: `'${club.name}' 동아리에서 내보내졌어요. 다시 신청할 수는 있어요.`,
+        link: `/clubs/${id}`,
+      });
+    } catch {
+      /* best-effort */
+    }
+    // 강퇴는 책임추적 대상 — 감사 기록 (개설자/운영진 구분)
+    try {
+      await recordAudit({
+        actor: user,
+        action: "club_member_remove",
+        targetType: "club",
+        targetId: id,
+        summary: isOwner ? "동아리 멤버 강퇴" : "동아리 멤버를 운영 권한으로 강퇴",
+        ip: getClientIp(req),
+      });
+    } catch {
+      /* best-effort */
+    }
+    return NextResponse.json({ ok: true });
+  }
+
+  /* ── 수락 / 반려 (개설자) ─────────────────────────────────── */
   const targetStatus = action === "accept" ? "accepted" : "rejected";
   // 멱등 처리: 이미 같은 상태면 아무것도 안 한다.
   // (안 그러면 개설자가 수락/반려를 반복 POST할 때마다 신청자에게 알림이 무한 생성된다)

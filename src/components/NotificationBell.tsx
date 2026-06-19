@@ -21,6 +21,9 @@ const ICON: Record<string, string> = {
   club_application_accepted: "🎉",
   club_application_rejected: "💌",
   club_meeting_created: "📅",
+  club_member_removed: "🚪",
+  club_member_left: "👋",
+  club_ownership_received: "👑",
   prayer_comment: "💬",
   prayer_intercession: "🙏",
 };

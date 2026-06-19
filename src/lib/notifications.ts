@@ -11,6 +11,9 @@ export type NotificationType =
   | "club_application_accepted" // 내 가입 신청이 수락됨 (→ 신청자)
   | "club_application_rejected" // 내 가입 신청이 반려됨 (→ 신청자)
   | "club_meeting_created" // 내가 속한 동아리에 새 모임 공지 (→ accepted 멤버)
+  | "club_member_removed" // 동아리에서 내보내짐 (→ 당사자)
+  | "club_member_left" // 멤버가 동아리를 나감 (→ 개설자)
+  | "club_ownership_received" // 동아리장이 됨 (→ 새 개설자)
   | "prayer_comment" // 내 광장 글에 댓글 (→ 글쓴이)
   | "prayer_intercession"; // 내 광장 글에 첫 공감/기도 (→ 글쓴이)
 

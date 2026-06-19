@@ -8,6 +8,8 @@ export type AuditAction =
   | "club_approve"
   | "club_reject"
   | "club_update"
+  | "club_transfer"
+  | "club_member_remove"
   | "content_delete";
 
 /**

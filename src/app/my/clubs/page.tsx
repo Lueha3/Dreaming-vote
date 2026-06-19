@@ -3,6 +3,7 @@ import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
 import { OwnedClubCard, type OwnedClub } from "./OwnedClubCard";
+import { LeaveClubButton } from "./LeaveClubButton";
 
 // getAuthUser가 쿠키를 읽으므로 동적.
 export const dynamic = "force-dynamic";
@@ -93,7 +94,13 @@ export default async function MyClubsPage() {
   }));
 
   const applied: AppliedClub[] = appliedRaw
-    .filter((a) => a.club.ownerUserId !== user.dbUserId)
+    // 나간/내보내진 신청은 '신청한 동아리'에서 숨긴다(다시 신청은 동아리 페이지에서 가능).
+    .filter(
+      (a) =>
+        a.club.ownerUserId !== user.dbUserId &&
+        a.status !== "left" &&
+        a.status !== "removed",
+    )
     .map((a) => ({
       applicationId: a.id,
       status: a.status,
@@ -159,6 +166,11 @@ export default async function MyClubsPage() {
               {applied.map((a) => (
                 <li key={a.applicationId}>
                   <AppliedRow item={a} />
+                  {a.status === "accepted" && (
+                    <div className="mt-1.5 flex justify-end px-1">
+                      <LeaveClubButton clubId={a.clubId} clubName={a.clubName} />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

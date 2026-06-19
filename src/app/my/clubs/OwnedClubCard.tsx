@@ -39,6 +39,9 @@ export function OwnedClubCard({ club }: { club: OwnedClub }) {
   const [loadingApps, setLoadingApps] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actError, setActError] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<{ appId: string; type: "remove" | "transfer" } | null>(
+    null,
+  );
 
   const loadApps = useCallback(async () => {
     setLoadingApps(true);
@@ -60,7 +63,7 @@ export function OwnedClubCard({ club }: { club: OwnedClub }) {
     if (next && apps === null) loadApps();
   }
 
-  async function act(appId: string, action: "accept" | "reject") {
+  async function act(appId: string, action: "accept" | "reject" | "remove") {
     setBusyId(appId);
     setActError(null);
     try {
@@ -69,12 +72,31 @@ export function OwnedClubCard({ club }: { club: OwnedClub }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),
       });
+      setConfirm(null);
       await loadApps();
       router.refresh(); // SSR된 멤버/대기 카운트 재계산
     } catch (e) {
       setActError(e instanceof Error ? e.message : "처리에 실패했습니다.");
     }
     setBusyId(null);
+  }
+
+  async function transferOwnership(appId: string) {
+    setBusyId(appId);
+    setActError(null);
+    try {
+      await fetchJson(`/api/clubs/${club.id}/transfer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ appId }),
+      });
+      setConfirm(null);
+      setBusyId(null);
+      router.refresh(); // 더 이상 내 소유가 아니므로 목록에서 사라진다
+    } catch (e) {
+      setActError(e instanceof Error ? e.message : "동아리장 양도에 실패했습니다.");
+      setBusyId(null);
+    }
   }
 
   const statusBadge = !club.isApproved ? (
@@ -186,12 +208,65 @@ export function OwnedClubCard({ club }: { club: OwnedClub }) {
                           </button>
                         </div>
                       ) : a.status === "accepted" ? (
-                        <span className="text-xs font-medium text-teal-ink">수락됨 ✓</span>
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => setConfirm({ appId: a.id, type: "transfer" })}
+                            disabled={busyId === a.id}
+                            className="glass-soft rounded-lg px-2.5 py-1 text-xs font-medium text-ink-soft transition-all hover:text-skyx-ink disabled:opacity-40"
+                          >
+                            👑 넘기기
+                          </button>
+                          <button
+                            onClick={() => setConfirm({ appId: a.id, type: "remove" })}
+                            disabled={busyId === a.id}
+                            className="glass-soft rounded-lg px-2.5 py-1 text-xs font-medium text-ink-soft transition-all hover:border-red-300/60 hover:text-red-500 disabled:opacity-40"
+                          >
+                            강퇴
+                          </button>
+                        </div>
+                      ) : a.status === "left" ? (
+                        <span className="text-xs font-medium text-ink-faint">나감</span>
+                      ) : a.status === "removed" ? (
+                        <span className="text-xs font-medium text-ink-faint">내보냄</span>
                       ) : (
                         <span className="text-xs font-medium text-ink-faint">거절됨</span>
                       )}
                     </div>
                   </div>
+
+                  {/* 강퇴 / 동아리장 양도 확인 */}
+                  {confirm?.appId === a.id && (
+                    <div className="mt-2.5 flex flex-wrap items-center justify-end gap-2 border-t border-sky-line pt-2.5">
+                      <span className="mr-auto text-xs text-ink-soft">
+                        {confirm.type === "remove"
+                          ? `${a.applicantNickname ?? "이 멤버"}님을 내보낼까요?`
+                          : `${a.applicantNickname ?? "이 멤버"}님에게 동아리장을 넘길까요? (되돌릴 수 없어요)`}
+                      </span>
+                      <button
+                        onClick={() =>
+                          confirm.type === "remove" ? act(a.id, "remove") : transferOwnership(a.id)
+                        }
+                        disabled={busyId === a.id}
+                        className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all disabled:opacity-50 ${
+                          confirm.type === "remove"
+                            ? "border border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+                            : "border border-skyx/40 bg-skyx/10 text-skyx-ink hover:bg-skyx/20"
+                        }`}
+                      >
+                        {busyId === a.id
+                          ? "처리 중…"
+                          : confirm.type === "remove"
+                            ? "강퇴 확정"
+                            : "양도 확정"}
+                      </button>
+                      <button
+                        onClick={() => setConfirm(null)}
+                        className="glass-soft rounded-lg px-2.5 py-1 text-xs text-ink-soft hover:text-ink"
+                      >
+                        취소
+                      </button>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
