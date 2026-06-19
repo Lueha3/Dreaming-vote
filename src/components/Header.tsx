@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { RoleBadge } from "@/components/RoleBadge";
+import { NotificationBell } from "@/components/NotificationBell";
 import { canManage, displayRoles, type Role } from "@/lib/roles";
 
 
@@ -108,13 +109,17 @@ export function Header() {
           </div>
         </Link>
 
-        {/* 햄버거 — 모든 화면 크기 공통 */}
-        <div className="relative flex items-center gap-2" ref={menuRef}>
+        {/* 우측 클러스터 (로그인/알림벨/햄버거) */}
+        <div className="flex items-center gap-2">
           {!loading && !nickname && (
             <Link href="/login" className="btn-gold rounded-full px-3.5 py-1.5 text-xs">
               로그인
             </Link>
           )}
+          {/* 알림 벨 — 로그인 상태에서만 자체 렌더(비로그인은 null). menuRef 밖에 둬서
+              벨 클릭이 햄버거 메뉴의 '외부 클릭'으로 인식돼 메뉴가 닫히게 한다(상호 배타). */}
+          <NotificationBell />
+          <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((o) => !o)}
             className="glass-soft flex h-9 w-9 items-center justify-center rounded-xl text-ink-soft transition-colors hover:text-skyx-ink"
@@ -174,6 +179,7 @@ export function Header() {
               )}
             </div>
           )}
+          </div>
         </div>
 
       </div>

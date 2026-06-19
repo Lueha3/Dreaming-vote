@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getAuthUser, membershipGate } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { createNotification } from "@/lib/notifications";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     where: { id },
     select: {
       id: true,
+      name: true,
       ownerUserId: true,
       isApproved: true,
       isActive: true,
@@ -94,6 +96,19 @@ export async function POST(req: NextRequest, { params }: Params) {
     update: { status: "pending", message },
     create: { clubId: id, userId: user.dbUserId, status: "pending", message },
   });
+
+  // 개설자에게 새 신청 알림 (best-effort — 알림 실패가 신청 자체를 막지 않음)
+  try {
+    await createNotification({
+      userId: club.ownerUserId,
+      type: "club_application_received",
+      title: "새 가입 신청이 도착했어요",
+      body: `'${club.name}'에 ${user.nickname ?? "누군가"}님이 가입을 신청했어요.`,
+      link: "/my/clubs",
+    });
+  } catch {
+    /* best-effort */
+  }
 
   return NextResponse.json({ ok: true });
 }

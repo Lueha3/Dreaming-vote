@@ -139,9 +139,9 @@ export function recommendClubs(
     const text = `${c.name} ${c.category} ${c.tags} ${c.description}`;
 
     if (archs.length === 0) {
-      // 레거시 폴백: 페르소나 토큰이 동아리 텍스트에 얼마나 등장하는지로 차등
+      // 레거시 폴백: 페르소나 토큰이 동아리 텍스트에 얼마나 등장하는지로 차등 (40..85 밴드)
       const hits = fallbackTokens.filter((t) => text.includes(t)).length;
-      const score = Math.round(55 + Math.min(1, hits * 0.12) * 30);
+      const score = Math.round(40 + Math.min(1, hits * 0.12) * 45);
       return { clubId: c.id, score, reason: buildReason(null, c.category, []), _name: c.name };
     }
 
@@ -173,7 +173,9 @@ export function recommendClubs(
     const catScore = 0.5 * sumNorm + 0.5 * maxNorm;
     const kwScore = Math.min(1, matched.size * 0.34); // 약 3개 일치 시 포화
     const final01 = 0.72 * catScore + 0.28 * kwScore;
-    const score = Math.round(55 + final01 * 43); // 55..98 밴드
+    // 40..98 밴드. 하한을 55→40으로 낮춰 적합도가 낮은 동아리도 솔직하게 낮은 점수로
+    // 표시한다(이전엔 적합도 0도 55%로 떠 매칭 신뢰도를 과장했다).
+    const score = Math.round(40 + final01 * 58);
 
     // 카테고리 적합도가 전부 0이면 대표 인물형을 이유 주체로
     const drv: BibleArchetype | null = drivingAff > 0 ? driving : archs[0] ?? null;

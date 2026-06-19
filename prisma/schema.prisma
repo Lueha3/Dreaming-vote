@@ -70,14 +70,16 @@ model AuditLog {
   @@index([targetType, targetId])
 }
 
-// 유저 개인 알림 — 가입 승인/거절 등 본인에게만 표시되는 인앱 알림.
-// 다음 방문 시 NotificationCenter가 미읽음 알림을 모달로 띄우고, 확인하면 isRead 처리.
+// 유저 개인 알림 — 본인에게만 표시되는 인앱 알림(가입 승인/거절, 동아리 신청·수락,
+// 새 모임 공지, 광장 댓글·공감 등 도메인 이벤트). Header 알림 벨이 최근 20건을 보여주고,
+// 항목 클릭 시 link로 이동하며 해당 건을 isRead 처리한다.
 model Notification {
   id        String   @id @default(cuid())
   userId    String
-  type      String   // membership_approved | membership_rejected
+  type      String   // membership_approved|rejected, club_application_received|accepted|rejected, club_meeting_created, prayer_comment, prayer_intercession
   title     String
   body      String?
+  link      String?  // 클릭 시 이동할 앱 내부 경로(예: /clubs/<id>, /my/clubs, /prayer). 없으면 비이동.
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 

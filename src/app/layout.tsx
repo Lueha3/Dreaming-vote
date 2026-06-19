@@ -3,7 +3,6 @@ import "./globals.css";
 
 import { Header } from "@/components/Header";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
-import { NotificationCenter } from "@/components/NotificationCenter";
 
 export const metadata: Metadata = {
   title: "BlueHumanity — 꿈꾸는교회 청년부",
@@ -80,7 +79,6 @@ export default function RootLayout({
         <SkyBackdrop />
         <Header />
         {children}
-        <NotificationCenter />
       </body>
     </html>
   );

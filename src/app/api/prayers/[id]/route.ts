@@ -3,7 +3,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getAuthUser, membershipGate } from "@/lib/auth";
 import { hasAtLeast } from "@/lib/roles";
-import { checkRateLimit } from "@/lib/rateLimit";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { recordAudit } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -59,7 +60,26 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   if (prayer.userId !== user.dbUserId && !hasAtLeast(user.role, "staff"))
     return NextResponse.json({ ok: false, error: "권한이 없습니다." }, { status: 403 });
 
+  // 본인 글이 아닌데 삭제 = 운영진 권한 모더레이션. 권한 남용·항의 대응을 위해 감사 기록.
+  const isModeration = prayer.userId !== user.dbUserId;
+
   // 첨부 이미지·댓글·반응은 onDelete: Cascade로 함께 정리됨 (스토리지 객체는 best-effort 미삭제)
   await prisma.prayer.delete({ where: { id } });
+
+  if (isModeration) {
+    try {
+      await recordAudit({
+        actor: user,
+        action: "content_delete",
+        targetType: "prayer",
+        targetId: id,
+        summary: "광장 글을 운영 권한으로 삭제",
+        ip: getClientIp(req),
+      });
+    } catch {
+      /* 감사 기록 실패가 삭제 자체를 되돌리지 않음 (best-effort) */
+    }
+  }
+
   return NextResponse.json({ ok: true });
 }

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { getAuthUser, membershipGate } from "@/lib/auth";
 import { hasAtLeast } from "@/lib/roles";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { createNotification } from "@/lib/notifications";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -67,7 +68,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   const gate = membershipGate(user);
   if (gate) return gate;
 
-  const prayer = await prisma.prayer.findUnique({ where: { id }, select: { id: true } });
+  const prayer = await prisma.prayer.findUnique({
+    where: { id },
+    select: { id: true, userId: true, category: true },
+  });
   if (!prayer) return NextResponse.json({ ok: false, error: "글을 찾을 수 없습니다." }, { status: 404 });
 
   const body = await req.json().catch(() => null);
@@ -83,6 +87,31 @@ export async function POST(req: NextRequest, { params }: Params) {
     data: { prayerId: id, userId: user.dbUserId, content: parsed.data.content },
     select: { id: true },
   });
+
+  // 글쓴이에게 댓글 알림 (본인 댓글은 제외). best-effort
+  // 같은 글의 미읽음 알림이 이미 있으면 새로 만들지 않는다 → 한 글에 댓글이 쏟아져도
+  // 미읽음은 1건으로 합쳐져 누적·도배를 막는다(글쓴이가 읽으면 다음 댓글에 다시 알림).
+  // body엔 댓글 원문을 넣지 않는다(임의 문구 반복 푸시 벡터 차단) — 닉네임만.
+  if (prayer.userId !== user.dbUserId) {
+    try {
+      const link = `/prayer?category=${encodeURIComponent(prayer.category)}#${id}`;
+      const dup = await prisma.notification.findFirst({
+        where: { userId: prayer.userId, type: "prayer_comment", link, isRead: false },
+        select: { id: true },
+      });
+      if (!dup) {
+        await createNotification({
+          userId: prayer.userId,
+          type: "prayer_comment",
+          title: "내 광장 글에 댓글이 달렸어요",
+          body: `${user.nickname ?? "누군가"}님이 댓글을 남겼어요.`,
+          link,
+        });
+      }
+    } catch {
+      /* best-effort */
+    }
+  }
 
   return NextResponse.json({ ok: true, id: comment.id });
 }

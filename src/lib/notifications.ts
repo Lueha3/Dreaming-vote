@@ -1,9 +1,69 @@
 import { prisma } from "@/lib/db";
 
 /**
+ * 인앱 알림 타입. Header 알림 벨이 type별 아이콘을 그리는 데 쓴다.
+ * 새 타입을 추가하면 NotificationBell의 ICON 맵에도 함께 추가한다.
+ */
+export type NotificationType =
+  | "membership_approved"
+  | "membership_rejected"
+  | "club_application_received" // 내 동아리에 가입 신청이 들어옴 (→ 개설자)
+  | "club_application_accepted" // 내 가입 신청이 수락됨 (→ 신청자)
+  | "club_application_rejected" // 내 가입 신청이 반려됨 (→ 신청자)
+  | "club_meeting_created" // 내가 속한 동아리에 새 모임 공지 (→ accepted 멤버)
+  | "prayer_comment" // 내 광장 글에 댓글 (→ 글쓴이)
+  | "prayer_intercession"; // 내 광장 글에 첫 공감/기도 (→ 글쓴이)
+
+type NotificationInput = {
+  userId: string;
+  type: NotificationType;
+  title: string;
+  body?: string | null;
+  /** 클릭 시 이동할 앱 내부 경로(예: /clubs/<id>). 없으면 항목이 이동하지 않음. */
+  link?: string | null;
+};
+
+/**
+ * 단건 인앱 알림 생성.
+ * best-effort 규약 — 알림 생성 실패가 본 작업(수락/공지/댓글 등)을 막지 않도록
+ * 호출부에서 try/catch로 감싼다.
+ */
+export async function createNotification(input: NotificationInput): Promise<void> {
+  await prisma.notification.create({
+    data: {
+      userId: input.userId,
+      type: input.type,
+      title: input.title,
+      body: input.body ?? null,
+      link: input.link ?? null,
+    },
+  });
+}
+
+/**
+ * 동일 알림을 여러 수신자에게 일괄 생성(새 모임 공지 → 멤버 전체 등).
+ * userIds가 비어 있으면 아무 것도 하지 않는다. best-effort — 호출부에서 try/catch.
+ */
+export async function createNotifications(
+  userIds: string[],
+  payload: Omit<NotificationInput, "userId">,
+): Promise<void> {
+  if (userIds.length === 0) return;
+  await prisma.notification.createMany({
+    data: userIds.map((userId) => ({
+      userId,
+      type: payload.type,
+      title: payload.title,
+      body: payload.body ?? null,
+      link: payload.link ?? null,
+    })),
+  });
+}
+
+/**
  * 가입신청 승인/거절 시 해당 유저에게 인앱 알림 1건 생성.
  * /api/manage/membership(PATCH)·/api/admin/members/[id]/approve|reject 세 경로가 공유.
- * best-effort — 알림 생성 실패가 승인/거절 처리 자체를 막지 않도록 호출부에서 try/catch.
+ * createNotification 위의 얇은 래퍼 — best-effort는 동일하게 호출부 책임.
  */
 export async function createMembershipNotification(
   userId: string,
@@ -11,26 +71,24 @@ export async function createMembershipNotification(
   note?: string | null,
 ): Promise<void> {
   if (action === "approve") {
-    await prisma.notification.create({
-      data: {
-        userId,
-        type: "membership_approved",
-        title: "가입이 승인됐어요 🎉",
-        body: "이제 동아리 개설·가입, 광장 글쓰기를 모두 할 수 있어요. 환영해요!",
-      },
+    await createNotification({
+      userId,
+      type: "membership_approved",
+      title: "가입이 승인됐어요 🎉",
+      body: "이제 동아리 개설·가입, 광장 글쓰기를 모두 할 수 있어요. 환영해요!",
+      link: "/clubs",
     });
     return;
   }
 
   const reason = note?.trim();
-  await prisma.notification.create({
-    data: {
-      userId,
-      type: "membership_rejected",
-      title: "가입 신청 결과를 알려드려요",
-      body: reason
-        ? `아쉽지만 이번 신청은 다시 살펴보기로 했어요.\n사유: ${reason}\n언제든 다시 신청할 수 있어요.`
-        : "아쉽지만 이번 신청은 다시 살펴보기로 했어요. 언제든 다시 신청할 수 있어요.",
-    },
+  await createNotification({
+    userId,
+    type: "membership_rejected",
+    title: "가입 신청 결과를 알려드려요",
+    body: reason
+      ? `아쉽지만 이번 신청은 다시 살펴보기로 했어요.\n사유: ${reason}\n언제든 다시 신청할 수 있어요.`
+      : "아쉽지만 이번 신청은 다시 살펴보기로 했어요. 언제든 다시 신청할 수 있어요.",
+    link: "/join",
   });
 }

@@ -6,7 +6,8 @@ export type AuditAction =
   | "membership_approve"
   | "membership_reject"
   | "club_approve"
-  | "club_reject";
+  | "club_reject"
+  | "content_delete";
 
 /**
  * 신뢰 경계 변이를 감사 로그에 기록한다.
@@ -16,7 +17,7 @@ export type AuditAction =
 export async function recordAudit(params: {
   actor: AuthUser | null;
   action: AuditAction;
-  targetType: "user" | "club";
+  targetType: "user" | "club" | "prayer" | "comment";
   targetId: string;
   summary: string;
   ip?: string | null;

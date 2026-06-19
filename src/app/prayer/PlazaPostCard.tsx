@@ -104,7 +104,7 @@ export function PlazaPostCard({
   }, [lightboxIndex, post.images.length]);
 
   return (
-    <li className={`glass-card p-5 transition-all ${post.isAnswered ? "border-teal/45!" : ""}`}>
+    <li id={post.id} className={`glass-card scroll-mt-24 p-5 transition-all ${post.isAnswered ? "border-teal/45!" : ""}`}>
       {/* 작성자 + 시간 */}
       <div className="mb-2.5 flex items-center justify-between">
         <div className="flex items-center gap-2">

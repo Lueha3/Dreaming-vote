@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getAuthUser, membershipGate } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { createNotifications } from "@/lib/notifications";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -112,7 +113,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const club = await prisma.club.findUnique({
     where: { id },
-    select: { ownerUserId: true },
+    select: { ownerUserId: true, name: true },
   });
   if (!club) {
     return NextResponse.json({ ok: false, error: "동아리를 찾을 수 없습니다." }, { status: 404 });
@@ -148,6 +149,25 @@ export async function POST(req: NextRequest, { params }: Params) {
     },
     select: { id: true },
   });
+
+  // 가입 멤버(accepted) 전원에게 새 모임 알림 (개설자는 application이 아니라 자동 제외). best-effort
+  try {
+    const members = await prisma.clubApplication.findMany({
+      where: { clubId: id, status: "accepted" },
+      select: { userId: true },
+    });
+    await createNotifications(
+      members.map((m) => m.userId),
+      {
+        type: "club_meeting_created",
+        title: "새 모임 공지가 올라왔어요",
+        body: `'${club.name}'에 '${parsed.data.title}' 모임이 공지됐어요.`,
+        link: `/clubs/${id}/meetings/${meeting.id}`,
+      },
+    );
+  } catch {
+    /* best-effort */
+  }
 
   return NextResponse.json({ ok: true, id: meeting.id });
 }

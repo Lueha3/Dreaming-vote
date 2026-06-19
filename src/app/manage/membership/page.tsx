@@ -48,6 +48,7 @@ export default function ManageMembershipPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     load();
@@ -60,14 +61,16 @@ export default function ManageMembershipPage() {
         `/api/manage/membership?status=${filter}`,
       );
       setItems(data.items ?? []);
-    } catch {
-      /* ignore */
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "목록을 불러오지 못했어요. 다시 시도해주세요.");
     }
     setLoading(false);
   }
 
   async function decide(id: string, action: "approve" | "reject", note?: string) {
     setBusyId(id);
+    setError(null);
     try {
       await fetchJson(`/api/manage/membership/${id}`, {
         method: "PATCH",
@@ -77,8 +80,9 @@ export default function ManageMembershipPage() {
       setRejectingId(null);
       setRejectNote("");
       await load();
-    } catch {
-      /* ignore */
+    } catch (e) {
+      const verb = action === "approve" ? "승인" : "반려";
+      setError(e instanceof Error ? e.message : `${verb} 처리에 실패했어요. 다시 시도해주세요.`);
     }
     setBusyId(null);
   }
@@ -92,6 +96,12 @@ export default function ManageMembershipPage() {
       <p className="mb-4 text-sm text-ink-soft">
         청년부 가입 신청을 검토하고 승인 또는 반려 처리합니다.
       </p>
+
+      {error && (
+        <div className="mb-4 rounded-xl border border-red-300/60 bg-red-500/[0.08] px-4 py-2.5 text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
       {/* 필터 */}
       <div className="mb-5 flex items-center gap-2">

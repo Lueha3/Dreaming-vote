@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
 import { hasAtLeast } from "@/lib/roles";
-import { checkRateLimit } from "@/lib/rateLimit";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { recordAudit } from "@/lib/audit";
 
 type Params = {
   params: Promise<{ id: string; commentId: string }> | { id: string; commentId: string };
@@ -37,6 +38,27 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     hasAtLeast(user.role, "staff");
   if (!canDelete) return NextResponse.json({ ok: false, error: "권한이 없습니다." }, { status: 403 });
 
+  // 내가 쓰지 않은 댓글 삭제 = 모더레이션(운영진 권한 또는 글 작성자의 스레드 관리).
+  // 두 경로 모두 타인 콘텐츠 삭제이므로 책임추적을 위해 감사하되 권한 출처를 구분 기록.
+  const isModeration = comment.userId !== user.dbUserId;
+  const byStaff = hasAtLeast(user.role, "staff");
+
   await prisma.prayerComment.delete({ where: { id: commentId } });
+
+  if (isModeration) {
+    try {
+      await recordAudit({
+        actor: user,
+        action: "content_delete",
+        targetType: "comment",
+        targetId: commentId,
+        summary: byStaff ? "광장 댓글을 운영 권한으로 삭제" : "광장 댓글을 글 작성자 권한으로 삭제",
+        ip: getClientIp(req),
+      });
+    } catch {
+      /* best-effort */
+    }
+  }
+
   return NextResponse.json({ ok: true });
 }

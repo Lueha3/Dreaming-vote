@@ -19,6 +19,7 @@ const ACTION_META: Record<string, { label: string; emoji: string; tone: string }
   membership_reject: { label: "가입 거절", emoji: "✋", tone: "text-gold-ink" },
   club_approve: { label: "동아리 승인", emoji: "🎯", tone: "text-teal-ink" },
   club_reject: { label: "동아리 반려", emoji: "🚫", tone: "text-gold-ink" },
+  content_delete: { label: "콘텐츠 삭제", emoji: "🗑", tone: "text-gold-ink" },
 };
 
 function fmtKST(iso: string): string {
@@ -64,7 +65,7 @@ export default function ManageAuditPage() {
   return (
     <div className="space-y-2">
       <p className="mb-3 text-xs text-ink-faint">
-        역할 변경·가입 승인/거절·동아리 승인/반려를 최신순 100건까지 보여줘요.
+        역할 변경·가입 승인/거절·동아리 승인/반려·콘텐츠 삭제를 최신순 100건까지 보여줘요.
       </p>
       {items.map((it) => {
         const meta = ACTION_META[it.action] ?? {

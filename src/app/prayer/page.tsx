@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, fetchJson } from "@/lib/http";
 import { PlazaImageUploader } from "./PlazaImageUploader";
 import { PlazaPostCard } from "./PlazaPostCard";
@@ -59,6 +59,25 @@ export default function PlazaPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // 알림 딥링크(/prayer?category=..#<글id>)로 진입 시 해당 카테고리 탭을 먼저 연다.
+  useEffect(() => {
+    const c = new URLSearchParams(window.location.search).get("category");
+    if (c && (CATEGORIES as readonly string[]).includes(c)) setCategory(c as Category);
+  }, []);
+
+  // 로드 완료 후 URL 해시(#<글id>)가 가리키는 글로 1회 스크롤(해당 글이 현재 목록에 있을 때).
+  const scrolledRef = useRef(false);
+  useEffect(() => {
+    if (loading || scrolledRef.current) return;
+    const hash = window.location.hash.slice(1);
+    if (!hash) return;
+    const el = document.getElementById(hash);
+    if (el) {
+      scrolledRef.current = true;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [loading, items]);
 
   /** 게이트(미승인) 등 API 에러를 작성 폼 영역에 안내 */
   function surfaceApiError(err: unknown, fallback: string) {
