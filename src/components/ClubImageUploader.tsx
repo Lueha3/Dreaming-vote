@@ -253,7 +253,7 @@ export function ClubImageUploader({ onChange, maxImages = 5 }: Props) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/*"
         multiple
         className="hidden"
         onChange={(e) => e.target.files && handleAdd(e.target.files)}

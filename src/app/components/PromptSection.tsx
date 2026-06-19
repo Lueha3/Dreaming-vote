@@ -79,7 +79,8 @@ export function PromptSection() {
    */
   async function resolveGate(): Promise<Gate> {
     try {
-      const m = await fetchJson<MembershipResponse>("/api/membership");
+      // membershipStatus만 보므로 summary 응답(PII 미포함)으로 충분.
+      const m = await fetchJson<MembershipResponse>("/api/membership?fields=summary");
       return m.membership.membershipStatus === "approved" ? "ok" : "join";
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) return "login";
