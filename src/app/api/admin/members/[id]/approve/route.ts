@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { buildNickname } from "@/lib/membership";
 import { hasAdminAreaAccess } from "@/lib/manageAuth";
+import { getAuthUser } from "@/lib/auth";
 import { createMembershipNotification } from "@/lib/notifications";
 import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
+import { recordAudit } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -56,6 +58,20 @@ export async function POST(req: NextRequest, { params }: Params) {
     await createMembershipNotification(id, "approve");
   } catch (e) {
     console.error("[membership-notify] 알림 생성 실패:", e);
+  }
+
+  // 감사 로그 — best-effort.
+  try {
+    await recordAudit({
+      actor: await getAuthUser(),
+      action: "membership_approve",
+      targetType: "user",
+      targetId: id,
+      summary: `가입 승인 (${autoNickname ?? user.nickname ?? "no-nickname"})`,
+      ip: getClientIp(req),
+    });
+  } catch (e) {
+    console.error("[audit] membership_approve 기록 실패:", e);
   }
 
   return NextResponse.json({ ok: true, nickname: autoNickname ?? user.nickname });

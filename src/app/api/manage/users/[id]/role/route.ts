@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { getAuthUser, roleGate } from "@/lib/auth";
 import { canAssignRole, type Role } from "@/lib/roles";
 import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
+import { recordAudit } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -62,10 +63,19 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   await prisma.user.update({ where: { id }, data: { role: next } });
 
-  // 경량 감사 로그 — 누가 누구의 역할을 어떻게 바꿨는지(서버 로그). 전용 감사 테이블은 후속.
-  console.info(
-    `[role-change] actor=${actor!.dbUserId}(${actor!.role}) target=${id}(${target.role}->${next})`,
-  );
+  // 감사 로그 — best-effort(실패해도 역할 변경은 유효).
+  try {
+    await recordAudit({
+      actor,
+      action: "role_change",
+      targetType: "user",
+      targetId: id,
+      summary: `역할 변경: ${target.role} → ${next} (${target.nickname ?? "no-nickname"})`,
+      ip: getClientIp(req),
+    });
+  } catch (e) {
+    console.error("[audit] role_change 기록 실패:", e);
+  }
 
   return NextResponse.json({ ok: true, id, role: next });
 }

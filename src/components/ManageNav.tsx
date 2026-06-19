@@ -9,6 +9,7 @@ const TABS = [
   { href: "/manage/announcements", label: "전체 공지", emoji: "📢" },
   { href: "/manage/clubs", label: "동아리 관리", emoji: "🎯" },
   { href: "/manage/stats", label: "운영 지표", emoji: "📊" },
+  { href: "/manage/audit", label: "감사 로그", emoji: "🧾" },
 ] as const;
 
 export function ManageNav() {

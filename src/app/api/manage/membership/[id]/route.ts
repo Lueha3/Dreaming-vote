@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { getAuthUser, roleGate } from "@/lib/auth";
 import { createMembershipNotification } from "@/lib/notifications";
 import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
+import { recordAudit } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -64,9 +65,22 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     console.error("[membership-notify] 알림 생성 실패:", e);
   }
 
-  console.log(
-    `[membership-${action}] actor=${user!.dbUserId}(${user!.role}) target=${id}(${target.nickname ?? "no-nickname"})`,
-  );
+  // 감사 로그 — best-effort.
+  try {
+    await recordAudit({
+      actor: user,
+      action: action === "approve" ? "membership_approve" : "membership_reject",
+      targetType: "user",
+      targetId: id,
+      summary:
+        action === "approve"
+          ? `가입 승인 (${target.nickname ?? "no-nickname"})`
+          : `가입 거절 (${target.nickname ?? "no-nickname"})${note?.trim() ? `: ${note.trim()}` : ""}`,
+      ip: getClientIp(req),
+    });
+  } catch (e) {
+    console.error("[audit] membership 기록 실패:", e);
+  }
 
   return NextResponse.json({ ok: true, id, action });
 }

@@ -45,8 +45,29 @@ model User {
   meetingReviews      ClubMeetingReview[]
   meetingImages       ClubMeetingImage[]   @relation("MeetingImageUploader")
   notifications       Notification[]
+  auditLogs           AuditLog[]           @relation("AuditActor")
 
   @@index([membershipStatus, membershipAppliedAt])
+}
+
+// 감사 로그 — 신뢰 경계 변이(역할변경·가입승인/거절·동아리승인/거절)를 추적.
+// 행위자가 삭제돼도 보존(SetNull)하고, 표시명/역할은 시점 스냅샷으로 비정규화 저장.
+model AuditLog {
+  id            String   @id @default(cuid())
+  actorId       String?
+  actorNickname String? // 행위자 표시명 스냅샷(행위자 삭제·개명돼도 보존)
+  actorRole     String? // 행위 시점 역할 스냅샷
+  action        String // role_change | membership_approve | membership_reject | club_approve | club_reject
+  targetType    String // user | club
+  targetId      String
+  summary       String // 사람이 읽는 요약 (예: "member→staff", "가입 거절: 사유")
+  ip            String?
+  createdAt     DateTime @default(now())
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
 }
 
 // 유저 개인 알림 — 가입 승인/거절 등 본인에게만 표시되는 인앱 알림.

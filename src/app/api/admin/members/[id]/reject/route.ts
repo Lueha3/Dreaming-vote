@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hasAdminAreaAccess } from "@/lib/manageAuth";
+import { getAuthUser } from "@/lib/auth";
 import { createMembershipNotification } from "@/lib/notifications";
 import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
+import { recordAudit } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -47,6 +49,20 @@ export async function POST(req: NextRequest, { params }: Params) {
     await createMembershipNotification(id, "reject", reason);
   } catch (e) {
     console.error("[membership-notify] 알림 생성 실패:", e);
+  }
+
+  // 감사 로그 — best-effort.
+  try {
+    await recordAudit({
+      actor: await getAuthUser(),
+      action: "membership_reject",
+      targetType: "user",
+      targetId: id,
+      summary: `가입 거절${reason ? `: ${reason}` : ""}`,
+      ip: getClientIp(req),
+    });
+  } catch (e) {
+    console.error("[audit] membership_reject 기록 실패:", e);
   }
 
   return NextResponse.json({ ok: true });

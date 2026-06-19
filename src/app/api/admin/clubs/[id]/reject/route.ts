@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hasAdminAreaAccess } from "@/lib/manageAuth";
+import { getAuthUser } from "@/lib/auth";
 import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
+import { recordAudit } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -27,6 +29,19 @@ export async function POST(req: NextRequest, { params }: Params) {
     where: { id },
     data: { isApproved: false, isActive: false },
   });
+
+  try {
+    await recordAudit({
+      actor: await getAuthUser(),
+      action: "club_reject",
+      targetType: "club",
+      targetId: id,
+      summary: "동아리 반려(비노출)",
+      ip: getClientIp(req),
+    });
+  } catch (e) {
+    console.error("[audit] club_reject 기록 실패:", e);
+  }
 
   return NextResponse.json({ ok: true });
 }
