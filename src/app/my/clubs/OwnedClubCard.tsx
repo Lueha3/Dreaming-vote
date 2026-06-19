@@ -111,17 +111,25 @@ export function OwnedClubCard({ club }: { club: OwnedClub }) {
           </p>
         </div>
 
-        <button
-          onClick={toggle}
-          className="glass-soft relative shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium text-ink-soft transition-all hover:bg-white/90 hover:text-ink"
-        >
-          신청 관리
-          {club.pendingCount > 0 && (
-            <span className="ml-1.5 rounded-full bg-gold/20 px-1.5 py-0.5 text-xs text-gold-ink">
-              {club.pendingCount}
-            </span>
-          )}
-        </button>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Link
+            href={`/clubs/${club.id}/edit`}
+            className="glass-soft rounded-xl px-3 py-1.5 text-xs font-medium text-ink-soft transition-all hover:bg-white/90 hover:text-ink"
+          >
+            ✏️ 수정
+          </Link>
+          <button
+            onClick={toggle}
+            className="glass-soft relative rounded-xl px-3 py-1.5 text-xs font-medium text-ink-soft transition-all hover:bg-white/90 hover:text-ink"
+          >
+            신청 관리
+            {club.pendingCount > 0 && (
+              <span className="ml-1.5 rounded-full bg-gold/20 px-1.5 py-0.5 text-xs text-gold-ink">
+                {club.pendingCount}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* 신청 관리 패널 */}

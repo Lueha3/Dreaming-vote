@@ -1,38 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 
 import { prisma } from "@/lib/db";
 import { getAuthUser, membershipGate } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
-import { CLUB_CATEGORIES, isClubCategory } from "@/lib/clubCategories";
-import { SUPABASE_STORAGE_PREFIX } from "@/lib/storage";
-
-const imageSchema = z.object({
-  url: z.string().url().startsWith(SUPABASE_STORAGE_PREFIX),
-  caption: z.string().max(100).default(""),
-  order: z.number().int().min(0),
-});
-
-const createSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(2, "동아리 이름은 2자 이상이어야 합니다.")
-    .max(40, "동아리 이름이 너무 깁니다."),
-  description: z
-    .string()
-    .trim()
-    .min(10, "소개를 10자 이상 작성해주세요.")
-    .max(2000, "소개가 너무 깁니다."),
-  category: z.enum(CLUB_CATEGORIES),
-  tags: z
-    .string()
-    .trim()
-    .min(1, "키워드를 1개 이상 입력해주세요.")
-    .max(200, "키워드가 너무 깁니다."),
-  maxMembers: z.number().int().min(2).max(1000).nullable().optional(),
-  images: z.array(imageSchema).max(10).optional().default([]),
-});
+import { isClubCategory } from "@/lib/clubCategories";
+import { clubCreateSchema } from "@/lib/clubSchema";
 
 /**
  * GET /api/clubs
@@ -112,7 +84,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "잘못된 요청 형식입니다." }, { status: 400 });
   }
 
-  const parsed = createSchema.safeParse(body);
+  const parsed = clubCreateSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { ok: false, error: "입력값 오류", fieldErrors: parsed.error.flatten().fieldErrors },

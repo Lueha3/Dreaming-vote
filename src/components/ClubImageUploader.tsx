@@ -23,10 +23,26 @@ type UploadState = {
 interface Props {
   onChange: (images: ClubImageItem[]) => void;
   maxImages?: number;
+  /** 수정 모드 prefill — 기존에 업로드된 이미지(이미 공개 URL 보유). */
+  initialImages?: ClubImageItem[];
 }
 
-export function ClubImageUploader({ onChange, maxImages = 5 }: Props) {
-  const [items, setItems] = useState<UploadState[]>([]);
+export function ClubImageUploader({ onChange, maxImages = 5, initialImages }: Props) {
+  const [items, setItems] = useState<UploadState[]>(() =>
+    (initialImages ?? [])
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .map((img) => ({
+        localId: crypto.randomUUID(),
+        // 기존 업로드본은 스토리지 경로를 모름 → 제거해도 객체는 best-effort 미정리(고아 허용).
+        path: null,
+        previewUrl: img.url,
+        url: img.url,
+        caption: img.caption,
+        uploading: false,
+        error: null,
+      })),
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function notify(updated: UploadState[]) {

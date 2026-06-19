@@ -7,6 +7,7 @@ export type AuditAction =
   | "membership_reject"
   | "club_approve"
   | "club_reject"
+  | "club_update"
   | "content_delete";
 
 /**

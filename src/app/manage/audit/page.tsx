@@ -19,6 +19,7 @@ const ACTION_META: Record<string, { label: string; emoji: string; tone: string }
   membership_reject: { label: "가입 거절", emoji: "✋", tone: "text-gold-ink" },
   club_approve: { label: "동아리 승인", emoji: "🎯", tone: "text-teal-ink" },
   club_reject: { label: "동아리 반려", emoji: "🚫", tone: "text-gold-ink" },
+  club_update: { label: "동아리 수정", emoji: "✏️", tone: "text-skyx-ink" },
   content_delete: { label: "콘텐츠 삭제", emoji: "🗑", tone: "text-gold-ink" },
 };
 

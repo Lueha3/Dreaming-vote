@@ -116,8 +116,10 @@ export async function getClubDetail(
 
   const isOwner = !!user && user.dbUserId === club.ownerUserId;
 
-  // 미승인/숨김 동아리는 개설자 본인에게만 보임 (라우트 GET과 동일).
-  if ((!club.isApproved || !club.isActive) && !isOwner) return null;
+  // 미승인/숨김 동아리는 개설자 본인 + 운영진(staff+)에게만 보임.
+  // (운영진은 수정/모더레이션을 위해 열람 가능해야 한다 — PATCH 게이트와 정렬.)
+  const isStaff = hasAtLeast(user?.role, "staff");
+  if ((!club.isApproved || !club.isActive) && !isOwner && !isStaff) return null;
 
   // 신청 상태는 비개설자에게만 의미. (병렬로 받았지만 개설자면 무시.)
   const myApplicationStatus = isOwner ? null : ownApplication?.status ?? null;
