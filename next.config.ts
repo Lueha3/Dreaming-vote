@@ -13,12 +13,20 @@ const connectSrc = [
   FONT_CDN,
 ].join(" ");
 
-// 주의: script-src의 'unsafe-inline'/'unsafe-eval'은 Next 하이드레이션 인라인 스크립트,
-// layout.tsx 폰트 swap 스크립트, browser-image-compression(eval) 때문에 현재 필요하다.
-// nonce 기반 강화는 후속(P1) 과제. upgrade-insecure-requests는 로컬(http) dev를 깨므로 제외.
+// script-src 정책:
+// - 'unsafe-eval'은 dev HMR(React Refresh)에만 필요. 프로덕션 번들·browser-image-compression은
+//   eval을 쓰지 않음(검증) → 프로덕션에서는 제외해 CSP를 강화한다.
+// - 'unsafe-inline'은 유지한다. 제거하려면 nonce가 필요한데, 그러면 정적 페이지(/ /clubs /join 등)가
+//   전부 per-request 동적 렌더로 바뀌어 성능 회귀가 크다. 또한 이 앱엔 저장형 XSS 벡터가 없다
+//   (사용자 콘텐츠는 전부 React 자동 이스케이프, 유저 입력 dangerouslySetInnerHTML 없음). 의도적 보류.
+// upgrade-insecure-requests는 로컬(http) dev를 깨므로 제외.
+const isDev = process.env.NODE_ENV !== "production";
+const scriptSrc = ["'self'", "'unsafe-inline'", isDev ? "'unsafe-eval'" : "", FONT_CDN]
+  .filter(Boolean)
+  .join(" ");
 const csp = [
   `default-src 'self'`,
-  `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${FONT_CDN}`,
+  `script-src ${scriptSrc}`,
   `style-src 'self' 'unsafe-inline' ${FONT_CDN}`,
   `font-src 'self' ${FONT_CDN} data:`,
   `img-src 'self' blob: data: https:`,
