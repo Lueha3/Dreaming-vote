@@ -1,5 +1,6 @@
 import { PromptSection } from "./components/PromptSection";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
+import { HomeFeed } from "@/components/HomeFeed";
 
 export default function Home() {
   return (
@@ -35,6 +36,9 @@ export default function Home() {
 
         {/* 4단계 슬라이드 카드 */}
         <PromptSection />
+
+        {/* 로그인 승인 멤버 전용 활동 피드 (클라 island — 홈 정적성 유지) */}
+        <HomeFeed />
 
         {/* 하단 교회 라인아트 (로고 오마주) */}
         <div className="mt-16 flex justify-center sm:mt-20" aria-hidden>
