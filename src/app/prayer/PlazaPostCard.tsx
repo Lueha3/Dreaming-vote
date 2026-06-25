@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { RoleBadge } from "@/components/RoleBadge";
+import { ReportButton } from "@/components/ReportButton";
 import { displayRoles } from "@/lib/roles";
 import { timeAgo } from "@/lib/time";
 import { PlazaComments } from "./PlazaComments";
@@ -206,6 +207,13 @@ export function PlazaPostCard({
             ))}
         </div>
       </div>
+
+      {/* 신고 (본인 글 제외) */}
+      {loggedIn && !post.isMine && (
+        <div className="mt-2 flex justify-end">
+          <ReportButton targetType="prayer" targetId={post.id} />
+        </div>
+      )}
 
       {/* 응답 간증 인라인 입력 */}
       {answering && (

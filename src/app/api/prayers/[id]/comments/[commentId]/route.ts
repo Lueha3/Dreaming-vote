@@ -43,7 +43,14 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const isModeration = comment.userId !== user.dbUserId;
   const byStaff = hasAtLeast(user.role, "staff");
 
-  await prisma.prayerComment.delete({ where: { id: commentId } });
+  await prisma.$transaction(async (tx) => {
+    await tx.prayerComment.delete({ where: { id: commentId } });
+    // 이 댓글의 미처리 신고를 해결 처리(콘텐츠가 사라졌으므로 유령 신고 적체 방지)
+    await tx.contentReport.updateMany({
+      where: { status: "open", targetType: "comment", targetId: commentId },
+      data: { status: "resolved", resolvedById: user.dbUserId, resolvedAt: new Date() },
+    });
+  });
 
   if (isModeration) {
     try {

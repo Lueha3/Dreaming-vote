@@ -46,8 +46,33 @@ model User {
   meetingImages       ClubMeetingImage[]   @relation("MeetingImageUploader")
   notifications       Notification[]
   auditLogs           AuditLog[]           @relation("AuditActor")
+  contentReports      ContentReport[]      @relation("ReportReporter")
+  resolvedReports     ContentReport[]      @relation("ReportResolver")
 
   @@index([membershipStatus, membershipAppliedAt])
+}
+
+// 사용자 신고 — 광장 글/댓글/동아리의 부적절 콘텐츠를 운영진이 검토·처리하는 큐.
+// (성향 카드 Report 모델과 구분하기 위해 ContentReport로 명명)
+model ContentReport {
+  id           String    @id @default(cuid())
+  reporterId   String?
+  targetType   String // prayer | comment | club
+  targetId     String
+  reason       String // 신고 사유(자유 텍스트)
+  status       String    @default("open") // open | resolved | dismissed
+  note         String? // 처리 메모(운영진)
+  createdAt    DateTime  @default(now())
+  resolvedAt   DateTime?
+  resolvedById String?
+
+  reporter   User? @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: SetNull)
+  resolvedBy User? @relation("ReportResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+  // 부분 유니크 인덱스(content_report_open_dedup_index 마이그레이션)로 본인 동일 대상 open 신고 1건 강제.
+  // Prisma 스키마로는 부분 유니크를 표현할 수 없어 raw SQL 마이그레이션으로 관리한다.
 }
 
 // 감사 로그 — 신뢰 경계 변이(역할변경·가입승인/거절·동아리승인/거절)를 추적.

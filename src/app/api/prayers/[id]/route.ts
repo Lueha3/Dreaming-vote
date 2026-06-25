@@ -63,8 +63,26 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   // 본인 글이 아닌데 삭제 = 운영진 권한 모더레이션. 권한 남용·항의 대응을 위해 감사 기록.
   const isModeration = prayer.userId !== user.dbUserId;
 
-  // 첨부 이미지·댓글·반응은 onDelete: Cascade로 함께 정리됨 (스토리지 객체는 best-effort 미삭제)
-  await prisma.prayer.delete({ where: { id } });
+  // cascade로 함께 삭제될 댓글 id 수집 — 그 댓글에 달린 미처리 신고까지 정리하기 위함.
+  const commentIds = (
+    await prisma.prayerComment.findMany({ where: { prayerId: id }, select: { id: true } })
+  ).map((c) => c.id);
+
+  await prisma.$transaction(async (tx) => {
+    // 첨부 이미지·댓글·반응은 onDelete: Cascade로 함께 정리됨 (스토리지 객체는 best-effort 미삭제)
+    await tx.prayer.delete({ where: { id } });
+    // 이 글/그 댓글의 미처리 신고를 해결 처리(콘텐츠가 사라졌으므로 유령 신고 적체 방지)
+    await tx.contentReport.updateMany({
+      where: { status: "open", targetType: "prayer", targetId: id },
+      data: { status: "resolved", resolvedById: user.dbUserId, resolvedAt: new Date() },
+    });
+    if (commentIds.length) {
+      await tx.contentReport.updateMany({
+        where: { status: "open", targetType: "comment", targetId: { in: commentIds } },
+        data: { status: "resolved", resolvedById: user.dbUserId, resolvedAt: new Date() },
+      });
+    }
+  });
 
   if (isModeration) {
     try {

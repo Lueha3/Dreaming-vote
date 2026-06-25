@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, fetchJson } from "@/lib/http";
 import { RoleBadge } from "@/components/RoleBadge";
+import { ReportButton } from "@/components/ReportButton";
 import { displayRoles, type Role } from "@/lib/roles";
 import { timeAgo } from "@/lib/time";
 
@@ -125,6 +126,11 @@ export function PlazaComments({
                 <p className="mt-0.5 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft">
                   {c.content}
                 </p>
+                {loggedIn && !c.isMine && (
+                  <div className="mt-1">
+                    <ReportButton targetType="comment" targetId={c.id} />
+                  </div>
+                )}
               </div>
             </li>
           ))}
