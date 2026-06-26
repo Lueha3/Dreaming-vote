@@ -34,6 +34,13 @@ type ReviewItem = {
 
 type ImageItem = { id: string; url: string; caption: string; canDelete: boolean };
 
+type RsvpData = {
+  myStatus: "going" | "maybe" | null;
+  goingCount: number;
+  maybeCount: number;
+  going: { nickname: string | null; avatarUrl: string | null }[];
+};
+
 type DetailResponse = {
   ok: true;
   isOwner: boolean;
@@ -41,6 +48,7 @@ type DetailResponse = {
   meeting: MeetingDetail;
   reviews: ReviewItem[];
   images: ImageItem[];
+  rsvp: RsvpData;
 };
 
 function fmtFull(iso: string): string {
@@ -99,6 +107,10 @@ export default function MeetingDetailPage({ params }: PageProps) {
   const [editErr, setEditErr] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // 참석(RSVP)
+  const [rsvpBusy, setRsvpBusy] = useState(false);
+  const [rsvpErr, setRsvpErr] = useState<string | null>(null);
+
   useEffect(() => {
     const resolve = async () => {
       const r = params instanceof Promise ? await params : params;
@@ -107,7 +119,7 @@ export default function MeetingDetailPage({ params }: PageProps) {
     resolve();
   }, [params]);
 
-  async function load(id: string, meetingId: string) {
+  async function load(id: string, meetingId: string, opts?: { silent?: boolean }) {
     try {
       const res = await fetch(`/api/clubs/${id}/meetings/${meetingId}`, { cache: "no-store" });
       const json = await res.json();
@@ -116,11 +128,12 @@ export default function MeetingDetailPage({ params }: PageProps) {
         setErrState(null);
       } else if (json.code === "member_only") {
         setErrState("member_only");
-      } else {
+      } else if (!opts?.silent) {
+        // 이미 로드된 화면에서의 갱신(silent) 실패는 전체를 not-found로 갈아엎지 않는다.
         setErrState("notfound");
       }
     } catch {
-      setErrState("notfound");
+      if (!opts?.silent) setErrState("notfound");
     }
     setLoading(false);
   }
@@ -130,6 +143,33 @@ export default function MeetingDetailPage({ params }: PageProps) {
     load(ids.id, ids.meetingId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ids]);
+
+  async function setRsvp(status: "going" | "maybe" | "none") {
+    if (!ids || rsvpBusy) return;
+    setRsvpBusy(true);
+    setRsvpErr(null);
+    try {
+      const res = await fetch(`/api/clubs/${ids.id}/meetings/${ids.meetingId}/rsvp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) {
+        setRsvpErr(
+          res.status === 429
+            ? "요청이 잦아요. 잠시 후 다시 시도해주세요."
+            : json?.error ?? "참석 표시에 실패했어요.",
+        );
+      } else {
+        // 참석 카운트·아바타 갱신. silent — 갱신 실패해도 현재 화면을 유지(not-found로 안 바뀜).
+        await load(ids.id, ids.meetingId, { silent: true });
+      }
+    } catch {
+      setRsvpErr("네트워크 오류. 잠시 후 다시 시도해주세요.");
+    }
+    setRsvpBusy(false);
+  }
 
   async function submitReview() {
     if (!ids || !reviewText.trim()) return;
@@ -459,6 +499,70 @@ export default function MeetingDetailPage({ params }: PageProps) {
               </p>
             )}
           </div>
+        )}
+
+        {/* ①-b 참석 표시(RSVP) — 예정된 모임에서만 */}
+        {!editing && !isPast && (
+          <section className="glass-card mb-6 bg-white/80 p-5 sm:p-6">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-base font-bold text-ink">🙋 참석</h2>
+              <span className="text-xs text-ink-faint">
+                가요 {data.rsvp.goingCount}
+                {data.rsvp.maybeCount > 0 ? ` · 아마도 ${data.rsvp.maybeCount}` : ""}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              {(["going", "maybe", "none"] as const).map((s) => {
+                // myStatus는 going|maybe|null만 — "none"과 절대 일치하지 않아 미응답 시 어떤 버튼도 강조 안 됨.
+                const active = data.rsvp.myStatus === s;
+                const label = s === "going" ? "🙌 가요" : s === "maybe" ? "🤔 아마도" : "🙅 안 가요";
+                return (
+                  <button
+                    key={s}
+                    onClick={() => setRsvp(s)}
+                    disabled={rsvpBusy}
+                    className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all disabled:opacity-50 ${
+                      active
+                        ? "border-teal/50 bg-teal/15 text-teal-ink"
+                        : "border-white/90 bg-white/60 text-ink-soft hover:bg-white/90 hover:text-ink"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            {data.rsvp.going.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                {data.rsvp.going.map((g, i) =>
+                  g.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={i}
+                      src={g.avatarUrl}
+                      alt=""
+                      title={g.nickname ?? ""}
+                      className="h-7 w-7 rounded-full object-cover ring-2 ring-white"
+                    />
+                  ) : (
+                    <div
+                      key={i}
+                      title={g.nickname ?? ""}
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-skyx/25 text-[11px] text-skyx-ink ring-2 ring-white"
+                    >
+                      {(g.nickname ?? "?")[0]}
+                    </div>
+                  ),
+                )}
+                {data.rsvp.goingCount > data.rsvp.going.length && (
+                  <span className="text-xs text-ink-faint">
+                    +{data.rsvp.goingCount - data.rsvp.going.length}
+                  </span>
+                )}
+              </div>
+            )}
+            {rsvpErr && <p className="mt-2 text-xs text-red-500">{rsvpErr}</p>}
+          </section>
         )}
 
         {/* ② 갤러리 */}

@@ -28,6 +28,10 @@ ADMIN_SECRET=your-admin-secret-here
 # 슈퍼관리자 이메일 (쉼표로 구분) — RBAC 최초 관리자 부트스트랩. 서버 전용(NEXT_PUBLIC_ 금지).
 SUPERADMIN_EMAILS=you@example.com
 
+# 모임 24h 리마인더 Cron 보호용 시크릿 — Vercel Cron이 Authorization: Bearer로 전송.
+# 설정해야 /api/cron/meeting-reminders가 동작(미설정 시 fail-closed로 401). 서버 전용.
+CRON_SECRET=generate-a-long-random-string
+
 # 앱 기본 URL (배포 후 실제 URL로 변경)
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```

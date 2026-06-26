@@ -44,6 +44,7 @@ model User {
   announcements       Announcement[]       @relation("AuthoredAnnouncements")
   meetingReviews      ClubMeetingReview[]
   meetingImages       ClubMeetingImage[]   @relation("MeetingImageUploader")
+  meetingRsvps        ClubMeetingRsvp[]
   notifications       Notification[]
   auditLogs           AuditLog[]           @relation("AuditActor")
   contentReports      ContentReport[]      @relation("ReportReporter")
@@ -207,12 +208,31 @@ model ClubMeeting {
   note      String? // 일정·세부 안내
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  // 24h 전 리마인더 발송 시점 — cron이 중복 발송을 막는 플래그(null이면 미발송).
+  reminderSentAt DateTime?
 
   club    Club                @relation(fields: [clubId], references: [id], onDelete: Cascade)
   reviews ClubMeetingReview[]
   images  ClubMeetingImage[]
+  rsvps   ClubMeetingRsvp[]
 
   @@index([clubId, meetsAt])
+  @@index([meetsAt, reminderSentAt])
+}
+
+// 모임 참석 표시(RSVP) — 멤버가 going(가요)/maybe(아마도)로 토글. 한 모임당 1행.
+model ClubMeetingRsvp {
+  id        String   @id @default(cuid())
+  meetingId String
+  userId    String
+  status    String   @default("going") // going | maybe
+  createdAt DateTime @default(now())
+
+  meeting ClubMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, userId])
+  @@index([meetingId])
 }
 
 // 모임 후기 — 멤버 누구나 댓글 형식으로 작성. 작성자·개설자가 삭제 가능.

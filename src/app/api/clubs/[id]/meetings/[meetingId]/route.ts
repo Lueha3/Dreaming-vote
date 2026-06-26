@@ -56,6 +56,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
         orderBy: [{ order: "asc" }, { createdAt: "asc" }],
         select: { id: true, url: true, caption: true, userId: true },
       },
+      rsvps: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          userId: true,
+          status: true,
+          user: { select: { nickname: true, avatarUrl: true } },
+        },
+      },
     },
   });
 
@@ -64,6 +72,10 @@ export async function GET(_req: NextRequest, { params }: Params) {
   }
 
   const me = user?.dbUserId ?? null;
+
+  const going = meeting.rsvps.filter((r) => r.status === "going");
+  const maybe = meeting.rsvps.filter((r) => r.status === "maybe");
+  const myStatus = me ? meeting.rsvps.find((r) => r.userId === me)?.status ?? null : null;
 
   return NextResponse.json({
     ok: true,
@@ -93,6 +105,16 @@ export async function GET(_req: NextRequest, { params }: Params) {
       caption: img.caption,
       canDelete: isOwner || (!!me && img.userId === me),
     })),
+    rsvp: {
+      myStatus,
+      goingCount: going.length,
+      maybeCount: maybe.length,
+      // 참석자 아바타 줄 — 너무 길지 않게 going 우선 최대 12명 표시.
+      going: going.slice(0, 12).map((r) => ({
+        nickname: r.user?.nickname ?? null,
+        avatarUrl: r.user?.avatarUrl ?? null,
+      })),
+    },
   });
 }
 

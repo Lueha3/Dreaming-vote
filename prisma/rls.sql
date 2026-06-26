@@ -26,6 +26,7 @@ ALTER TABLE "ClubRecommendation" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Notification"       ENABLE ROW LEVEL SECURITY;  -- 개인 알림(본인 외 접근 차단). create_notification_table 마이그레이션에서 이미 적용됨.
 ALTER TABLE "AuditLog"           ENABLE ROW LEVEL SECURITY;  -- 감사 로그(운영 전용). create_audit_log_table 마이그레이션에서 이미 적용됨.
 ALTER TABLE "ContentReport"      ENABLE ROW LEVEL SECURITY;  -- 사용자 신고(운영 전용). create_content_report_table 마이그레이션에서 이미 적용됨.
+ALTER TABLE "ClubMeetingRsvp"    ENABLE ROW LEVEL SECURITY;  -- 모임 참석 표시. create_meeting_rsvp_and_reminder 마이그레이션에서 이미 적용됨.
 
 -- 정책은 의도적으로 생성하지 않습니다.
 -- (anon/authenticated 직접 접근 전면 차단; 서비스는 Prisma 소유자 연결로만 동작)
