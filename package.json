@@ -7,8 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "postinstall": "prisma generate",
-    "audit:check": "npm audit --audit-level=high"
+    "audit:check": "npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -32,6 +35,7 @@
     "eslint-config-next": "16.0.10",
     "prisma": "^5.22.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^2.1.9"
   }
 }

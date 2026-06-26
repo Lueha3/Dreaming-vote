@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# 동일 브랜치의 이전 실행은 취소(최신 커밋만 검사).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # postinstall이 prisma generate를 수행(스키마만 필요, DB 연결 불필요).
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          # 빌드 시 모듈이 읽는 자리표시자(런타임 비밀 아님). 동적 라우트라 빌드에선 DB 미연결,
+          # Prisma는 첫 쿼리에서야 연결하므로 placeholder DATABASE_URL로 충분하다.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          DATABASE_URL: postgresql://u:p@localhost:5432/placeholder
