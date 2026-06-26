@@ -10,7 +10,8 @@ export type AuditAction =
   | "club_update"
   | "club_transfer"
   | "club_member_remove"
-  | "content_delete";
+  | "content_delete"
+  | "roster_export";
 
 /**
  * 신뢰 경계 변이를 감사 로그에 기록한다.

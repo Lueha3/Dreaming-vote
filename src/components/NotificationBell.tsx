@@ -27,6 +27,7 @@ const ICON: Record<string, string> = {
   club_ownership_received: "👑",
   prayer_comment: "💬",
   prayer_intercession: "🙏",
+  announcement: "📢",
 };
 
 function timeAgo(iso: string): string {

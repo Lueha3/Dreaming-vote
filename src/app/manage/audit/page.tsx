@@ -23,6 +23,7 @@ const ACTION_META: Record<string, { label: string; emoji: string; tone: string }
   club_transfer: { label: "동아리장 양도", emoji: "👑", tone: "text-skyx-ink" },
   club_member_remove: { label: "멤버 강퇴", emoji: "🚪", tone: "text-gold-ink" },
   content_delete: { label: "콘텐츠 삭제", emoji: "🗑", tone: "text-gold-ink" },
+  roster_export: { label: "명단 내보내기", emoji: "📄", tone: "text-ink" },
 };
 
 function fmtKST(iso: string): string {

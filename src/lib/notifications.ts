@@ -16,7 +16,8 @@ export type NotificationType =
   | "club_member_left" // 멤버가 동아리를 나감 (→ 개설자)
   | "club_ownership_received" // 동아리장이 됨 (→ 새 개설자)
   | "prayer_comment" // 내 광장 글에 댓글 (→ 글쓴이)
-  | "prayer_intercession"; // 내 광장 글에 첫 공감/기도 (→ 글쓴이)
+  | "prayer_intercession" // 내 광장 글에 첫 공감/기도 (→ 글쓴이)
+  | "announcement"; // 운영진 공지 브로드캐스트 (→ 승인 멤버 전원)
 
 type NotificationInput = {
   userId: string;

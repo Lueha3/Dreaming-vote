@@ -13,9 +13,21 @@ type Announcement = {
   authorNickname: string | null;
 };
 
-type Draft = { title: string; body: string; isPublished: boolean; isPinned: boolean };
+type Draft = {
+  title: string;
+  body: string;
+  isPublished: boolean;
+  isPinned: boolean;
+  broadcast: boolean;
+};
 
-const EMPTY_DRAFT: Draft = { title: "", body: "", isPublished: true, isPinned: false };
+const EMPTY_DRAFT: Draft = {
+  title: "",
+  body: "",
+  isPublished: true,
+  isPinned: false,
+  broadcast: false,
+};
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("ko-KR", {
@@ -67,6 +79,7 @@ export default function ManageAnnouncementsPage() {
       body: a.body,
       isPublished: a.isPublished,
       isPinned: a.isPinned,
+      broadcast: false, // 브로드캐스트는 신규 작성에서만 — 수정 시엔 항상 false
     });
     setEditing(a.id);
   }
@@ -200,7 +213,14 @@ export default function ManageAnnouncementsPage() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => setDraft((d) => ({ ...d, isPublished: !d.isPublished }))}
+              onClick={() =>
+                setDraft((d) => ({
+                  ...d,
+                  isPublished: !d.isPublished,
+                  // 초안으로 내리면 브로드캐스트는 불가 → 함께 해제.
+                  broadcast: !d.isPublished ? d.broadcast : false,
+                }))
+              }
               className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
                 draft.isPublished
                   ? "border-teal/40 bg-teal/10 text-teal-ink"
@@ -220,6 +240,20 @@ export default function ManageAnnouncementsPage() {
             >
               📌 {draft.isPinned ? "상단 고정" : "고정 안 함"}
             </button>
+            {/* 브로드캐스트는 신규 게시 공지에서만 — 멤버 전원에게 인앱 알림 발송 */}
+            {editing === "new" && draft.isPublished && (
+              <button
+                type="button"
+                onClick={() => setDraft((d) => ({ ...d, broadcast: !d.broadcast }))}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                  draft.broadcast
+                    ? "border-skyx/40 bg-skyx/10 text-skyx-ink"
+                    : "glass-soft text-ink-soft"
+                }`}
+              >
+                🔔 {draft.broadcast ? "알림 발송함" : "알림으로도 보내기"}
+              </button>
+            )}
           </div>
           <div className="flex justify-end gap-2 pt-1">
             <button

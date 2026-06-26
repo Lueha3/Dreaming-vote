@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getAuthUser, roleGate } from "@/lib/auth";
+import { createNotifications } from "@/lib/notifications";
 
 const createSchema = z.object({
   title: z.string().trim().min(1, "제목을 입력해주세요.").max(120, "제목이 너무 길어요."),
   body: z.string().trim().min(1, "내용을 입력해주세요.").max(5000, "내용이 너무 길어요."),
   isPinned: z.boolean().optional(),
   isPublished: z.boolean().optional(),
+  broadcast: z.boolean().optional(), // 게시와 함께 승인 멤버 전원에게 알림 발송
 });
 
 /**
@@ -69,17 +71,41 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const published = parsed.data.isPublished ?? true;
   const created = await prisma.announcement.create({
     data: {
       title: parsed.data.title,
       body: parsed.data.body,
       isPinned: parsed.data.isPinned ?? false,
-      isPublished: parsed.data.isPublished ?? true,
+      isPublished: published,
       authorId: user!.dbUserId,
     },
     select: { id: true },
   });
 
-  console.info(`[announcement-create] actor=${user!.dbUserId}(${user!.role}) id=${created.id}`);
-  return NextResponse.json({ ok: true, id: created.id });
+  // 게시 + 브로드캐스트 선택 시 승인 멤버 전원에게 알림(작성자·탈퇴자 제외). best-effort.
+  let notified = 0;
+  if (parsed.data.broadcast && published) {
+    try {
+      const members = await prisma.user.findMany({
+        where: { membershipStatus: "approved", deletedAt: null, id: { not: user!.dbUserId } },
+        select: { id: true },
+      });
+      await createNotifications(
+        members.map((m) => m.id),
+        {
+          type: "announcement",
+          title: `📢 ${parsed.data.title.slice(0, 40)}`,
+          body: parsed.data.body.slice(0, 80),
+          link: "/notices",
+        },
+      );
+      notified = members.length;
+    } catch (e) {
+      console.error("[announcement-broadcast] 알림 발송 실패:", e);
+    }
+  }
+
+  console.info(`[announcement-create] actor=${user!.dbUserId}(${user!.role}) id=${created.id} notified=${notified}`);
+  return NextResponse.json({ ok: true, id: created.id, notified });
 }

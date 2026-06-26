@@ -49,6 +49,8 @@ export default function ManageMembershipPage() {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   useEffect(() => {
     load();
@@ -61,11 +63,64 @@ export default function ManageMembershipPage() {
         `/api/manage/membership?status=${filter}`,
       );
       setItems(data.items ?? []);
+      setSelected(new Set());
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "목록을 불러오지 못했어요. 다시 시도해주세요.");
     }
     setLoading(false);
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function bulkApprove() {
+    const ids = [...selected];
+    if (ids.length === 0 || bulkBusy) return;
+    setBulkBusy(true);
+    setError(null);
+    try {
+      await fetchJson("/api/manage/membership/bulk-approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "일괄 승인에 실패했어요. 다시 시도해주세요.");
+    }
+    setBulkBusy(false);
+  }
+
+  // CSV는 fetch→blob로 내려받는다. 평범한 <a>로 열면 세션 만료 시 JSON 에러 문서로
+  // 네비게이션돼 관리 화면을 벗어나므로, 실패는 인앱 에러 배너로 처리한다.
+  async function downloadCsv() {
+    setError(null);
+    try {
+      const res = await fetch("/api/manage/membership/export");
+      if (!res.ok) {
+        const j = await res.json().catch(() => null);
+        setError(j?.error ?? "명단을 내보내지 못했어요.");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `members-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError("명단을 내보내지 못했어요.");
+    }
   }
 
   async function decide(id: string, action: "approve" | "reject", note?: string) {
@@ -91,11 +146,25 @@ export default function ManageMembershipPage() {
   const visible =
     filter === "pending" ? items.filter((u) => u.membershipStatus === "pending") : items;
 
+  const selectableIds = filter === "pending" ? visible.map((u) => u.id) : [];
+  const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
+  function toggleSelectAll() {
+    setSelected(allSelected ? new Set() : new Set(selectableIds));
+  }
+
   return (
     <div>
-      <p className="mb-4 text-sm text-ink-soft">
-        청년부 가입 신청을 검토하고 승인 또는 반려 처리합니다.
-      </p>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <p className="text-sm text-ink-soft">
+          청년부 가입 신청을 검토하고 승인 또는 반려 처리합니다.
+        </p>
+        <button
+          onClick={downloadCsv}
+          className="glass-soft shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium text-ink-soft transition-all hover:text-ink"
+        >
+          📄 명단 CSV
+        </button>
+      </div>
 
       {error && (
         <div className="mb-4 rounded-xl border border-red-300/60 bg-red-500/[0.08] px-4 py-2.5 text-sm text-red-600">
@@ -132,6 +201,27 @@ export default function ManageMembershipPage() {
         </button>
       </div>
 
+      {/* 일괄 선택/승인 (대기 목록에서만) */}
+      {filter === "pending" && !loading && visible.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <button
+            onClick={toggleSelectAll}
+            className="glass-soft rounded-full px-3 py-1.5 text-xs text-ink-soft transition-colors hover:text-ink"
+          >
+            {allSelected ? "선택 해제" : "전체 선택"}
+          </button>
+          {selected.size > 0 && (
+            <button
+              onClick={bulkApprove}
+              disabled={bulkBusy}
+              className="rounded-full border border-teal/40 bg-teal/10 px-3.5 py-1.5 text-xs font-medium text-teal-ink transition-all hover:bg-teal/20 disabled:opacity-50"
+            >
+              {bulkBusy ? "승인 중…" : `선택 ${selected.size}건 승인`}
+            </button>
+          )}
+        </div>
+      )}
+
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
@@ -161,6 +251,15 @@ export default function ManageMembershipPage() {
                 {/* 좌측: 신청자 정보 */}
                 <div className="min-w-0 flex-1">
                   <div className="mb-2.5 flex items-center gap-2.5">
+                    {filter === "pending" && u.membershipStatus === "pending" && (
+                      <input
+                        type="checkbox"
+                        checked={selected.has(u.id)}
+                        onChange={() => toggleSelect(u.id)}
+                        aria-label="일괄 승인 선택"
+                        className="h-4 w-4 shrink-0 accent-teal-600"
+                      />
+                    )}
                     {u.avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
