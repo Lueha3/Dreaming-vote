@@ -355,7 +355,7 @@ model ClubApplication {
   clubId    String
   userId    String
   message   String?  // 신청 메시지 (선택)
-  status    String   @default("pending") // pending | accepted | rejected
+  status    String   @default("pending") // pending | accepted | rejected | left(자진 탈퇴) | removed(강퇴)
   createdAt DateTime @default(now())
 
   club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)

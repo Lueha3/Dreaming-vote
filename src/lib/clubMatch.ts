@@ -27,6 +27,10 @@ export type ClubCandidate = {
   category: string;
   description: string;
   tags: string;
+  // 참여 신호 보정용 (없으면 보정 없음).
+  maxMembers?: number | null;
+  memberCount?: number; // accepted 멤버 수
+  memberArchetypes?: string[]; // accepted 멤버들의 대표 인물형 label
 };
 
 export type ClubMatch = { clubId: string; score: number; reason: string };
@@ -120,6 +124,7 @@ export function recommendClubs(
   if (candidates.length === 0) return [];
 
   const archs = userArchetypes(persona.coreTraits);
+  const userLabels = new Set(archs.map((a) => a.label));
   // 인식된 인물형이 없을 때(레거시 리포트)를 위한 텍스트 폴백 토큰
   const fallbackTokens =
     archs.length === 0
@@ -138,53 +143,66 @@ export function recommendClubs(
   const scored: Scored[] = candidates.map((c) => {
     const text = `${c.name} ${c.category} ${c.tags} ${c.description}`;
 
+    // ── 1) 적합도 기본 점수 ──
+    let baseScore: number;
+    let drv: BibleArchetype | null = null;
+    const matched = new Set<string>();
+
     if (archs.length === 0) {
       // 레거시 폴백: 페르소나 토큰이 동아리 텍스트에 얼마나 등장하는지로 차등 (40..85 밴드)
       const hits = fallbackTokens.filter((t) => text.includes(t)).length;
-      const score = Math.round(40 + Math.min(1, hits * 0.12) * 45);
-      return { clubId: c.id, score, reason: buildReason(null, c.category, []), _name: c.name };
+      baseScore = Math.round(40 + Math.min(1, hits * 0.12) * 45);
+    } else {
+      let catRaw = 0; // 가중 합 (얼마나 폭넓게 이 카테고리로 기우는가)
+      let bestWeighted = 0; // 가장 강한 단일 인물형의 가중 적합도 (대표가 강하게 맞는가)
+      let driving: BibleArchetype | null = null;
+      let drivingAff = -1;
+
+      archs.forEach((a, i) => {
+        const aff = AFFINITY[a.label]?.[c.category] ?? 0;
+        const weighted = weightAt(i) * aff;
+        catRaw += weighted;
+        if (weighted > bestWeighted) bestWeighted = weighted;
+        // 이 동아리 카테고리에 가장 잘 맞는 인물형 = 추천 이유의 주체
+        if (aff > drivingAff) {
+          drivingAff = aff;
+          driving = a;
+        }
+        for (const kw of a.keywords) {
+          if (text.includes(kw)) matched.add(kw);
+        }
+      });
+
+      // 폭(sumNorm) + 강도(maxNorm)를 5:5로 혼합. 강도 항이 없으면 소수 인물형만 맞는
+      // 니치 카테고리(운동/취미/문화·예술)가 여러 인물형에 걸친 카테고리(친목 등)에 구조적으로 묻힌다.
+      const sumNorm = catRaw / maxCat; // 0..1 — 프로필이 전반적으로 이 카테고리로 기운 정도
+      const maxNorm = Math.min(1, bestWeighted / (ORDER_WEIGHTS[0] * MAX_AFFINITY)); // 0..1 — 대표가 강하게 맞는가
+      const catScore = 0.5 * sumNorm + 0.5 * maxNorm;
+      const kwScore = Math.min(1, matched.size * 0.34); // 약 3개 일치 시 포화
+      const final01 = 0.72 * catScore + 0.28 * kwScore;
+      // 40..98 밴드. 하한을 55→40으로 낮춰 적합도가 낮은 동아리도 솔직하게 낮은 점수로 표시.
+      baseScore = Math.round(40 + final01 * 58);
+      // 카테고리 적합도가 전부 0이면 대표 인물형을 이유 주체로
+      drv = drivingAff > 0 ? driving : archs[0] ?? null;
     }
 
-    let catRaw = 0; // 가중 합 (얼마나 폭넓게 이 카테고리로 기우는가)
-    let bestWeighted = 0; // 가장 강한 단일 인물형의 가중 적합도 (대표가 강하게 맞는가)
-    let driving: BibleArchetype | null = null;
-    let drivingAff = -1;
-    const matched = new Set<string>();
+    // ── 2) 참여 신호 보정 (결정론 유지) ──
+    // (a) 멤버 동질성: 나와 같은 대표 인물형 멤버가 있을수록 가점(최대 +6).
+    const sharedMembers = (c.memberArchetypes ?? []).filter((l) => userLabels.has(l)).length;
+    const homogeneity = Math.min(1, sharedMembers * 0.34); // 약 3명에서 포화
+    let score = baseScore + Math.round(6 * homogeneity);
+    // (b) 만석/임박 패널티: 들어갈 수 없는(혹은 곧 마감) 동아리를 상위에서 끌어내린다.
+    if (c.maxMembers && c.maxMembers > 0 && c.memberCount != null) {
+      const ratio = c.memberCount / c.maxMembers;
+      if (ratio >= 1) score = Math.round(score * 0.5); // 만석
+      else if (ratio >= 0.85) score = Math.round(score * 0.85); // 임박
+    }
+    score = Math.max(20, Math.min(98, score));
 
-    archs.forEach((a, i) => {
-      const aff = AFFINITY[a.label]?.[c.category] ?? 0;
-      const weighted = weightAt(i) * aff;
-      catRaw += weighted;
-      if (weighted > bestWeighted) bestWeighted = weighted;
-      // 이 동아리 카테고리에 가장 잘 맞는 인물형 = 추천 이유의 주체
-      if (aff > drivingAff) {
-        drivingAff = aff;
-        driving = a;
-      }
-      for (const kw of a.keywords) {
-        if (text.includes(kw)) matched.add(kw);
-      }
-    });
+    let reason = buildReason(drv, c.category, [...matched]);
+    if (sharedMembers > 0) reason += " 나와 비슷한 인물형 멤버도 함께해요.";
 
-    // 폭(sumNorm) + 강도(maxNorm)를 5:5로 혼합. 강도 항이 없으면 소수 인물형만 맞는
-    // 니치 카테고리(운동/취미/문화·예술)가 여러 인물형에 걸친 카테고리(친목 등)에 구조적으로 묻힌다.
-    const sumNorm = catRaw / maxCat; // 0..1 — 프로필이 전반적으로 이 카테고리로 기운 정도
-    const maxNorm = Math.min(1, bestWeighted / (ORDER_WEIGHTS[0] * MAX_AFFINITY)); // 0..1 — 대표가 강하게 맞는가
-    const catScore = 0.5 * sumNorm + 0.5 * maxNorm;
-    const kwScore = Math.min(1, matched.size * 0.34); // 약 3개 일치 시 포화
-    const final01 = 0.72 * catScore + 0.28 * kwScore;
-    // 40..98 밴드. 하한을 55→40으로 낮춰 적합도가 낮은 동아리도 솔직하게 낮은 점수로
-    // 표시한다(이전엔 적합도 0도 55%로 떠 매칭 신뢰도를 과장했다).
-    const score = Math.round(40 + final01 * 58);
-
-    // 카테고리 적합도가 전부 0이면 대표 인물형을 이유 주체로
-    const drv: BibleArchetype | null = drivingAff > 0 ? driving : archs[0] ?? null;
-    return {
-      clubId: c.id,
-      score,
-      reason: buildReason(drv, c.category, [...matched]),
-      _name: c.name,
-    };
+    return { clubId: c.id, score, reason, _name: c.name };
   });
 
   // 점수 내림차순, 동점은 이름 오름차순으로 안정 정렬(결정론적)

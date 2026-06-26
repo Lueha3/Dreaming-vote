@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { recommendClubs, type ClubCandidate } from "@/lib/clubMatch";
+import { getPrimaryArchetype } from "@/lib/bibleArchetypes";
 
 const bodySchema = z.object({ reportId: z.string().min(1) });
 
@@ -60,19 +61,67 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "리포트를 찾을 수 없습니다." }, { status: 404 });
   }
 
-  // 후보 동아리 (승인+활성, 본인 개설 제외)
+  // 후보 동아리 (승인+활성, 본인 개설 제외, 이미 신청/가입한 곳 제외 — 헛추천 방지)
   const candidatesRaw = await prisma.club.findMany({
-    where: { isApproved: true, isActive: true, ownerUserId: { not: user.dbUserId } },
-    orderBy: { createdAt: "desc" },
+    where: {
+      isApproved: true,
+      isActive: true,
+      ownerUserId: { not: user.dbUserId },
+      applications: { none: { userId: user.dbUserId, status: { in: ["pending", "accepted"] } } },
+    },
+    // 인기(조회 많은) 동아리가 후보 컷오프(상위 N)에서 잘리지 않도록 조회수 desc 우선.
+    // (accepted 멤버수로 정렬하고 싶으나 Prisma 관계 _count는 status 필터를 못 걸어
+    //  전체 신청수가 되어버리므로, 정확한 인기 신호로 viewCount를 쓴다.)
+    orderBy: [{ viewCount: "desc" }, { createdAt: "desc" }],
     take: CANDIDATE_LIMIT,
-    select: { id: true, name: true, category: true, description: true, tags: true },
+    select: {
+      id: true,
+      name: true,
+      category: true,
+      description: true,
+      tags: true,
+      maxMembers: true,
+      // accepted 멤버들의 최신 공개 리포트 인물형 — 멤버 동질성 보너스용.
+      applications: {
+        where: { status: "accepted" },
+        select: {
+          user: {
+            select: {
+              reports: {
+                where: { isPublic: true },
+                orderBy: { createdAt: "desc" },
+                take: 1,
+                select: { coreTraits: true },
+              },
+            },
+          },
+        },
+      },
+    },
   });
 
   if (candidatesRaw.length === 0) {
     return NextResponse.json({ ok: true, items: [], message: "아직 추천할 동아리가 없습니다." });
   }
 
-  const candidates: ClubCandidate[] = candidatesRaw;
+  const candidates: ClubCandidate[] = candidatesRaw.map((c) => {
+    const memberArchetypes: string[] = [];
+    for (const app of c.applications) {
+      const ct = app.user?.reports[0]?.coreTraits;
+      const arch = ct ? getPrimaryArchetype(ct) : undefined;
+      if (arch) memberArchetypes.push(arch.label);
+    }
+    return {
+      id: c.id,
+      name: c.name,
+      category: c.category,
+      description: c.description,
+      tags: c.tags,
+      maxMembers: c.maxMembers,
+      memberCount: c.applications.length,
+      memberArchetypes,
+    };
+  });
   const validIds = new Set(candidatesRaw.map((c) => c.id));
 
   // 로컬 결정론적 매칭 — AI 호출 없음, 예외 없이 항상 결과 반환
