@@ -91,28 +91,28 @@ export function Header() {
         boxShadow: "0 4px 24px -12px rgba(74,144,194,.25)",
       }}
     >
-      <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-4 py-2.5">
+      <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-1 px-2 py-2.5 sm:gap-2 sm:px-4">
 
-        {/* 로고 */}
-        <Link href="/" className="flex items-center gap-2.5">
-          <span className="block text-lg font-extrabold tracking-tight sm:text-xl">
+        {/* 로고 — 브랜드명은 절대 줄이거나 잘리지 않게 flex-shrink-0로 고정, 장식 요소만 모바일에서 축소 */}
+        <Link href="/" className="flex flex-shrink-0 items-center gap-0.5 sm:gap-2.5">
+          <span className="text-base font-extrabold tracking-tight sm:text-xl">
             <span className="text-ink">Blue</span>
             <span className="bg-gradient-to-r from-[#4A90D9] to-[#3FC8B7] bg-clip-text text-transparent">Humanity</span>
           </span>
-          <span className="text-ink-soft/40 text-sm font-light mt-0.5">×</span>
-          <div className="rounded-md border border-sky-line bg-white px-2.5 py-1.5 shadow-sm">
+          <span className="hidden text-ink-soft/40 text-sm font-light mt-0.5 sm:inline">×</span>
+          <div className="rounded-md border border-sky-line bg-white px-0.5 py-0.5 shadow-sm sm:px-2.5 sm:py-1.5">
             <img
               src="/dreaming-church.png"
               alt="꿈꾸는교회"
-              style={{ height: 28, width: "auto", display: "block", maxWidth: 96 }}
+              className="block h-5 w-auto max-w-[60px] sm:h-7 sm:max-w-[96px]"
             />
           </div>
         </Link>
 
         {/* 우측 클러스터 (로그인/알림벨/햄버거) */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-shrink-0 items-center gap-0.5 sm:gap-2">
           {!loading && !nickname && (
-            <Link href="/login" className="glass-soft rounded-full px-3.5 py-1.5 text-xs font-semibold text-skyx-ink">
+            <Link href="/login" className="glass-soft whitespace-nowrap rounded-full px-1.5 py-1.5 text-[11px] font-semibold text-skyx-ink sm:px-3.5 sm:text-xs">
               로그인
             </Link>
           )}
@@ -120,7 +120,7 @@ export function Header() {
               비로그인은 membershipStatus가 null이라 노출되며, /join이 로그인 단계를 자체 안내.
               운영진(staff+)은 가입 상태와 무관하게 게이트를 통과하므로 canManage로 제외(게이트와 대칭). */}
           {!loading && !canManage(role) && membershipStatus !== "approved" && membershipStatus !== "pending" && (
-            <Link href="/join" className="btn-gold rounded-full px-3.5 py-1.5 text-xs font-bold">
+            <Link href="/join" className="btn-gold whitespace-nowrap rounded-full px-1.5 py-1.5 text-[11px] font-bold sm:px-3.5 sm:text-xs">
               가입 신청하기
             </Link>
           )}
