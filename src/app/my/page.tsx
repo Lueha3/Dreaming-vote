@@ -106,7 +106,7 @@ export default async function MyPage() {
           <p className="text-sm text-ink-soft">
             {items.length > 0 ? "성향 카드 1개" : "아직 성향 카드가 없어요"}
           </p>
-          <Link href="/" className="btn-gold btn-glow rounded-full px-4 py-2 text-xs font-semibold">
+          <Link href="/start" className="btn-gold btn-glow rounded-full px-4 py-2 text-xs font-semibold">
             + 새 성향 카드
           </Link>
         </div>

@@ -134,7 +134,7 @@ function EmptyState() {
       <p className="mb-2 font-semibold text-ink">아직 성향 카드가 없어요</p>
       <p className="mb-7 text-sm leading-relaxed text-ink-soft">첫 성향 카드를 만들어볼까요?</p>
       <Link
-        href="/"
+        href="/start"
         className="btn-gold inline-block rounded-full px-6 py-2.5 text-sm font-semibold btn-glow"
       >
         첫 성향 카드 만들기 →

@@ -29,7 +29,7 @@ export async function GET() {
   ]);
   const myClubIds = [...new Set([...owned.map((c) => c.id), ...memberApps.map((a) => a.clubId)])];
 
-  const [upcomingMeetings, recentClubs, recentPosts, answeredPrayers] = await Promise.all([
+  const [upcomingMeetings, recentClubs, recentPosts, answeredPrayers, reportCount] = await Promise.all([
     myClubIds.length
       ? prisma.clubMeeting.findMany({
           where: { clubId: { in: myClubIds }, meetsAt: { gte: now } },
@@ -77,10 +77,14 @@ export async function GET() {
       take: 2,
       select: { id: true, category: true, content: true, answeredNote: true, answeredAt: true },
     }),
+    // 승인 직후 홈에서 '성향 카드 만들기' 유도 CTA를 띄우기 위한 플래그(0/1).
+    // Report.userId는 비유니크지만 생성 API가 deleteMany→create로 1장만 유지하므로 count>0로 충분.
+    prisma.report.count({ where: { userId: me } }),
   ]);
 
   return NextResponse.json({
     ok: true,
+    hasPersonalityReport: reportCount > 0,
     upcomingMeetings: upcomingMeetings.map((m) => ({
       id: m.id,
       clubId: m.clubId,

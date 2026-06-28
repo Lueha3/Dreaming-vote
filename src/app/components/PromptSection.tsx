@@ -91,7 +91,7 @@ export function PromptSection() {
 
   /**
    * MBTI 선택 처리.
-   *   - 비로그인        → 고른 유형 stash 후 /login (성공 후 홈에서 자동 재개)
+   *   - 비로그인        → 고른 유형 stash 후 /login (성공 후 /start에서 자동 재개)
    *   - 로그인·미승인   → 프로필 설정(/join)으로
    *   - 로그인·승인     → 생성 로더 + 성향 카드
    * 서버 응답코드(401/403)로도 동일하게 백스톱 처리한다.
@@ -105,7 +105,7 @@ export function PromptSection() {
     const gate = await resolveGate();
     if (gate === "login") {
       stashType(personalityType);
-      router.push("/login?next=/");
+      router.push("/login?next=/start");
       return; // 이동 중 — busy 유지
     }
     if (gate === "join") {
@@ -129,7 +129,7 @@ export function PromptSection() {
       // 서버 백스톱 — 사전판정을 통과했더라도 서버가 막으면 동일하게 라우팅
       if (e instanceof ApiError && e.status === 401) {
         stashType(personalityType);
-        router.push("/login?next=/");
+        router.push("/login?next=/start");
         return;
       }
       if (e instanceof ApiError && e.status === 403) {
@@ -143,7 +143,7 @@ export function PromptSection() {
     }
   }
 
-  // 로그인 왕복 후 홈 복귀 시: stash된 유형이 있고 '로그인 상태'면 자동으로 이어서 처리.
+  // 로그인 왕복 후 /start 복귀 시: stash된 유형이 있고 '로그인 상태'면 자동으로 이어서 처리.
   // (로그인 취소하고 돌아온 경우엔 재개하지 않아 로그인 루프를 막는다.)
   useEffect(() => {
     if (resumedRef.current) return;

@@ -80,8 +80,8 @@ export async function createMembershipNotification(
       userId,
       type: "membership_approved",
       title: "가입이 승인됐어요 🎉",
-      body: "이제 동아리 개설·가입, 광장 글쓰기를 모두 할 수 있어요. 환영해요!",
-      link: "/clubs",
+      body: "환영해요! 먼저 성격유형을 골라 나에게 꼭 맞는 동아리를 찾아보세요.",
+      link: "/start",
     });
     return;
   }

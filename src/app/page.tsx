@@ -1,4 +1,3 @@
-import { PromptSection } from "./components/PromptSection";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { HomeFeed } from "@/components/HomeFeed";
 
@@ -10,34 +9,27 @@ export default function Home() {
         <AnnouncementBanner />
 
         {/* 뱃지 */}
-        <div className="mb-6 flex justify-center">
+        <div className="mb-5 flex justify-center">
           <span className="glass-soft inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-skyx-ink shadow-[0_8px_24px_-8px_rgba(74,144,194,.22)]">
             <span
               className="h-[7px] w-[7px] rounded-full bg-teal"
               style={{ boxShadow: "0 0 0 4px rgba(53,195,180,.18), 0 0 10px rgba(53,195,180,.7)" }}
             />
-            꿈꾸는교회 청년부 · 동아리 뭐 들지!?
+            꿈꾸는교회 청년부
           </span>
         </div>
 
-        {/* Hero */}
-        <div className="mb-10 text-center">
-          <h1 className="mb-4 text-[34px] sm:text-[42px] font-extrabold tracking-tight leading-[1.28] text-ink">
-            나에게 꼭 맞는{" "}
-            <em className="not-italic gradient-text whitespace-nowrap">동아리</em>
-            를
-            <br />
-            찾아보세요
+        {/* Hero — 피드 우선 정체성. '성격유형 고르기'는 헤더 메뉴(🧭)로 이동. */}
+        <div className="mb-8 text-center">
+          <h1 className="mb-3 text-[34px] sm:text-[42px] font-extrabold tracking-tight leading-[1.2] text-ink">
+            오늘의 <em className="not-italic gradient-text">청년부</em>
           </h1>
           <p className="text-[15px] sm:text-base text-ink-soft font-medium leading-relaxed">
-            내 성향에 꼭 맞는 동아리를 찾아드려요.
+            우리 청년부의 새 소식과 모임이 모이는 곳이에요.
           </p>
         </div>
 
-        {/* 4단계 슬라이드 카드 */}
-        <PromptSection />
-
-        {/* 로그인 승인 멤버 전용 활동 피드 (클라 island — 홈 정적성 유지) */}
+        {/* 홈 본문(클라 island — 홈 정적성 유지): 게이트 상태별 안내 + 승인 멤버 활동 피드 */}
         <HomeFeed />
 
         {/* 하단 교회 라인아트 (로고 오마주) */}

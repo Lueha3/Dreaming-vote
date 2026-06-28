@@ -112,8 +112,16 @@ export function Header() {
         {/* 우측 클러스터 (로그인/알림벨/햄버거) */}
         <div className="flex items-center gap-2">
           {!loading && !nickname && (
-            <Link href="/login" className="btn-gold rounded-full px-3.5 py-1.5 text-xs">
+            <Link href="/login" className="glass-soft rounded-full px-3.5 py-1.5 text-xs font-semibold text-skyx-ink">
               로그인
+            </Link>
+          )}
+          {/* 가입 신청하기 — 미가입/반려/비로그인에게 노출(이미 가입했거나 승인대기는 숨김).
+              비로그인은 membershipStatus가 null이라 노출되며, /join이 로그인 단계를 자체 안내.
+              운영진(staff+)은 가입 상태와 무관하게 게이트를 통과하므로 canManage로 제외(게이트와 대칭). */}
+          {!loading && !canManage(role) && membershipStatus !== "approved" && membershipStatus !== "pending" && (
+            <Link href="/join" className="btn-gold rounded-full px-3.5 py-1.5 text-xs font-bold">
+              가입 신청하기
             </Link>
           )}
           {/* 알림 벨 — 로그인 상태에서만 자체 렌더(비로그인은 null). menuRef 밖에 둬서
@@ -148,6 +156,7 @@ export function Header() {
                 </div>
               )}
               <MobileNavLink href="/" onClick={() => setMenuOpen(false)}>홈</MobileNavLink>
+              <MobileNavLink href="/start" onClick={() => setMenuOpen(false)}>🧭 성격유형 고르기</MobileNavLink>
               <MobileNavLink href="/notices" onClick={() => setMenuOpen(false)}>📢 공지</MobileNavLink>
               <MobileNavLink href="/prayer" onClick={() => setMenuOpen(false)}>🗣 광장</MobileNavLink>
               <MobileNavLink href="/clubs" onClick={() => setMenuOpen(false)}>목록</MobileNavLink>
