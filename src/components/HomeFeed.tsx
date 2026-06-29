@@ -4,42 +4,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { timeAgo } from "@/lib/time";
 import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
+import type { FeedData } from "@/lib/feed";
 
-type Meeting = {
-  id: string;
-  clubId: string;
-  clubName: string;
-  title: string;
-  meetsAt: string;
-  place: string;
-};
-type ClubItem = { id: string; name: string; category: string; memberCount: number };
-type Post = {
-  id: string;
-  category: string;
-  snippet: string;
-  authorName: string;
-  createdAt: string;
-  reactionCount: number;
-  commentCount: number;
-};
-type Answered = {
-  id: string;
-  category: string;
-  snippet: string;
-  answeredNote: string | null;
-  createdAt: string | null;
-};
-type Feed = {
-  upcomingMeetings: Meeting[];
-  recentClubs: ClubItem[];
-  recentPosts: Post[];
-  answeredPrayers: Answered[];
-  hasPersonalityReport: boolean;
-};
+type Feed = FeedData;
 
 // 홈 본문 상태: 로딩 → (비로그인 | 가입유도 | 승인대기 | 승인멤버 피드)
-type View =
+// page.tsx(서버)가 이 View를 직접 계산해 initial prop으로 주입한다(클라 페치 워터폴 제거).
+export type HomeView =
   | { kind: "loading" }
   | { kind: "loggedOut" }
   | { kind: "apply" } // 미가입(none) · 반려(rejected)
@@ -76,10 +47,13 @@ function fmtMeeting(iso: string): string {
  *   - 승인 대기(403, status=pending)      → 대기 안내 카드
  *   - 승인 멤버(200)                      → (성향카드 미작성 시) 만들기 CTA + 활동 피드
  */
-export function HomeFeed() {
-  const [view, setView] = useState<View>({ kind: "loading" });
+export function HomeFeed({ initial }: { initial?: HomeView }) {
+  const [view, setView] = useState<HomeView>(initial ?? { kind: "loading" });
 
   useEffect(() => {
+    // 서버(page.tsx)가 초기 뷰를 주입했으면 클라 페치를 생략 — 하이드레이션 후 재페치 워터폴 제거.
+    if (initial && initial.kind !== "loading") return;
+
     // 인증 쿠키가 없으면 비로그인 — 서버 왕복 없이 즉시 확정.
     if (!/sb-[a-z0-9-]+-auth-token/i.test(document.cookie)) {
       setView({ kind: "loggedOut" });
@@ -111,7 +85,7 @@ export function HomeFeed() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [initial]);
 
   if (view.kind === "loading") return null;
   // 1) 비로그인 — 기존과 동일하게 로그인·가입 유도 카드.

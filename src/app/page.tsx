@@ -1,5 +1,30 @@
+import { Suspense } from "react";
+
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
-import { HomeFeed } from "@/components/HomeFeed";
+import { HomeFeed, type HomeView } from "@/components/HomeFeed";
+import { getAuthUser } from "@/lib/auth";
+import { getFeedData } from "@/lib/feed";
+import { hasAtLeast } from "@/lib/roles";
+
+// 홈 본문 뷰를 서버에서 직접 계산 + 피드 데이터까지 조회해 HomeFeed에 주입한다.
+// 클라가 하이드레이션 후 /api/feed를 다시 페치하던 워터폴(브라우저→서버→DB 추가 왕복)을 제거.
+async function HomeFeedSection() {
+  const user = await getAuthUser();
+
+  let initial: HomeView;
+  if (!user) {
+    initial = { kind: "loggedOut" };
+  } else if (hasAtLeast(user.role, "staff") || user.membershipStatus === "approved") {
+    // 승인 멤버(또는 운영진) — 활동 피드를 서버에서 채워 함께 스트리밍.
+    initial = { kind: "approved", feed: await getFeedData(user.dbUserId) };
+  } else if (user.membershipStatus === "pending") {
+    initial = { kind: "pending" };
+  } else {
+    initial = { kind: "apply" }; // none · rejected
+  }
+
+  return <HomeFeed initial={initial} />;
+}
 
 export default function Home() {
   return (
@@ -29,8 +54,11 @@ export default function Home() {
           </p>
         </div>
 
-        {/* 홈 본문(클라 island — 홈 정적성 유지): 게이트 상태별 안내 + 승인 멤버 활동 피드 */}
-        <HomeFeed />
+        {/* 홈 본문: 서버에서 게이트 상태별 뷰 + 피드를 채워 스트리밍(Suspense).
+            셸(히어로 등)은 즉시 표시되고, 피드는 준비되는 대로 같은 응답에 흘려보낸다. */}
+        <Suspense fallback={<HomeFeed initial={{ kind: "loading" }} />}>
+          <HomeFeedSection />
+        </Suspense>
 
         {/* 하단 교회 라인아트 (로고 오마주) */}
         <div className="mt-16 flex justify-center sm:mt-20" aria-hidden>
