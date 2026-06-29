@@ -38,20 +38,25 @@ export type AuthUser = {
  * 성능: 기존 유저는 findUnique(읽기)로만 처리하고, 없을 때(첫 로그인)만
  * upsert로 멱등 생성한다. 매 요청 no-op 쓰기 트랜잭션을 없애기 위함.
  * React cache()로 감싸 한 요청 내 중복 호출(미들웨어/라우트/레이아웃)을 1회로 합친다.
+ *
+ * 인증 검증: getUser()는 매 호출마다 Supabase Auth 서버로 네트워크 왕복(원격 JWT 검증)을 한다.
+ * getClaims()는 비대칭 서명키(ES256/RS256) 환경에서 JWKS를 캐시해 JWT를 로컬에서 검증하므로
+ * 인증 경로의 네트워크 홉을 제거한다(대칭 HS256이면 내부적으로 getUser로 폴백 — 무회귀).
+ * 모든 인증 API/서버 컴포넌트의 TTFB가 왕복 1회만큼 빨라진다.
  */
 export const getAuthUser = cache(async (): Promise<AuthUser | null> => {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
+    const { data, error } = await supabase.auth.getClaims();
+    const claims = data?.claims;
+    if (error || !claims?.sub) return null;
 
-    if (error || !user) return null;
+    const supabaseId = claims.sub;
+    const email = (typeof claims.email === "string" ? claims.email : null) as string | null;
 
     // 읽기 우선 — 기존 유저는 쓰기 없이 조회만
     let dbUser = await prisma.user.findUnique({
-      where: { supabaseId: user.id },
+      where: { supabaseId },
       select: AUTH_USER_SELECT,
     });
 
@@ -71,34 +76,33 @@ export const getAuthUser = cache(async (): Promise<AuthUser | null> => {
 
     // 첫 로그인 — 멱등 생성 (동시 첫로그인 race 안전을 위해 upsert)
     if (!dbUser) {
-      const fallbackNickname =
-        user.user_metadata?.full_name ??
-        user.email?.split("@")[0] ??
-        null;
+      // JWT의 user_metadata(카카오 표시명/아바타)에서 폴백값을 읽는다.
+      const meta = (claims.user_metadata ?? {}) as { full_name?: string; avatar_url?: string };
+      const fallbackNickname = meta.full_name ?? email?.split("@")[0] ?? null;
 
       dbUser = await prisma.user.upsert({
-        where: { supabaseId: user.id },
+        where: { supabaseId },
         update: {},
         create: {
-          supabaseId: user.id,
+          supabaseId,
           nickname: fallbackNickname,
-          avatarUrl: user.user_metadata?.avatar_url ?? null,
+          avatarUrl: meta.avatar_url ?? null,
         },
         select: AUTH_USER_SELECT,
       });
     }
 
     return {
-      supabaseId: user.id,
+      supabaseId,
       dbUserId: dbUser.id,
-      email: user.email ?? null,
+      email,
       nickname: dbUser.nickname,
       avatarUrl: dbUser.avatarUrl,
       membershipStatus: dbUser.membershipStatus,
       age: dbUser.age,
       approvedAge: dbUser.approvedAge,
       // 슈퍼관리자 이메일은 DB 값과 무관하게 항상 superadmin으로 승격(첫 로그인 부트스트랩 포함).
-      role: isSuperadminEmail(user.email) ? "superadmin" : (dbUser.role as Role),
+      role: isSuperadminEmail(email) ? "superadmin" : (dbUser.role as Role),
     };
   } catch {
     return null;

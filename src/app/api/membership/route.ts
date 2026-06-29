@@ -22,24 +22,38 @@ export async function GET(req: Request) {
   const summary = new URL(req.url).searchParams.get("fields") === "summary";
 
   // 동아리장 배지는 전역 role이 아니라 "활성 동아리를 소유 중인가"로 파생한다.
+  if (summary) {
+    // getAuthUser가 이미 membershipStatus·nickname·role을 들고 있으므로(첫 조회 1회) 추가 user 조회 없이
+    // 동아리장 배지용 소유 동아리 개수만 센다 — 매 페이지 이동마다 호출되는 Header의 DB 왕복을 1회로 줄인다.
+    const ownedActiveClubs = await prisma.club.count({
+      where: { ownerUserId: user.dbUserId, isActive: true },
+    });
+    return NextResponse.json({
+      ok: true,
+      membership: {
+        membershipStatus: user.membershipStatus,
+        nickname: user.nickname,
+        role: user.role,
+        isClubLeader: ownedActiveClubs > 0,
+      },
+    });
+  }
+
+  // 전체(/join 화면) 모드 — 제출했던 PII 포함 전체 반환.
   const [me, ownedActiveClubs] = await Promise.all([
     prisma.user.findUnique({
       where: { id: user.dbUserId },
-      // summary 모드는 본인 PII(realName·age·gender·phone)를 select 자체에서 제외해
-      // 응답·서버 메모리 어디에도 싣지 않는다.
-      select: summary
-        ? { membershipStatus: true, nickname: true }
-        : {
-            membershipStatus: true,
-            nickname: true,
-            realName: true,
-            age: true,
-            gender: true,
-            dreamGroup: true,
-            phone: true,
-            membershipAppliedAt: true,
-            membershipNote: true,
-          },
+      select: {
+        membershipStatus: true,
+        nickname: true,
+        realName: true,
+        age: true,
+        gender: true,
+        dreamGroup: true,
+        phone: true,
+        membershipAppliedAt: true,
+        membershipNote: true,
+      },
     }),
     prisma.club.count({ where: { ownerUserId: user.dbUserId, isActive: true } }),
   ]);

@@ -42,8 +42,13 @@ async function refreshSession(request: NextRequest) {
   );
 
   // IMPORTANT: refresh token 갱신 — 이 호출 없으면 세션이 만료됨.
-  // getUser()와 createServerClient() 사이에 로직을 넣지 말 것 (세션 동기화 깨짐).
-  await supabase.auth.getUser();
+  // createServerClient()와 이 호출 사이에 로직을 넣지 말 것 (세션 동기화 깨짐).
+  //
+  // getUser()는 매 요청 Supabase Auth로 네트워크 왕복(원격 JWT 검증)을 한다.
+  // getClaims()는 내부적으로 getSession()을 호출해 만료 임박 토큰을 갱신(setAll로 쿠키 반영)하면서,
+  // 비대칭 서명키 환경에선 JWT를 로컬 검증한다 — 갱신 동작은 유지하되 매 요청 네트워크 홉을 제거.
+  // (대칭 HS256이면 내부적으로 getUser로 폴백하므로 동작 무회귀)
+  await supabase.auth.getClaims();
 
   return supabaseResponse;
 }
