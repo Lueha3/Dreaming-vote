@@ -4,6 +4,7 @@ import {
   canManage,
   canAdminister,
   canAssignRole,
+  canForceWithdraw,
   displayRoles,
   roleBadge,
   type Role,
@@ -67,6 +68,34 @@ describe("canAssignRole — 권한 상승/탈취 방지 게이트", () => {
     expect(canAssignRole("staff", "member", "staff")).toBe(false);
     expect(canAssignRole("member", "member", "staff")).toBe(false);
     expect(canAssignRole("club_leader", "member", "staff")).toBe(false);
+  });
+});
+
+describe("canForceWithdraw — 강제 탈퇴 등급 역전 방지 게이트", () => {
+  it("staff: member만 탈퇴시킬 수 있다", () => {
+    expect(canForceWithdraw("staff", "member")).toBe(true);
+    expect(canForceWithdraw("staff", "staff")).toBe(false);
+    expect(canForceWithdraw("staff", "admin")).toBe(false);
+    expect(canForceWithdraw("staff", "superadmin")).toBe(false);
+  });
+
+  it("admin: staff/member까지. 다른 admin·superadmin은 불가(상호 탈퇴 방지)", () => {
+    expect(canForceWithdraw("admin", "member")).toBe(true);
+    expect(canForceWithdraw("admin", "staff")).toBe(true);
+    expect(canForceWithdraw("admin", "admin")).toBe(false);
+    expect(canForceWithdraw("admin", "superadmin")).toBe(false);
+  });
+
+  it("superadmin: superadmin 대상만 제외하고 모두 가능", () => {
+    expect(canForceWithdraw("superadmin", "member")).toBe(true);
+    expect(canForceWithdraw("superadmin", "staff")).toBe(true);
+    expect(canForceWithdraw("superadmin", "admin")).toBe(true);
+    expect(canForceWithdraw("superadmin", "superadmin")).toBe(false);
+  });
+
+  it("member 이하: 권한 없음", () => {
+    expect(canForceWithdraw("member", "member")).toBe(false);
+    expect(canForceWithdraw("club_leader", "member")).toBe(false);
   });
 });
 

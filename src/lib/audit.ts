@@ -5,6 +5,7 @@ export type AuditAction =
   | "role_change"
   | "membership_approve"
   | "membership_reject"
+  | "membership_force_withdraw"
   | "club_approve"
   | "club_reject"
   | "club_update"

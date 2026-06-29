@@ -61,6 +61,20 @@ export function canAssignRole(actor: Role, targetCurrent: Role, next: Role): boo
   return false;
 }
 
+/**
+ * actor가 target을 강제 탈퇴시킬 수 있는지 — canAssignRole과 동일한 등급 역전 방지 원칙.
+ * - staff(운영진): member만. 동료 운영진·관리자는 탈퇴시킬 수 없다.
+ * - admin: staff·member까지. 다른 admin·superadmin은 불가(상호 탈퇴 방지).
+ * - superadmin: superadmin 대상만 제외하고 모두 가능.
+ * (본인 대상 차단은 호출부에서 별도 처리)
+ */
+export function canForceWithdraw(actor: Role, targetRole: Role): boolean {
+  if (actor === "superadmin") return targetRole !== "superadmin";
+  if (actor === "admin") return targetRole !== "admin" && targetRole !== "superadmin";
+  if (actor === "staff") return targetRole === "member";
+  return false;
+}
+
 // 인증마크(배지) — 3종만 운영: 관리자 · 운영진 · 동아리장.
 // member는 배지 없음. superadmin은 외부 표기상 admin과 동일("관리자").
 export type BadgeMeta = { label: string; emoji: string };
