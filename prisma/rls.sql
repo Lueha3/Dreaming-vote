@@ -47,3 +47,14 @@ DROP POLICY IF EXISTS "ClubImage_read" ON "ClubImage";
 DROP POLICY IF EXISTS "ClubImage_write" ON "ClubImage";
 DROP POLICY IF EXISTS "Prayer_all" ON "Prayer";
 DROP POLICY IF EXISTS "PrayerIntercession_all" ON "PrayerIntercession";
+
+-- ----------------------------------------------------------------------------
+-- Storage 버킷 listing 허용 SELECT 정책 제거 (storage.objects).
+-- 공개 버킷은 URL을 알면 개별 객체에 접근할 수 있지만(CDN 레벨),
+-- SELECT 정책이 있으면 anon이 버킷 전체 목록(list)까지 조회 가능하다.
+-- 앱 코드는 supabase.storage.from(bucket).list()를 호출하지 않으므로
+-- 정책을 제거해도 기능에 영향 없음. INSERT / DELETE 정책은 유지.
+-- drop_broad_select_policies_storage_buckets 마이그레이션에서 적용됨.
+DROP POLICY IF EXISTS "avatars_select"      ON storage.objects;
+DROP POLICY IF EXISTS "club_images_select"  ON storage.objects;
+DROP POLICY IF EXISTS "plaza_images_select" ON storage.objects;
