@@ -35,3 +35,15 @@ ALTER TABLE "PrayerComment"      ENABLE ROW LEVEL SECURITY;  -- 광장 댓글/�
 
 -- 정책은 의도적으로 생성하지 않습니다.
 -- (anon/authenticated 직접 접근 전면 차단; 서비스는 Prisma 소유자 연결로만 동작)
+
+-- ----------------------------------------------------------------------------
+-- ClubImage / Prayer / PrayerIntercession은 RLS는 켜져 있었지만 과거에 만들어진
+-- public(anon 포함) 전면 허용 정책(qual: true)이 남아있어 실질적으로 무방비
+-- 상태였다. 앱 코드는 이 테이블들을 클라이언트에서 직접 호출하지 않으므로
+-- (Storage 버킷 업로드만 클라이언트에서 직접 수행, row는 Prisma API로 생성)
+-- 정책을 제거해 다른 테이블과 동일한 기본 거부 상태로 되돌린다.
+-- drop_open_public_policies_clubimage_prayer_intercession 마이그레이션에서 적용됨.
+DROP POLICY IF EXISTS "ClubImage_read" ON "ClubImage";
+DROP POLICY IF EXISTS "ClubImage_write" ON "ClubImage";
+DROP POLICY IF EXISTS "Prayer_all" ON "Prayer";
+DROP POLICY IF EXISTS "PrayerIntercession_all" ON "PrayerIntercession";
