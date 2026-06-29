@@ -109,7 +109,9 @@ export function ProfileForm({
       await fetchJson("/api/my/withdraw", { method: "POST" });
       const supabase = createClient();
       await supabase.auth.signOut();
-      router.push("/");
+      // 풀 리로드로 이동 — 클라 라우터 push만으로는 같은 "/"에 마운트된 HomeFeed의
+      // useState(initial)이 갱신되지 않아 탈퇴 후에도 이전 피드가 남을 수 있다.
+      window.location.href = "/";
     } catch {
       setWithdrawError("탈퇴 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
       setWithdrawing(false);

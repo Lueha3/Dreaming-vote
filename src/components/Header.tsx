@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { RoleBadge } from "@/components/RoleBadge";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -11,7 +11,6 @@ import { canManage, displayRoles, type Role } from "@/lib/roles";
 
 
 export function Header() {
-  const router = useRouter();
   const pathname = usePathname();
   const [nickname, setNickname] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,13 +71,10 @@ export function Header() {
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    setMenuOpen(false);
-    setNickname(null);
-    setMembershipStatus(null);
-    setRole(null);
-    setIsClubLeader(false);
-    router.push("/");
-    router.refresh();
+    // 클라 라우터 push+refresh는 같은 "/"에 이미 떠 있는 HomeFeed의 useState(initial)을
+    // 리셋하지 못해(prop 변경이 lazy initializer를 다시 안 태움) 로그아웃 후에도 이전 피드가
+    // 그대로 남는다. 풀 리로드로 모든 클라 상태를 확실히 비운다(AdminLogoutButton과 동일 패턴).
+    window.location.href = "/";
   }
 
   return (
