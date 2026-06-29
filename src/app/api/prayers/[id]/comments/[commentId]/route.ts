@@ -25,7 +25,12 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
   const comment = await prisma.prayerComment.findUnique({
     where: { id: commentId },
-    select: { userId: true, prayerId: true, prayer: { select: { userId: true } } },
+    select: {
+      userId: true,
+      prayerId: true,
+      prayer: { select: { userId: true } },
+      replies: { select: { id: true } },
+    },
   });
 
   if (!comment || comment.prayerId !== id) {
@@ -43,11 +48,13 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const isModeration = comment.userId !== user.dbUserId;
   const byStaff = hasAtLeast(user.role, "staff");
 
+  // 부모 댓글 삭제 시 답글도 DB FK(onDelete: Cascade)로 함께 삭제됨 — 신고 해결도 답글까지 포함.
+  const targetIds = [commentId, ...comment.replies.map((r) => r.id)];
   await prisma.$transaction(async (tx) => {
     await tx.prayerComment.delete({ where: { id: commentId } });
-    // 이 댓글의 미처리 신고를 해결 처리(콘텐츠가 사라졌으므로 유령 신고 적체 방지)
+    // 이 댓글(및 함께 삭제된 답글)의 미처리 신고를 해결 처리(콘텐츠가 사라졌으므로 유령 신고 적체 방지)
     await tx.contentReport.updateMany({
-      where: { status: "open", targetType: "comment", targetId: commentId },
+      where: { status: "open", targetType: "comment", targetId: { in: targetIds } },
       data: { status: "resolved", resolvedById: user.dbUserId, resolvedAt: new Date() },
     });
   });

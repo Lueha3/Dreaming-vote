@@ -11,9 +11,10 @@ type Params = { params: Promise<{ id: string }> | { id: string } };
 
 const createSchema = z.object({
   content: z.string().trim().min(1, "댓글을 입력해주세요.").max(500, "댓글이 너무 깁니다."),
+  parentId: z.string().trim().min(1).optional(),
 });
 
-/** GET /api/prayers/[id]/comments — 댓글 목록 (공개) */
+/** GET /api/prayers/[id]/comments — 댓글 목록 (공개). 답글(대댓글)은 단일 깊이로 부모 아래 묶어 반환. */
 export async function GET(req: NextRequest, { params }: Params) {
   const { id } = params instanceof Promise ? await params : params;
   const user = await getAuthUser();
@@ -30,23 +31,37 @@ export async function GET(req: NextRequest, { params }: Params) {
       content: true,
       createdAt: true,
       userId: true,
+      parentId: true,
       user: { select: { nickname: true, avatarUrl: true, role: true } },
     },
   });
 
   const isStaff = !!user && hasAtLeast(user.role, "staff");
-  const items = comments.map((c) => ({
-    id: c.id,
-    content: c.content,
-    createdAt: c.createdAt,
-    authorName: c.user?.nickname ?? "탈퇴한 멤버",
-    authorAvatar: c.user?.avatarUrl ?? null,
-    authorRole: c.user?.role ?? null,
-    isMine: !!user && c.userId === user.dbUserId,
-    // 작성자 본인 · 글쓴이(글 모더레이션) · 운영진+ 가 삭제 가능
-    canDelete:
-      !!user && (c.userId === user.dbUserId || prayer.userId === user.dbUserId || isStaff),
-  }));
+  const postAuthorId = prayer.userId;
+  function toItem(c: (typeof comments)[number]) {
+    return {
+      id: c.id,
+      content: c.content,
+      createdAt: c.createdAt,
+      authorName: c.user?.nickname ?? "탈퇴한 멤버",
+      authorAvatar: c.user?.avatarUrl ?? null,
+      authorRole: c.user?.role ?? null,
+      isMine: !!user && c.userId === user.dbUserId,
+      // 작성자 본인 · 글쓴이(글 모더레이션) · 운영진+ 가 삭제 가능
+      canDelete: !!user && (c.userId === user.dbUserId || postAuthorId === user.dbUserId || isStaff),
+    };
+  }
+
+  const repliesByParent = new Map<string, ReturnType<typeof toItem>[]>();
+  for (const c of comments) {
+    if (!c.parentId) continue;
+    const list = repliesByParent.get(c.parentId) ?? [];
+    list.push(toItem(c));
+    repliesByParent.set(c.parentId, list);
+  }
+  const items = comments
+    .filter((c) => !c.parentId)
+    .map((c) => ({ ...toItem(c), replies: repliesByParent.get(c.id) ?? [] }));
 
   return NextResponse.json({ ok: true, items, loggedIn: !!user });
 }
@@ -83,34 +98,60 @@ export async function POST(req: NextRequest, { params }: Params) {
     );
   }
 
+  let parentId: string | null = null;
+  let parentAuthorId: string | null = null;
+  if (parsed.data.parentId) {
+    const parent = await prisma.prayerComment.findUnique({
+      where: { id: parsed.data.parentId },
+      select: { id: true, prayerId: true, parentId: true, userId: true },
+    });
+    if (!parent || parent.prayerId !== id) {
+      return NextResponse.json({ ok: false, error: "답글 대상을 찾을 수 없습니다." }, { status: 404 });
+    }
+    if (parent.parentId) {
+      return NextResponse.json({ ok: false, error: "답글에는 답글을 달 수 없습니다." }, { status: 400 });
+    }
+    parentId = parent.id;
+    parentAuthorId = parent.userId;
+  }
+
   const comment = await prisma.prayerComment.create({
-    data: { prayerId: id, userId: user.dbUserId, content: parsed.data.content },
+    data: { prayerId: id, userId: user.dbUserId, content: parsed.data.content, parentId },
     select: { id: true },
   });
 
-  // 글쓴이에게 댓글 알림 (본인 댓글은 제외). best-effort
+  // 알림(글쓴이·답글 대상 댓글 작성자) — 본인에게는 보내지 않는다. best-effort.
   // 같은 글의 미읽음 알림이 이미 있으면 새로 만들지 않는다 → 한 글에 댓글이 쏟아져도
-  // 미읽음은 1건으로 합쳐져 누적·도배를 막는다(글쓴이가 읽으면 다음 댓글에 다시 알림).
+  // 미읽음은 1건으로 합쳐져 누적·도배를 막는다(읽으면 다음 댓글에 다시 알림).
   // body엔 댓글 원문을 넣지 않는다(임의 문구 반복 푸시 벡터 차단) — 닉네임만.
-  if (prayer.userId !== user.dbUserId) {
+  const link = `/prayer?category=${encodeURIComponent(prayer.category)}#${id}`;
+  async function notifyOnce(targetUserId: string, type: "prayer_comment" | "prayer_comment_reply", title: string, body: string) {
     try {
-      const link = `/prayer?category=${encodeURIComponent(prayer.category)}#${id}`;
       const dup = await prisma.notification.findFirst({
-        where: { userId: prayer.userId, type: "prayer_comment", link, isRead: false },
+        where: { userId: targetUserId, type, link, isRead: false },
         select: { id: true },
       });
-      if (!dup) {
-        await createNotification({
-          userId: prayer.userId,
-          type: "prayer_comment",
-          title: "내 광장 글에 댓글이 달렸어요",
-          body: `${user.nickname ?? "누군가"}님이 댓글을 남겼어요.`,
-          link,
-        });
-      }
+      if (!dup) await createNotification({ userId: targetUserId, type, title, body, link });
     } catch {
       /* best-effort */
     }
+  }
+
+  if (prayer.userId !== user.dbUserId) {
+    await notifyOnce(
+      prayer.userId,
+      "prayer_comment",
+      "내 광장 글에 댓글이 달렸어요",
+      `${user.nickname ?? "누군가"}님이 댓글을 남겼어요.`,
+    );
+  }
+  if (parentAuthorId && parentAuthorId !== user.dbUserId && parentAuthorId !== prayer.userId) {
+    await notifyOnce(
+      parentAuthorId,
+      "prayer_comment_reply",
+      "내 댓글에 답글이 달렸어요",
+      `${user.nickname ?? "누군가"}님이 답글을 남겼어요.`,
+    );
   }
 
   return NextResponse.json({ ok: true, id: comment.id });
