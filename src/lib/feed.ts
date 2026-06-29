@@ -1,3 +1,5 @@
+import { unstable_cache } from "next/cache";
+
 import { prisma } from "@/lib/db";
 
 /**
@@ -36,18 +38,19 @@ export type FeedData = {
   }[];
 };
 
-export async function getFeedData(dbUserId: string): Promise<FeedData> {
-  const me = dbUserId;
-  const now = new Date();
+type GlobalFeed = Pick<FeedData, "recentClubs" | "recentPosts" | "answeredPrayers">;
 
-  // 내 동아리 id(소유 + accepted 멤버) + 동아리 id에 의존하지 않는 나머지 피드를 한 번에 조회.
-  const [owned, memberApps, recentClubsRaw, recentPostsRaw, answeredPrayersRaw, reportCount] =
-    await Promise.all([
-      prisma.club.findMany({ where: { ownerUserId: me, isActive: true }, select: { id: true } }),
-      prisma.clubApplication.findMany({
-        where: { userId: me, status: "accepted" },
-        select: { clubId: true },
-      }),
+/** 홈 피드의 전역 캐시 태그 — 새 동아리/광장글/응답기도 반영 시 revalidateTag로 즉시 무효화 가능. */
+export const HOME_FEED_TAG = "home-feed";
+
+/**
+ * 전역(모든 유저 공통) 피드 — 최근 개설 동아리 + 광장 최신 글 + 응답된 기도.
+ * 내용이 유저와 무관하게 동일하므로 unstable_cache로 ~60초 묶어, 매 요청·매 유저가
+ * DB를 치는 대신 윈도우당 1회만 조회한다(콜드/원격 왕복 비용을 대다수 로드에서 제거).
+ */
+const getGlobalFeed = unstable_cache(
+  async (): Promise<GlobalFeed> => {
+    const [recentClubsRaw, recentPostsRaw, answeredPrayersRaw] = await Promise.all([
       prisma.club.findMany({
         where: { isApproved: true, isActive: true },
         orderBy: { createdAt: "desc" },
@@ -80,10 +83,53 @@ export async function getFeedData(dbUserId: string): Promise<FeedData> {
         take: 2,
         select: { id: true, category: true, content: true, answeredNote: true, answeredAt: true },
       }),
-      // 승인 직후 홈에서 '성향 카드 만들기' 유도 CTA를 띄우기 위한 플래그(0/1).
-      // Report.userId는 비유니크지만 생성 API가 deleteMany→create로 1장만 유지하므로 count>0로 충분.
-      prisma.report.count({ where: { userId: me } }),
     ]);
+
+    return {
+      recentClubs: recentClubsRaw.map((c) => ({
+        id: c.id,
+        name: c.name,
+        category: c.category,
+        memberCount: c._count.applications,
+      })),
+      recentPosts: recentPostsRaw.map((p) => ({
+        id: p.id,
+        category: p.category,
+        snippet: p.content.slice(0, 60),
+        authorName: p.isAnonymous ? "익명" : p.user?.nickname ?? "탈퇴한 멤버",
+        createdAt: p.createdAt.toISOString(),
+        reactionCount: p._count.intercessions,
+        commentCount: p._count.comments,
+      })),
+      answeredPrayers: answeredPrayersRaw.map((p) => ({
+        id: p.id,
+        category: p.category,
+        snippet: p.content.slice(0, 50),
+        answeredNote: p.answeredNote,
+        createdAt: p.answeredAt ? p.answeredAt.toISOString() : null,
+      })),
+    };
+  },
+  ["home-global-feed"],
+  { revalidate: 60, tags: [HOME_FEED_TAG] },
+);
+
+export async function getFeedData(dbUserId: string): Promise<FeedData> {
+  const me = dbUserId;
+  const now = new Date();
+
+  // 내 동아리 id(소유 + accepted 멤버) + 전역 피드(대개 캐시 히트)를 한 배치로 병렬.
+  const [owned, memberApps, global, reportCount] = await Promise.all([
+    prisma.club.findMany({ where: { ownerUserId: me, isActive: true }, select: { id: true } }),
+    prisma.clubApplication.findMany({
+      where: { userId: me, status: "accepted" },
+      select: { clubId: true },
+    }),
+    getGlobalFeed(),
+    // 승인 직후 홈에서 '성향 카드 만들기' 유도 CTA를 띄우기 위한 플래그(0/1).
+    // Report.userId는 비유니크지만 생성 API가 deleteMany→create로 1장만 유지하므로 count>0로 충분.
+    prisma.report.count({ where: { userId: me } }),
+  ]);
 
   const myClubIds = [...new Set([...owned.map((c) => c.id), ...memberApps.map((a) => a.clubId)])];
 
@@ -114,27 +160,6 @@ export async function getFeedData(dbUserId: string): Promise<FeedData> {
       meetsAt: m.meetsAt.toISOString(),
       place: m.place,
     })),
-    recentClubs: recentClubsRaw.map((c) => ({
-      id: c.id,
-      name: c.name,
-      category: c.category,
-      memberCount: c._count.applications,
-    })),
-    recentPosts: recentPostsRaw.map((p) => ({
-      id: p.id,
-      category: p.category,
-      snippet: p.content.slice(0, 60),
-      authorName: p.isAnonymous ? "익명" : p.user?.nickname ?? "탈퇴한 멤버",
-      createdAt: p.createdAt.toISOString(),
-      reactionCount: p._count.intercessions,
-      commentCount: p._count.comments,
-    })),
-    answeredPrayers: answeredPrayersRaw.map((p) => ({
-      id: p.id,
-      category: p.category,
-      snippet: p.content.slice(0, 50),
-      answeredNote: p.answeredNote,
-      createdAt: p.answeredAt ? p.answeredAt.toISOString() : null,
-    })),
+    ...global,
   };
 }
