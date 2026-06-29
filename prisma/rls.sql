@@ -27,6 +27,11 @@ ALTER TABLE "Notification"       ENABLE ROW LEVEL SECURITY;  -- 개인 알림(�
 ALTER TABLE "AuditLog"           ENABLE ROW LEVEL SECURITY;  -- 감사 로그(운영 전용). create_audit_log_table 마이그레이션에서 이미 적용됨.
 ALTER TABLE "ContentReport"      ENABLE ROW LEVEL SECURITY;  -- 사용자 신고(운영 전용). create_content_report_table 마이그레이션에서 이미 적용됨.
 ALTER TABLE "ClubMeetingRsvp"    ENABLE ROW LEVEL SECURITY;  -- 모임 참석 표시. create_meeting_rsvp_and_reminder 마이그레이션에서 이미 적용됨.
+ALTER TABLE "Announcement"       ENABLE ROW LEVEL SECURITY;  -- 공지사항. enable_rls_announcement_prayercomment_images_review 마이그레이션에서 적용됨.
+ALTER TABLE "ClubMeetingReview"  ENABLE ROW LEVEL SECURITY;  -- 모임 후기. 〃
+ALTER TABLE "ClubMeetingImage"   ENABLE ROW LEVEL SECURITY;  -- 모임 갤러리 사진(URL만 저장, 업로드 자체는 Storage). 〃
+ALTER TABLE "PrayerImage"        ENABLE ROW LEVEL SECURITY;  -- 광장 글 첨부 이미지(URL만 저장). 〃
+ALTER TABLE "PrayerComment"      ENABLE ROW LEVEL SECURITY;  -- 광장 댓글/대댓글. 〃
 
 -- 정책은 의도적으로 생성하지 않습니다.
 -- (anon/authenticated 직접 접근 전면 차단; 서비스는 Prisma 소유자 연결로만 동작)
