@@ -114,9 +114,11 @@ export function HomeFeed() {
   }, []);
 
   if (view.kind === "loading") return null;
+  // 1) 비로그인 — 기존과 동일하게 로그인·가입 유도 카드.
   if (view.kind === "loggedOut") return <WelcomeCard />;
-  if (view.kind === "apply") return <ApplyCard />;
-  if (view.kind === "pending") return <PendingCard />;
+  // 2) 로그인했지만 미승인(미가입·반려·승인대기) — 피드를 블러(블라인드)로 가리고 안내 문구 노출.
+  if (view.kind === "apply") return <BlindFeed variant="apply" />;
+  if (view.kind === "pending") return <BlindFeed variant="pending" />;
 
   // 승인 멤버
   const { upcomingMeetings, recentClubs, recentPosts, answeredPrayers, hasPersonalityReport } =
@@ -129,8 +131,7 @@ export function HomeFeed() {
 
   return (
     <div className="mt-8 space-y-3">
-      {/* 승인 직후 다음 스텝 유도 — 성향 카드 미작성 멤버에게만 */}
-      {!hasPersonalityReport && <CreateCardCTA />}
+      {/* 3) 승인 멤버 — 최신 활동 피드를 상단에 우선 노출(인스타·스레드형). */}
 
       {/* 다가오는 내 동아리 모임 */}
       {upcomingMeetings.length > 0 && (
@@ -237,6 +238,9 @@ export function HomeFeed() {
         </div>
       )}
 
+      {/* 성향 카드 미작성 멤버 — 다음 스텝 유도(피드 아래). 피드가 비어도 이 카드가 채워준다. */}
+      {!hasPersonalityReport && <CreateCardCTA />}
+
       {/* 승인 멤버 + 성향카드 보유 + 피드 비었을 때의 부드러운 빈 상태 */}
       {feedEmpty && hasPersonalityReport && <EmptyFeed />}
     </div>
@@ -297,37 +301,81 @@ function WelcomeCard() {
   );
 }
 
-// 미가입(none)·반려(rejected) — 가입 신청 유도.
-function ApplyCard() {
+/**
+ * 미승인(미가입·반려·승인대기) 로그인 유저용 '블라인드 피드'.
+ * 실제 피드 데이터는 게이트로 막혀 받지 못하므로, 더미 카드를 블러 처리해
+ * "여기 소식이 모인다"는 미리보기만 보여주고 그 위에 상태별 안내를 띄운다.
+ *   - pending : "가입 승인 대기중!" (이미 신청, 승인 대기)
+ *   - apply   : 미가입·반려 — 가입 신청 버튼을 함께 노출
+ */
+function BlindFeed({ variant }: { variant: "pending" | "apply" }) {
   return (
-    <div className="glass-card mt-8 px-6 py-8 text-center">
-      <div className="mb-3 text-3xl" aria-hidden>
-        ✋
+    <div className="relative mt-8">
+      {/* 블러 처리된 더미 피드 — 읽을 수 없게 가린 미리보기(접근성/포커스에서 제외) */}
+      <div
+        aria-hidden
+        className="space-y-3 select-none blur-[6px] pointer-events-none"
+      >
+        <FeedSkeletonCard accent="teal" lines={2} />
+        <FeedSkeletonCard accent="sky" lines={1} />
+        <FeedSkeletonCard accent="gold" lines={2} />
       </div>
-      <p className="mb-1.5 text-base font-bold text-ink">청년부에 가입하고 시작하세요</p>
-      <p className="mb-6 text-sm leading-relaxed text-ink-soft">
-        가입 승인 후 성향 카드 만들기 · 동아리 가입 · 광장 글쓰기를 할 수 있어요.
-      </p>
-      <Link href="/join" className="btn-gold btn-glow inline-block rounded-full px-6 py-3 text-sm font-bold">
-        가입 신청하기 →
-      </Link>
+
+      {/* 안내 오버레이 */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+        <div className="mb-3 text-4xl" aria-hidden>
+          {variant === "pending" ? "⏳" : "✋"}
+        </div>
+        {variant === "pending" ? (
+          <>
+            <p className="mb-1.5 text-xl font-extrabold text-ink">가입 승인 대기중!</p>
+            <p className="text-sm leading-relaxed text-ink-soft">
+              운영진의 승인을 기다리는 중이에요.
+              <br />
+              승인되면 청년부 소식을 모두 볼 수 있어요.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="mb-1.5 text-xl font-extrabold text-ink">청년부 가입하고 함께해요</p>
+            <p className="mb-5 text-sm leading-relaxed text-ink-soft">
+              가입 승인 후 청년부 소식과 모임을 모두 볼 수 있어요.
+            </p>
+            <Link
+              href="/join"
+              className="btn-gold btn-glow inline-block rounded-full px-6 py-3 text-sm font-bold"
+            >
+              가입 신청하기 →
+            </Link>
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
-// 승인 대기.
-function PendingCard() {
+// 블라인드 피드용 더미 카드 — 실제 콘텐츠 대신 모양만 흉내내 블러로 가린다.
+function FeedSkeletonCard({
+  accent,
+  lines,
+}: {
+  accent: "teal" | "sky" | "gold";
+  lines: number;
+}) {
+  const dot =
+    accent === "teal" ? "bg-teal/60" : accent === "sky" ? "bg-skyx/60" : "bg-gold-deep/60";
   return (
-    <div className="glass-card mt-8 px-6 py-8 text-center">
-      <div className="mb-3 text-3xl" aria-hidden>
-        ⏳
+    <div className="glass-card p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <span className={`h-2.5 w-2.5 rounded-full ${dot}`} />
+        <span className="h-3 w-24 rounded-full bg-ink/15" />
       </div>
-      <p className="mb-1.5 text-base font-bold text-ink">가입 신청이 접수됐어요</p>
-      <p className="text-sm leading-relaxed text-ink-soft">
-        운영진의 승인을 기다리는 중이에요.
-        <br />
-        승인되면 알림으로 알려드릴게요!
-      </p>
+      <div className="space-y-2">
+        <span className="block h-3.5 w-full rounded-full bg-ink/10" />
+        {Array.from({ length: lines }).map((_, i) => (
+          <span key={i} className="block h-3.5 w-4/5 rounded-full bg-ink/10" />
+        ))}
+      </div>
     </div>
   );
 }
