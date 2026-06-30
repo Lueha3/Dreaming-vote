@@ -15,8 +15,8 @@ const applySchema = z.object({
   age: z
     .number()
     .int()
-    .min(20, "청년부(20~34세) 대상 서비스예요.")
-    .max(34, "청년부(20~34세) 대상 서비스예요."),
+    .min(20, "청년부는 20세 이상부터 신청할 수 있어요.")
+    .max(99, "나이를 다시 확인해주세요."),
   gender: z.enum(GENDERS),
   dreamGroup: z
     .string()

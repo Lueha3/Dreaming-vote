@@ -5,17 +5,18 @@ export const GENDERS = ["남", "여"] as const;
 
 /**
  * 활동 닉네임 형식("집단-나이-이름") — 단일 출처.
- * 캡처 그룹: [1]=집단(러비아|유디코), [2]=나이(2자리), [3]=이름.
+ * 캡처 그룹: [1]=집단(러비아|유디코|엘리야), [2]=나이(2자리), [3]=이름.
  * 첫 로그인 시 Prisma nickname에 구글 이름이 폴백 저장되므로,
  * 화면에 '활동 닉네임'으로 표시하거나 변경을 허용할 때 이 형식 검사를 통과해야 한다.
  * (.test()는 캡처 그룹 영향 없음 — 표시 필터·변경 검증이 같은 정규식을 공유.)
  */
-export const NICKNAME_RE = /^(러비아|유디코)-(\d{2})-(.+)$/;
+export const NICKNAME_RE = /^(러비아|유디코|엘리야)-(\d{2})-(.+)$/;
 
-/** 나이 → 집단 (러비아 20~26, 유디코 27~34) — /my/profile과 동일 규칙 */
-export function getGroup(age: number): "러비아" | "유디코" | null {
+/** 나이 → 집단 (러비아 20~26, 유디코 27~34, 엘리야 35세~) — /my/profile과 동일 규칙 */
+export function getGroup(age: number): "러비아" | "유디코" | "엘리야" | null {
   if (age >= 20 && age <= 26) return "러비아";
   if (age >= 27 && age <= 34) return "유디코";
+  if (age >= 35) return "엘리야";
   return null;
 }
 
