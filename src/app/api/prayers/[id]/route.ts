@@ -5,6 +5,8 @@ import { getAuthUser, membershipGate } from "@/lib/auth";
 import { hasAtLeast } from "@/lib/roles";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { recordAudit } from "@/lib/audit";
+import { createClient } from "@/lib/supabase/server";
+import { removeStorageObjects } from "@/lib/storage";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -50,7 +52,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   // 이미지는 삭제만 허용(추가 불가) — 제출된 URL이 모두 이 글에 이미 속한 이미지인지 검증.
-  let imagesToRemove: { id: string }[] = [];
+  let imagesToRemove: { id: string; url: string }[] = [];
   if (parsed.data.images !== undefined) {
     const currentUrls = new Set(prayer.images.map((im) => im.url));
     const allOwned = parsed.data.images.every((url) => currentUrls.has(url));
@@ -87,6 +89,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     }
   });
 
+  // DB에서 제거된 이미지의 스토리지 객체도 정리(고아 방지) — best-effort.
+  if (imagesToRemove.length > 0) {
+    const supabase = await createClient();
+    await removeStorageObjects(supabase, "plaza-images", imagesToRemove.map((im) => im.url));
+  }
+
   return NextResponse.json({ ok: true });
 }
 
@@ -103,7 +111,10 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     );
   }
 
-  const prayer = await prisma.prayer.findUnique({ where: { id }, select: { userId: true } });
+  const prayer = await prisma.prayer.findUnique({
+    where: { id },
+    select: { userId: true, images: { select: { url: true } } },
+  });
   if (!prayer) return NextResponse.json({ ok: false, error: "글을 찾을 수 없습니다." }, { status: 404 });
   if (prayer.userId !== user.dbUserId && !hasAtLeast(user.role, "staff"))
     return NextResponse.json({ ok: false, error: "권한이 없습니다." }, { status: 403 });
@@ -117,7 +128,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   ).map((c) => c.id);
 
   await prisma.$transaction(async (tx) => {
-    // 첨부 이미지·댓글·반응은 onDelete: Cascade로 함께 정리됨 (스토리지 객체는 best-effort 미삭제)
+    // 첨부 이미지·댓글·반응 행은 onDelete: Cascade로 함께 정리됨. 스토리지 객체는 아래에서 별도 정리.
     await tx.prayer.delete({ where: { id } });
     // 이 글/그 댓글의 미처리 신고를 해결 처리(콘텐츠가 사라졌으므로 유령 신고 적체 방지)
     await tx.contentReport.updateMany({
@@ -145,6 +156,13 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     } catch {
       /* 감사 기록 실패가 삭제 자체를 되돌리지 않음 (best-effort) */
     }
+  }
+
+  // 첨부 사진의 스토리지 객체 정리(고아 방지) — best-effort.
+  // 본인 글 삭제는 RLS상 정리되고, 운영진 모더레이션 삭제(타인 글)는 정책상 남을 수 있음.
+  if (prayer.images.length > 0) {
+    const supabase = await createClient();
+    await removeStorageObjects(supabase, "plaza-images", prayer.images.map((im) => im.url));
   }
 
   return NextResponse.json({ ok: true });

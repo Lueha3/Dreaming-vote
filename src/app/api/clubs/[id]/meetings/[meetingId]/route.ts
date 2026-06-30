@@ -5,6 +5,8 @@ import { prisma } from "@/lib/db";
 import { getAuthUser, membershipGate } from "@/lib/auth";
 import { getClubMembership } from "@/lib/clubAccess";
 import type { Role } from "@/lib/roles";
+import { createClient } from "@/lib/supabase/server";
+import { removeStorageObjects } from "@/lib/storage";
 
 type Params = {
   params: Promise<{ id: string; meetingId: string }> | { id: string; meetingId: string };
@@ -188,6 +190,18 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const denied = await ownerGate(id, meetingId);
   if (denied) return denied;
 
+  // cascade로 함께 삭제될 갤러리 사진의 스토리지 객체를 정리(고아 방지) — best-effort.
+  const images = await prisma.clubMeetingImage.findMany({
+    where: { meetingId },
+    select: { url: true },
+  });
+
   await prisma.clubMeeting.delete({ where: { id: meetingId } });
+
+  if (images.length > 0) {
+    const supabase = await createClient();
+    await removeStorageObjects(supabase, "club-images", images.map((im) => im.url));
+  }
+
   return NextResponse.json({ ok: true });
 }

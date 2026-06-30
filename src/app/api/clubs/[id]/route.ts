@@ -7,6 +7,8 @@ import { getClubDetail } from "@/lib/clubDetail";
 import { clubPatchSchema } from "@/lib/clubSchema";
 import { recordAudit } from "@/lib/audit";
 import { getClientIp } from "@/lib/rateLimit";
+import { createClient } from "@/lib/supabase/server";
+import { removeStorageObjects } from "@/lib/storage";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -106,6 +108,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     (d.tags !== undefined && d.tags !== club.tags);
   const replaceImages = d.images !== undefined;
 
+  // 이미지 전체 교체 시, 새 목록에서 빠진 옛 이미지의 스토리지 객체를 정리하기 위해 미리 수집.
+  let orphanedImageUrls: string[] = [];
+  if (replaceImages) {
+    const oldImages = await prisma.clubImage.findMany({ where: { clubId: id }, select: { url: true } });
+    const keepUrls = new Set(d.images!.map((img) => img.url));
+    orphanedImageUrls = oldImages.map((im) => im.url).filter((u) => !keepUrls.has(u));
+  }
+
   await prisma.$transaction(async (tx) => {
     await tx.club.update({
       where: { id },
@@ -137,6 +147,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       await tx.clubRecommendation.deleteMany({ where: { clubId: id } });
     }
   });
+
+  // 교체로 빠진 옛 이미지의 스토리지 객체 정리(고아 방지) — best-effort.
+  if (orphanedImageUrls.length > 0) {
+    const supabase = await createClient();
+    await removeStorageObjects(supabase, "club-images", orphanedImageUrls);
+  }
 
   // best-effort 감사 (운영진의 타 동아리 수정은 별도 표기)
   try {

@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthUser, membershipGate } from "@/lib/auth";
 import { getClubMembership } from "@/lib/clubAccess";
+import { createClient } from "@/lib/supabase/server";
+import { removeStorageObjects } from "@/lib/storage";
 
 type Params = {
   params:
@@ -31,7 +33,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
   const image = await prisma.clubMeetingImage.findUnique({
     where: { id: imageId },
-    select: { userId: true, meetingId: true, meeting: { select: { clubId: true } } },
+    select: { userId: true, url: true, meetingId: true, meeting: { select: { clubId: true } } },
   });
   if (!image || image.meetingId !== meetingId || image.meeting.clubId !== id) {
     return NextResponse.json({ ok: false, error: "사진을 찾을 수 없습니다." }, { status: 404 });
@@ -45,5 +47,10 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   }
 
   await prisma.clubMeetingImage.delete({ where: { id: imageId } });
+
+  // 스토리지 객체도 정리(고아 방지) — best-effort.
+  const supabase = await createClient();
+  await removeStorageObjects(supabase, "club-images", [image.url]);
+
   return NextResponse.json({ ok: true });
 }

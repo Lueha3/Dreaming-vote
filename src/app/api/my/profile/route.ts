@@ -3,6 +3,8 @@ import { z } from "zod";
 import { getAuthUser, membershipGate } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getGroup, NICKNAME_RE } from "@/lib/membership";
+import { createClient } from "@/lib/supabase/server";
+import { removeStorageObjects } from "@/lib/storage";
 
 const schema = z.object({
   nickname: z.string().min(1).max(50).optional(),
@@ -55,8 +57,24 @@ export async function PATCH(req: NextRequest) {
 
   if (parsed.data.avatarUrl) data.avatarUrl = parsed.data.avatarUrl;
 
+  // 아바타가 실제로 바뀌면 옛 사진을 정리하기 위해 교체 전 값을 확보한다.
+  let oldAvatarUrl: string | null = null;
+  if (data.avatarUrl) {
+    const current = await prisma.user.findUnique({
+      where: { id: user.dbUserId },
+      select: { avatarUrl: true },
+    });
+    if (current?.avatarUrl && current.avatarUrl !== data.avatarUrl) oldAvatarUrl = current.avatarUrl;
+  }
+
   if (Object.keys(data).length > 0) {
     await prisma.user.update({ where: { id: user.dbUserId }, data });
+  }
+
+  // 교체된 옛 아바타의 스토리지 객체 정리(고아 방지) — best-effort.
+  if (oldAvatarUrl) {
+    const supabase = await createClient();
+    await removeStorageObjects(supabase, "avatars", [oldAvatarUrl]);
   }
 
   return NextResponse.json({ ok: true });
