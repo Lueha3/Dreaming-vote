@@ -5,17 +5,19 @@ import { ApiError, fetchJson } from "@/lib/http";
 import { RoleBadge } from "@/components/RoleBadge";
 import { ReportButton } from "@/components/ReportButton";
 import { displayRoles, type Role } from "@/lib/roles";
-import { timeAgo } from "@/lib/time";
+import { timeAgo, isEdited } from "@/lib/time";
 
 type CommentItem = {
   id: string;
   content: string;
   createdAt: string;
+  updatedAt: string;
   authorName: string;
   authorAvatar: string | null;
   authorRole: Role | null;
   isMine: boolean;
   canDelete: boolean;
+  canEdit: boolean;
 };
 
 type TopComment = CommentItem & { replies: CommentItem[] };
@@ -76,13 +78,18 @@ function CommentRow({
   comment,
   loggedIn,
   onDelete,
+  onEdit,
   onReply,
 }: {
   comment: CommentItem;
   loggedIn: boolean;
   onDelete: () => void;
+  onEdit: (content: string) => void;
   onReply?: () => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [editContent, setEditContent] = useState("");
+
   return (
     <div className="flex items-start gap-2">
       {comment.authorAvatar ? (
@@ -100,18 +107,59 @@ function CommentRow({
             <RoleBadge key={r} role={r} size="sm" />
           ))}
           <span className="text-xs text-ink-faint">· {timeAgo(comment.createdAt)}</span>
-          {comment.canDelete && (
-            <button
-              onClick={onDelete}
-              className="ml-auto text-xs text-ink-faint transition-colors hover:text-red-500"
-            >
-              삭제
-            </button>
+          {isEdited(comment.createdAt, comment.updatedAt) && (
+            <span className="text-xs text-ink-faint">· 수정됨</span>
           )}
+          <span className="ml-auto flex items-center gap-2">
+            {comment.canEdit && !editing && (
+              <button
+                onClick={() => { setEditContent(comment.content); setEditing(true); }}
+                className="text-xs text-ink-faint transition-colors hover:text-ink"
+              >
+                수정
+              </button>
+            )}
+            {comment.canDelete && (
+              <button
+                onClick={onDelete}
+                className="text-xs text-ink-faint transition-colors hover:text-red-500"
+              >
+                삭제
+              </button>
+            )}
+          </span>
         </div>
-        <p className="mt-0.5 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft">
-          {comment.content}
-        </p>
+        {editing ? (
+          <div className="mt-1 space-y-1.5">
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              rows={2}
+              maxLength={500}
+              autoFocus
+              className="w-full resize-none rounded-xl border border-white/95 bg-white/70 px-3 py-2 text-sm leading-relaxed text-ink focus:border-teal focus:outline-none"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => { onEdit(editContent); setEditing(false); }}
+                disabled={!editContent.trim()}
+                className="btn-gold rounded-full px-3.5 py-1 text-xs disabled:opacity-40"
+              >
+                저장
+              </button>
+              <button
+                onClick={() => setEditing(false)}
+                className="glass-soft rounded-full px-3.5 py-1 text-xs text-ink-soft hover:text-ink"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-0.5 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-soft">
+            {comment.content}
+          </p>
+        )}
         <div className="mt-1 flex items-center gap-3">
           {onReply && (
             <button onClick={onReply} className="text-xs text-ink-faint transition-colors hover:text-skyx-ink">
@@ -209,6 +257,40 @@ export function PlazaComments({
     setReplyPosting(false);
   }
 
+  async function editComment(c: CommentItem, content: string, parentId?: string) {
+    const trimmed = content.trim();
+    const prev = c.content;
+    // 낙관적 갱신 — 실패 시 원복
+    setItems((items) =>
+      items.map((p) => {
+        if (parentId) {
+          if (p.id !== parentId) return p;
+          return { ...p, replies: p.replies.map((r) => (r.id === c.id ? { ...r, content: trimmed } : r)) };
+        }
+        return p.id === c.id ? { ...p, content: trimmed } : p;
+      }),
+    );
+    try {
+      await fetchJson(`/api/prayers/${postId}/comments/${c.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: trimmed }),
+      });
+      await load();
+    } catch (err) {
+      setItems((items) =>
+        items.map((p) => {
+          if (parentId) {
+            if (p.id !== parentId) return p;
+            return { ...p, replies: p.replies.map((r) => (r.id === c.id ? { ...r, content: prev } : r)) };
+          }
+          return p.id === c.id ? { ...p, content: prev } : p;
+        }),
+      );
+      setError(err instanceof Error ? err.message : "댓글을 수정하지 못했어요.");
+    }
+  }
+
   async function remove(c: CommentItem & { replies?: CommentItem[] }, parentId?: string) {
     const delta = -(1 + (c.replies?.length ?? 0));
     // 낙관적 제거 — 부모 삭제 시 그 아래 답글도 함께 사라진다.
@@ -248,6 +330,7 @@ export function PlazaComments({
                 comment={c}
                 loggedIn={loggedIn}
                 onDelete={() => remove(c)}
+                onEdit={(content) => editComment(c, content)}
                 onReply={loggedIn ? () => startReply(c.id) : undefined}
               />
 
@@ -255,7 +338,12 @@ export function PlazaComments({
                 <ul className="mt-2 ml-8 space-y-2.5 border-l border-sky-line pl-3">
                   {c.replies.map((r) => (
                     <li key={r.id}>
-                      <CommentRow comment={r} loggedIn={loggedIn} onDelete={() => remove(r, c.id)} />
+                      <CommentRow
+                        comment={r}
+                        loggedIn={loggedIn}
+                        onDelete={() => remove(r, c.id)}
+                        onEdit={(content) => editComment(r, content, c.id)}
+                      />
                     </li>
                   ))}
                 </ul>

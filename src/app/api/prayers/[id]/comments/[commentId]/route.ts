@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 
 import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
@@ -9,6 +10,52 @@ import { recordAudit } from "@/lib/audit";
 type Params = {
   params: Promise<{ id: string; commentId: string }> | { id: string; commentId: string };
 };
+
+const patchSchema = z.object({
+  content: z.string().trim().min(1, "댓글을 입력해주세요.").max(500, "댓글이 너무 깁니다."),
+});
+
+/** PATCH /api/prayers/[id]/comments/[commentId] — 댓글 내용 수정 (작성자 본인만) */
+export async function PATCH(req: NextRequest, { params }: Params) {
+  const { id, commentId } = params instanceof Promise ? await params : params;
+  const user = await getAuthUser();
+  if (!user) return NextResponse.json({ ok: false, error: "로그인이 필요합니다." }, { status: 401 });
+
+  if (!checkRateLimit(`editc:${user.dbUserId}`, { windowMs: 60_000, max: 30 })) {
+    return NextResponse.json(
+      { ok: false, error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
+      { status: 429 },
+    );
+  }
+
+  const comment = await prisma.prayerComment.findUnique({
+    where: { id: commentId },
+    select: { userId: true, prayerId: true },
+  });
+  if (!comment || comment.prayerId !== id) {
+    return NextResponse.json({ ok: false, error: "댓글을 찾을 수 없습니다." }, { status: 404 });
+  }
+  // 본인 댓글 수정만 허용 — 글쓴이·운영진은 삭제(모더레이션)만 가능, 남의 말을 고쳐 쓸 수는 없음.
+  if (comment.userId !== user.dbUserId) {
+    return NextResponse.json({ ok: false, error: "권한이 없습니다." }, { status: 403 });
+  }
+
+  const body = await req.json().catch(() => null);
+  const parsed = patchSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { ok: false, error: parsed.error.flatten().fieldErrors.content?.[0] ?? "입력값 오류" },
+      { status: 400 },
+    );
+  }
+
+  await prisma.prayerComment.update({
+    where: { id: commentId },
+    data: { content: parsed.data.content },
+  });
+
+  return NextResponse.json({ ok: true });
+}
 
 /** DELETE /api/prayers/[id]/comments/[commentId] — 댓글 삭제 (작성자·글쓴이·운영진+) */
 export async function DELETE(req: NextRequest, { params }: Params) {

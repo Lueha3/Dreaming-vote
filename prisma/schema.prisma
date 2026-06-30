@@ -242,6 +242,7 @@ model ClubMeetingReview {
   userId    String
   content   String
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt // 후기 수정 시 갱신 — createdAt과 다르면 "수정됨" 표시
 
   meeting ClubMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -281,6 +282,7 @@ model Prayer {
   answeredNote String?   // 응답 간증 한 줄 (선택)
   answeredAt   DateTime?
   createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt // 글 수정 시 갱신 — createdAt과 다르면 "수정됨" 표시
 
   user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   club          Club?                @relation(fields: [clubId], references: [id], onDelete: Cascade)
@@ -328,6 +330,7 @@ model PrayerComment {
   parentId  String? // 대댓글 — 단일 깊이만 허용(부모가 이미 답글이면 거부, API에서 검증)
   content   String
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt // 댓글 수정 시 갱신 — createdAt과 다르면 "수정됨" 표시
 
   prayer  Prayer          @relation(fields: [prayerId], references: [id], onDelete: Cascade)
   user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)

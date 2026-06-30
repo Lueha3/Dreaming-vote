@@ -9,11 +9,12 @@ import { recordAudit } from "@/lib/audit";
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
 const patchSchema = z.object({
-  isAnswered: z.boolean(),
+  isAnswered: z.boolean().optional(),
   answeredNote: z.string().trim().max(300).optional(),
+  content: z.string().trim().min(1, "내용을 입력해주세요.").max(2000, "내용이 너무 깁니다.").optional(),
 });
 
-/** PATCH /api/prayers/[id] — 응답됨 표시 (작성자만) */
+/** PATCH /api/prayers/[id] — 내용 수정 또는 응답됨 표시 (작성자만, 모더레이션 권한 없음) */
 export async function PATCH(req: NextRequest, { params }: Params) {
   const { id } = params instanceof Promise ? await params : params;
   const user = await getAuthUser();
@@ -21,23 +22,41 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const gate = membershipGate(user);
   if (gate) return gate;
 
+  if (!checkRateLimit(`editp:${user.dbUserId}`, { windowMs: 60_000, max: 20 })) {
+    return NextResponse.json(
+      { ok: false, error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
+      { status: 429 },
+    );
+  }
+
   const prayer = await prisma.prayer.findUnique({ where: { id }, select: { userId: true } });
   if (!prayer) return NextResponse.json({ ok: false, error: "기도제목을 찾을 수 없습니다." }, { status: 404 });
+  // 본인 글 수정만 허용 — 운영진도 타인 글 내용은 고칠 수 없음(삭제만 가능).
   if (prayer.userId !== user.dbUserId)
     return NextResponse.json({ ok: false, error: "권한이 없습니다." }, { status: 403 });
 
   const body = await req.json().catch(() => null);
   const parsed = patchSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ ok: false, error: "입력값 오류" }, { status: 400 });
+  if (!parsed.success) {
+    const fieldErrors = parsed.error.flatten().fieldErrors;
+    return NextResponse.json(
+      { ok: false, error: fieldErrors.content?.[0] ?? "입력값 오류" },
+      { status: 400 },
+    );
+  }
 
-  await prisma.prayer.update({
-    where: { id },
-    data: {
-      isAnswered: parsed.data.isAnswered,
-      answeredNote: parsed.data.isAnswered ? parsed.data.answeredNote ?? null : null,
-      answeredAt: parsed.data.isAnswered ? new Date() : null,
-    },
-  });
+  const data: { content?: string; isAnswered?: boolean; answeredNote?: string | null; answeredAt?: Date | null } = {};
+  if (parsed.data.content !== undefined) data.content = parsed.data.content;
+  if (parsed.data.isAnswered !== undefined) {
+    data.isAnswered = parsed.data.isAnswered;
+    data.answeredNote = parsed.data.isAnswered ? parsed.data.answeredNote ?? null : null;
+    data.answeredAt = parsed.data.isAnswered ? new Date() : null;
+  }
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json({ ok: false, error: "수정할 내용이 없습니다." }, { status: 400 });
+  }
+
+  await prisma.prayer.update({ where: { id }, data });
 
   return NextResponse.json({ ok: true });
 }

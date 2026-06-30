@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
+import { isEdited } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export default async function NoticesPage() {
       body: true,
       isPinned: true,
       createdAt: true,
+      updatedAt: true,
       author: { select: { nickname: true } },
     },
   });
@@ -63,6 +65,7 @@ export default async function NoticesPage() {
                 </p>
                 <p className="mt-3 text-[11px] text-ink-faint">
                   {a.author?.nickname ?? "운영팀"} · {fmtDate(a.createdAt)}
+                  {isEdited(a.createdAt, a.updatedAt) && " · 수정됨"}
                 </p>
               </li>
             ))}

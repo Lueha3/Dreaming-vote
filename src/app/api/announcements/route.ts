@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
       body: true,
       isPinned: true,
       createdAt: true,
+      updatedAt: true,
       author: { select: { nickname: true } },
     },
   });
@@ -33,6 +34,7 @@ export async function GET(req: NextRequest) {
     body: a.body,
     isPinned: a.isPinned,
     createdAt: a.createdAt,
+    updatedAt: a.updatedAt,
     authorNickname: a.author?.nickname ?? null,
   }));
 

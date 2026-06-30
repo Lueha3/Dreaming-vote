@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { RoleBadge } from "@/components/RoleBadge";
 import { ReportButton } from "@/components/ReportButton";
 import { displayRoles } from "@/lib/roles";
-import { timeAgo } from "@/lib/time";
+import { timeAgo, isEdited } from "@/lib/time";
 import { PlazaComments } from "./PlazaComments";
 import type { PlazaPost } from "./types";
 
@@ -72,6 +72,7 @@ export function PlazaPostCard({
   onReact,
   onDelete,
   onAnswered,
+  onEdit,
   onCommentDelta,
 }: {
   post: PlazaPost;
@@ -79,6 +80,7 @@ export function PlazaPostCard({
   onReact: (post: PlazaPost) => void;
   onDelete: (post: PlazaPost) => void;
   onAnswered: (post: PlazaPost, note: string) => void;
+  onEdit: (post: PlazaPost, content: string) => void;
   onCommentDelta: (postId: string, delta: number) => void;
 }) {
   const isPrayer = post.category === "기도해주세요";
@@ -87,6 +89,8 @@ export function PlazaPostCard({
   const [answering, setAnswering] = useState(false);
   const [answerNote, setAnswerNote] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editContent, setEditContent] = useState("");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const touchStartX = useRef<number>(0);
 
@@ -122,6 +126,9 @@ export function PlazaPostCard({
             <RoleBadge key={r} role={r} size="sm" />
           ))}
           <span className="text-xs text-ink-faint">· {timeAgo(post.createdAt)}</span>
+          {isEdited(post.createdAt, post.updatedAt) && (
+            <span className="text-xs text-ink-faint">· 수정됨</span>
+          )}
         </div>
         {isPrayer && post.isAnswered && (
           <span className="rounded-full border border-teal/35 bg-teal/10 px-2.5 py-0.5 text-xs font-medium text-teal-ink">
@@ -131,8 +138,36 @@ export function PlazaPostCard({
       </div>
 
       {/* 내용 */}
-      {post.content && (
-        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink">{post.content}</p>
+      {editing ? (
+        <div className="space-y-2">
+          <textarea
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            rows={3}
+            maxLength={2000}
+            autoFocus
+            className="w-full resize-none rounded-xl border border-white/95 bg-white/70 px-3.5 py-2.5 text-sm leading-relaxed text-ink focus:border-teal focus:outline-none"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => { onEdit(post, editContent); setEditing(false); }}
+              disabled={!editContent.trim()}
+              className="btn-gold flex-1 rounded-xl py-2 text-sm disabled:opacity-40"
+            >
+              저장
+            </button>
+            <button
+              onClick={() => setEditing(false)}
+              className="glass-soft rounded-xl px-4 py-2 text-sm text-ink-soft hover:bg-white/90 hover:text-ink"
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      ) : (
+        post.content && (
+          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink">{post.content}</p>
+        )
       )}
 
       {/* 이미지 캐러셀 */}
@@ -187,6 +222,14 @@ export function PlazaPostCard({
               className="text-teal-ink hover:text-teal-deep"
             >
               응답됨 표시
+            </button>
+          )}
+          {post.canEdit && !editing && (
+            <button
+              onClick={() => { setEditContent(post.content); setEditing(true); }}
+              className="text-ink-faint hover:text-ink"
+            >
+              수정
             </button>
           )}
           {post.canDelete &&

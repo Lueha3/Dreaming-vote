@@ -48,6 +48,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
           id: true,
           content: true,
           createdAt: true,
+          updatedAt: true,
           userId: true,
           user: { select: { nickname: true, avatarUrl: true, role: true } },
         },
@@ -94,10 +95,13 @@ export async function GET(_req: NextRequest, { params }: Params) {
       id: r.id,
       content: r.content,
       createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
       authorNickname: r.user?.nickname ?? null,
       authorAvatarUrl: r.user?.avatarUrl ?? null,
       authorRole: (r.user?.role ?? null) as Role | null,
       canDelete: isOwner || (!!me && r.userId === me),
+      // 수정은 본인 후기만 — 개설자 권한과 분리
+      canEdit: !!me && r.userId === me,
     })),
     images: meeting.images.map((img) => ({
       id: img.id,

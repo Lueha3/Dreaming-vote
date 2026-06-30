@@ -7,6 +7,7 @@ import { ClubImageUploader, type ClubImageItem } from "@/components/ClubImageUpl
 import { ClubImageCarousel } from "@/components/ClubImageCarousel";
 import { RoleBadge } from "@/components/RoleBadge";
 import { displayRoles, type Role } from "@/lib/roles";
+import { isEdited } from "@/lib/time";
 
 type PageProps = {
   params: Promise<{ id: string; meetingId: string }> | { id: string; meetingId: string };
@@ -26,10 +27,12 @@ type ReviewItem = {
   id: string;
   content: string;
   createdAt: string;
+  updatedAt: string;
   authorNickname: string | null;
   authorAvatarUrl: string | null;
   authorRole: Role | null;
   canDelete: boolean;
+  canEdit: boolean;
 };
 
 type ImageItem = { id: string; url: string; caption: string; canDelete: boolean };
@@ -91,6 +94,9 @@ export default function MeetingDetailPage({ params }: PageProps) {
   const [postingReview, setPostingReview] = useState(false);
   const [reviewErr, setReviewErr] = useState<string | null>(null);
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [editReviewText, setEditReviewText] = useState("");
+  const [savingReviewEdit, setSavingReviewEdit] = useState(false);
 
   // 갤러리
   const [lightbox, setLightbox] = useState<number | null>(null);
@@ -209,6 +215,35 @@ export default function MeetingDetailPage({ params }: PageProps) {
       /* ignore */
     } finally {
       setDeletingReviewId(null);
+    }
+  }
+
+  function startEditReview(r: ReviewItem) {
+    setEditingReviewId(r.id);
+    setEditReviewText(r.content);
+  }
+
+  async function saveReviewEdit(reviewId: string) {
+    if (!ids || !editReviewText.trim()) return;
+    setSavingReviewEdit(true);
+    try {
+      const res = await fetch(
+        `/api/clubs/${ids.id}/meetings/${ids.meetingId}/reviews/${reviewId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: editReviewText.trim() }),
+        },
+      );
+      const json = await res.json();
+      if (res.ok && json.ok) {
+        setEditingReviewId(null);
+        await load(ids.id, ids.meetingId);
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setSavingReviewEdit(false);
     }
   }
 
@@ -673,19 +708,62 @@ export default function MeetingDetailPage({ params }: PageProps) {
                         <RoleBadge key={role} role={role} size="sm" />
                       ))}
                       <span className="text-[11px] text-ink-faint">{fmtReviewTime(r.createdAt)}</span>
+                      {isEdited(r.createdAt, r.updatedAt) && (
+                        <span className="text-[11px] text-ink-faint">· 수정됨</span>
+                      )}
                     </div>
-                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink/90">
-                      {r.content}
-                    </p>
+                    {editingReviewId === r.id ? (
+                      <div className="space-y-1.5">
+                        <textarea
+                          value={editReviewText}
+                          onChange={(e) => setEditReviewText(e.target.value)}
+                          rows={2}
+                          maxLength={1000}
+                          autoFocus
+                          className="w-full resize-y rounded-xl border border-sky-line bg-white/80 px-3 py-2 text-sm leading-relaxed text-ink focus:border-teal focus:outline-none"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => saveReviewEdit(r.id)}
+                            disabled={savingReviewEdit || !editReviewText.trim()}
+                            className="btn-gold rounded-full px-3.5 py-1 text-xs disabled:opacity-40"
+                          >
+                            저장
+                          </button>
+                          <button
+                            onClick={() => setEditingReviewId(null)}
+                            className="glass-soft rounded-full px-3.5 py-1 text-xs text-ink-soft hover:text-ink"
+                          >
+                            취소
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink/90">
+                        {r.content}
+                      </p>
+                    )}
                   </div>
-                  {r.canDelete && (
-                    <button
-                      onClick={() => deleteReview(r.id)}
-                      disabled={deletingReviewId === r.id}
-                      className="shrink-0 text-[11px] text-ink-faint transition-colors hover:text-red-500 disabled:opacity-50"
-                    >
-                      삭제
-                    </button>
+                  {editingReviewId !== r.id && (r.canEdit || r.canDelete) && (
+                    <span className="flex shrink-0 items-center gap-2">
+                      {r.canEdit && (
+                        <button
+                          onClick={() => startEditReview(r)}
+                          className="text-[11px] text-ink-faint transition-colors hover:text-ink"
+                        >
+                          수정
+                        </button>
+                      )}
+                      {r.canDelete && (
+                        <button
+                          onClick={() => deleteReview(r.id)}
+                          disabled={deletingReviewId === r.id}
+                          className="text-[11px] text-ink-faint transition-colors hover:text-red-500 disabled:opacity-50"
+                        >
+                          삭제
+                        </button>
+                      )}
+                    </span>
                   )}
                 </li>
               ))}

@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
       answeredNote: true,
       answeredAt: true,
       createdAt: true,
+      updatedAt: true,
       userId: true,
       user: { select: { nickname: true, avatarUrl: true, role: true } },
       images: { select: { url: true }, orderBy: { order: "asc" } },
@@ -65,9 +66,12 @@ export async function GET(req: NextRequest) {
     answeredNote: p.answeredNote,
     answeredAt: p.answeredAt,
     createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
     isMine: !!user && p.userId === user.dbUserId,
     // 작성자 본인 또는 운영진+ 가 삭제(모더레이션) 가능
     canDelete: (!!user && p.userId === user.dbUserId) || isStaff,
+    // 수정은 본인 글만 — 운영진도 타인 글 내용은 못 고침
+    canEdit: !!user && p.userId === user.dbUserId,
     authorName: p.isAnonymous ? "익명" : p.user?.nickname ?? "익명",
     authorAvatar: p.isAnonymous ? null : p.user?.avatarUrl ?? null,
     // 익명 글은 작성자 배지도 숨긴다(관리자/운영진 신원 노출 방지)

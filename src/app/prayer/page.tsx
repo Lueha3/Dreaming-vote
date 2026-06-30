@@ -152,6 +152,24 @@ export default function PlazaPage() {
     }
   }
 
+  async function editPost(post: PlazaPost, content: string) {
+    const trimmed = content.trim();
+    const prev = post.content;
+    // 낙관적 갱신 — 실패 시 원복
+    setItems((items) => items.map((x) => (x.id === post.id ? { ...x, content: trimmed } : x)));
+    try {
+      await fetchJson(`/api/prayers/${post.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: trimmed }),
+      });
+      await load();
+    } catch (err) {
+      setItems((items) => items.map((x) => (x.id === post.id ? { ...x, content: prev } : x)));
+      surfaceApiError(err, "수정에 실패했어요. 다시 시도해주세요.");
+    }
+  }
+
   async function markAnswered(post: PlazaPost, note: string) {
     try {
       await fetchJson(`/api/prayers/${post.id}`, {
@@ -285,6 +303,7 @@ export default function PlazaPage() {
                 onReact={react}
                 onDelete={removePost}
                 onAnswered={markAnswered}
+                onEdit={editPost}
                 onCommentDelta={commentDelta}
               />
             ))}

@@ -30,6 +30,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       id: true,
       content: true,
       createdAt: true,
+      updatedAt: true,
       userId: true,
       parentId: true,
       user: { select: { nickname: true, avatarUrl: true, role: true } },
@@ -43,12 +44,15 @@ export async function GET(req: NextRequest, { params }: Params) {
       id: c.id,
       content: c.content,
       createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
       authorName: c.user?.nickname ?? "탈퇴한 멤버",
       authorAvatar: c.user?.avatarUrl ?? null,
       authorRole: c.user?.role ?? null,
       isMine: !!user && c.userId === user.dbUserId,
       // 작성자 본인 · 글쓴이(글 모더레이션) · 운영진+ 가 삭제 가능
       canDelete: !!user && (c.userId === user.dbUserId || postAuthorId === user.dbUserId || isStaff),
+      // 수정은 본인 댓글만 — 모더레이션 권한과 분리
+      canEdit: !!user && c.userId === user.dbUserId,
     };
   }
 

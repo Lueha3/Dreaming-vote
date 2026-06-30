@@ -29,8 +29,10 @@ export type PlazaPost = {
   answeredNote: string | null;
   answeredAt: string | null;
   createdAt: string;
+  updatedAt: string;
   isMine: boolean;
   canDelete: boolean;
+  canEdit: boolean;
   authorName: string;
   authorAvatar: string | null;
   authorRole: Role | null;
