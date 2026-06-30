@@ -105,10 +105,18 @@ export function Header() {
           </div>
         </Link>
 
-        {/* 로그인·가입 신청하기 버튼은 카테고리 바에서 제거하고, 홈 본문(HomeFeed)의 상태별 화면으로 이동. */}
+        {/* 가입 신청하기는 홈 본문(HomeFeed)으로 옮겼지만, 로그인은 모든 활동의 선행조건이므로
+            비로그인 유저가 어느 페이지에서든 즉시 찾을 수 있게 진입점을 카테고리 바에 유지한다(아래). */}
 
-        {/* 우측 클러스터 (알림벨/햄버거) — 로고와 분리해 우측 끝으로(ml-auto) */}
+        {/* 우측 클러스터 (로그인/알림벨/햄버거) — 로고와 분리해 우측 끝으로(ml-auto) */}
         <div className="ml-auto flex flex-shrink-0 items-center gap-0.5 sm:gap-2">
+          {/* 비로그인 — 로그인 버튼(가입 신청과 동일한 골드 톤). 로그인하면 사라지고
+              그 자리를 알림 벨이 대체한다. */}
+          {!loading && !nickname && (
+            <Link href="/login" className="btn-gold rounded-full px-3.5 py-1.5 text-xs font-bold">
+              로그인
+            </Link>
+          )}
           {/* 알림 벨 — 로그인 상태에서만 자체 렌더(비로그인은 null). menuRef 밖에 둬서
               벨 클릭이 햄버거 메뉴의 '외부 클릭'으로 인식돼 메뉴가 닫히게 한다(상호 배타). */}
           <NotificationBell />

@@ -264,8 +264,10 @@ function WelcomeCard() {
         >
           로그인
         </Link>
+        {/* 비로그인 상태 — 가입 신청도 구글 로그인이 선행조건이므로 /login을 거쳐
+            로그인 완료 후 /join 폼으로 돌아온다(next). 로그인 유저용 BlindFeed의 버튼은 /join 직행. */}
         <Link
-          href="/join"
+          href="/login?next=/join"
           className="btn-gold rounded-full px-5 py-2.5 text-sm font-bold"
         >
           가입 신청하기 →
