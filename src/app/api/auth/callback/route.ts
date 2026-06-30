@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -27,6 +28,24 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      // 헤더의 일반 '로그인' 버튼(next 미지정 → '/')으로 들어온 경우에 한해:
+      // 미가입(none/rejected) 유저는 가입 신청 화면으로 안내한다.
+      // 특정 페이지에서 로그인한 경우(next!=='/')는 그 페이지가 자체적으로 가입 안내를 하므로 원래 목적지로 보낸다.
+      if (next === "/") {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          const dbUser = await prisma.user.findUnique({
+            where: { supabaseId: user.id },
+            select: { membershipStatus: true },
+          });
+          const status = dbUser?.membershipStatus ?? "none";
+          if (status === "none" || status === "rejected") {
+            return NextResponse.redirect(`${origin}/join?welcome=1`);
+          }
+        }
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

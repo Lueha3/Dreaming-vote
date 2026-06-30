@@ -60,13 +60,9 @@ export const getAuthUser = cache(async (): Promise<AuthUser | null> => {
       select: AUTH_USER_SELECT,
     });
 
-    // 탈퇴 후 재로그인 — 쿨다운 기간(7일) 체크
+    // 탈퇴 후 재로그인 — 쿨다운 없이 즉시 복구. membershipStatus는 탈퇴 시
+    // 이미 'none'으로 찍혀 있어 /join에서 정상적으로 재가입 절차를 다시 밟는다.
     if (dbUser?.deletedAt) {
-      const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-      if (Date.now() - dbUser.deletedAt.getTime() < SEVEN_DAYS_MS) {
-        return null; // 재가입 차단 — 7일 경과 후 복구 가능
-      }
-      // 7일 경과 — 탈퇴 해제 후 정상 복구
       dbUser = await prisma.user.update({
         where: { id: dbUser.id },
         data: { deletedAt: null },

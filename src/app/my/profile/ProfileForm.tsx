@@ -37,6 +37,7 @@ export function ProfileForm({
   const [withdrawConfirm, setWithdrawConfirm] = useState("");
   const [withdrawing, setWithdrawing] = useState(false);
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
+  const [withdrawn, setWithdrawn] = useState(false);
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -107,11 +108,15 @@ export function ProfileForm({
     setWithdrawError(null);
     try {
       await fetchJson("/api/my/withdraw", { method: "POST" });
+      setWithdrawn(true);
       const supabase = createClient();
       await supabase.auth.signOut();
       // 풀 리로드로 이동 — 클라 라우터 push만으로는 같은 "/"에 마운트된 HomeFeed의
       // useState(initial)이 갱신되지 않아 탈퇴 후에도 이전 피드가 남을 수 있다.
-      window.location.href = "/";
+      // 탈퇴 완료 문구를 잠깐 보여준 뒤 이동.
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1800);
     } catch {
       setWithdrawError("탈퇴 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
       setWithdrawing(false);
@@ -127,6 +132,21 @@ export function ProfileForm({
           <div className="mb-4 text-4xl">✅</div>
           <p className="text-lg font-bold text-ink">저장됐습니다!</p>
           <p className="mt-2 text-sm text-ink-soft">잠시 후 이동합니다...</p>
+        </div>
+      </div>
+    );
+
+  if (withdrawn)
+    return (
+      <div className="flex items-center justify-center py-20 text-center">
+        <div>
+          <div className="mb-4 text-4xl">👋</div>
+          <p className="text-lg font-bold text-ink">탈퇴가 완료됐어요</p>
+          <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+            언제든 다시 로그인해서 즉시 재가입할 수 있어요.
+            <br />
+            그동안 함께해줘서 고마워요!
+          </p>
         </div>
       </div>
     );
@@ -217,9 +237,9 @@ export function ProfileForm({
               <div>
                 <p className="text-sm font-semibold text-red-600 mb-1">정말 탈퇴하시겠어요?</p>
                 <ul className="text-xs text-red-500 space-y-1 list-disc list-inside leading-relaxed">
-                  <li>탈퇴 후 7일 이내 재가입이 불가합니다.</li>
                   <li>프로필·가입 정보(실명·연락처 등)가 즉시 삭제됩니다.</li>
                   <li>개설한 동아리는 자동으로 비공개 처리됩니다.</li>
+                  <li className="text-ink-soft">언제든 다시 로그인해서 즉시 재가입할 수 있어요.</li>
                 </ul>
               </div>
               <div>

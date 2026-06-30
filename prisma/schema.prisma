@@ -33,7 +33,7 @@ model User {
   membershipAppliedAt DateTime?
   membershipDecidedAt DateTime?
   membershipNote      String? // 거절 사유 (신청자에게 표시)
-  deletedAt           DateTime? // 탈퇴 처리 일시 — null이면 활성. 7일 이내 재가입 차단.
+  deletedAt           DateTime? // 탈퇴 처리 일시 — null이면 활성. 재로그인 시 즉시 해제(쿨다운 없음).
 
   ownedClubs          Club[]               @relation("OwnedClubs")
   clubApplications    ClubApplication[]

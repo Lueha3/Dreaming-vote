@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { buildNickname, getGroup, normalizePhone } from "@/lib/membership";
 
 type Membership = {
@@ -17,6 +18,19 @@ type Membership = {
 };
 
 export default function JoinPage() {
+  return (
+    <Suspense>
+      <JoinForm />
+    </Suspense>
+  );
+}
+
+function JoinForm() {
+  const searchParams = useSearchParams();
+  // 헤더의 일반 '로그인' 버튼으로 들어와 OAuth 콜백이 미가입 상태를 감지해 붙인 플래그.
+  // /api/auth/callback/route.ts에서 next==='/' && status가 none/rejected일 때만 ?welcome=1로 이리 보낸다.
+  const justLoggedIn = searchParams.get("welcome") === "1";
+
   const [loading, setLoading] = useState(true);
   const [notLoggedIn, setNotLoggedIn] = useState(false);
   const [membership, setMembership] = useState<Membership | null>(null);
@@ -225,6 +239,15 @@ export default function JoinPage() {
             )}
             <span className="mt-1 block text-xs text-ink-soft">
               내용을 확인하고 다시 신청할 수 있어요.
+            </span>
+          </div>
+        )}
+
+        {status === "none" && justLoggedIn && (
+          <div className="mb-6 rounded-xl border border-teal/35 bg-teal/[0.08] px-4 py-3 text-sm text-teal-ink">
+            로그인됐어요! 아직 청년부 가입 전이에요.
+            <span className="mt-1 block text-xs text-ink-soft">
+              아래 정보를 입력하고 가입을 신청해주세요.
             </span>
           </div>
         )}
