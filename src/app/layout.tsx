@@ -13,6 +13,12 @@ export const metadata: Metadata = {
     description: "내 성향에 맞는 동아리 찾기 · 꿈꾸는교회 청년부",
     siteName: "BlueHumanity",
   },
+  // iOS "홈 화면에 추가" 시 아이콘 아래 표시되는 이름 — 미설정 시 <title>이 길게 잘려 노출됨.
+  appleWebApp: {
+    capable: true,
+    title: "꿈꾸는동아리",
+    statusBarStyle: "default",
+  },
 };
 
 // 하단 고정 CTA가 iOS 홈 인디케이터 영역까지 safe-area 인셋을 확보하려면 필요.
@@ -20,6 +26,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#7FBDE4",
 };
 
 const SUPABASE_ORIGIN = (() => {
