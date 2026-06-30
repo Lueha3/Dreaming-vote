@@ -15,6 +15,8 @@ export const CLUB_CATEGORIES = [
 
 export type ClubCategory = (typeof CLUB_CATEGORIES)[number];
 
+// 교회 청년부 앱 — 술/담배/성적 암시 등 기독교 교리상 논란이 될 수 있는 이모지는 쓰지 않는다.
+// (예: 친목 카테고리는 🍻 대신 🧑‍🤝‍🧑)
 export const CLUB_CATEGORY_META: Record<string, { emoji: string }> = {
   신앙: { emoji: "✝️" },
   스터디: { emoji: "📚" },
@@ -23,7 +25,7 @@ export const CLUB_CATEGORY_META: Record<string, { emoji: string }> = {
   봉사: { emoji: "🤝" },
   "창업/사이드프로젝트": { emoji: "🚀" },
   "문화/예술": { emoji: "🎨" },
-  친목: { emoji: "🍻" },
+  친목: { emoji: "🧑‍🤝‍🧑" },
 };
 
 export function isClubCategory(value: string): value is ClubCategory {
