@@ -51,12 +51,15 @@ export async function POST(req: NextRequest, { params }: Params) {
     );
   }
 
-  // PII 익명화 + 소프트 탈퇴 (/api/my/withdraw와 동일 로직)
+  // PII 익명화 + 소프트 탈퇴 (/api/my/withdraw와 동일 로직).
+  // role도 반드시 "member"로 리셋 — 탈퇴 쿨다운이 없어진 이상(즉시 재로그인 가능),
+  // role을 안 지우면 강제 탈퇴당한 staff/admin이 곧바로 재로그인해 권한을 그대로 되찾는다.
   await prisma.user.update({
     where: { id },
     data: {
       deletedAt: new Date(),
       membershipStatus: "none",
+      role: "member",
       nickname: null,
       avatarUrl: null,
       realName: null,

@@ -55,7 +55,7 @@ export default function ManageMembersPage() {
 
   async function withdraw(u: Member) {
     const ok = window.confirm(
-      `${u.nickname ?? "이 멤버"}를 강제 탈퇴시킬까요?\n프로필·가입 정보가 즉시 삭제되고, 7일간 재가입이 불가합니다. 되돌릴 수 없어요.`,
+      `${u.nickname ?? "이 멤버"}를 강제 탈퇴시킬까요?\n프로필·가입 정보가 즉시 삭제됩니다. 되돌릴 수 없어요(언제든 재가입은 가능).`,
     );
     if (!ok) return;
     setBusyId(u.id);
