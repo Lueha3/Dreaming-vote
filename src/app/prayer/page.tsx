@@ -152,20 +152,25 @@ export default function PlazaPage() {
     }
   }
 
-  async function editPost(post: PlazaPost, content: string) {
+  async function editPost(post: PlazaPost, content: string, images: string[]) {
     const trimmed = content.trim();
-    const prev = post.content;
+    const prevContent = post.content;
+    const prevImages = post.images;
     // 낙관적 갱신 — 실패 시 원복
-    setItems((items) => items.map((x) => (x.id === post.id ? { ...x, content: trimmed } : x)));
+    setItems((items) =>
+      items.map((x) => (x.id === post.id ? { ...x, content: trimmed, images } : x)),
+    );
     try {
       await fetchJson(`/api/prayers/${post.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: trimmed }),
+        body: JSON.stringify({ content: trimmed, images }),
       });
       await load();
     } catch (err) {
-      setItems((items) => items.map((x) => (x.id === post.id ? { ...x, content: prev } : x)));
+      setItems((items) =>
+        items.map((x) => (x.id === post.id ? { ...x, content: prevContent, images: prevImages } : x)),
+      );
       surfaceApiError(err, "수정에 실패했어요. 다시 시도해주세요.");
     }
   }

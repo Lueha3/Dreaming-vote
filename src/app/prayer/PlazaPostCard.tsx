@@ -80,7 +80,7 @@ export function PlazaPostCard({
   onReact: (post: PlazaPost) => void;
   onDelete: (post: PlazaPost) => void;
   onAnswered: (post: PlazaPost, note: string) => void;
-  onEdit: (post: PlazaPost, content: string) => void;
+  onEdit: (post: PlazaPost, content: string, images: string[]) => void;
   onCommentDelta: (postId: string, delta: number) => void;
 }) {
   const isPrayer = post.category === "기도해주세요";
@@ -91,6 +91,7 @@ export function PlazaPostCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
+  const [editImages, setEditImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const touchStartX = useRef<number>(0);
 
@@ -148,10 +149,31 @@ export function PlazaPostCard({
             autoFocus
             className="w-full resize-none rounded-xl border border-white/95 bg-white/70 px-3.5 py-2.5 text-sm leading-relaxed text-ink focus:border-teal focus:outline-none"
           />
+          {editImages.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {editImages.map((url) => (
+                <div
+                  key={url}
+                  className="relative h-20 w-20 overflow-hidden rounded-lg border border-sky-line bg-white/55"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt="" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setEditImages((imgs) => imgs.filter((u) => u !== url))}
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-xs text-white transition-colors hover:bg-black/70"
+                    aria-label="이미지 삭제"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="flex gap-2">
             <button
-              onClick={() => { onEdit(post, editContent); setEditing(false); }}
-              disabled={!editContent.trim()}
+              onClick={() => { onEdit(post, editContent, editImages); setEditing(false); }}
+              disabled={!editContent.trim() && editImages.length === 0}
               className="btn-gold flex-1 rounded-xl py-2 text-sm disabled:opacity-40"
             >
               저장
@@ -171,7 +193,7 @@ export function PlazaPostCard({
       )}
 
       {/* 이미지 캐러셀 */}
-      <ImageCarousel images={post.images} onOpen={setLightboxIndex} />
+      {!editing && <ImageCarousel images={post.images} onOpen={setLightboxIndex} />}
 
       {/* 응답 간증 */}
       {isPrayer && post.isAnswered && post.answeredNote && (
@@ -226,7 +248,7 @@ export function PlazaPostCard({
           )}
           {post.canEdit && !editing && (
             <button
-              onClick={() => { setEditContent(post.content); setEditing(true); }}
+              onClick={() => { setEditContent(post.content); setEditImages(post.images); setEditing(true); }}
               className="text-ink-faint hover:text-ink"
             >
               수정

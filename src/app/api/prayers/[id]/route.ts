@@ -11,7 +11,8 @@ type Params = { params: Promise<{ id: string }> | { id: string } };
 const patchSchema = z.object({
   isAnswered: z.boolean().optional(),
   answeredNote: z.string().trim().max(300).optional(),
-  content: z.string().trim().min(1, "내용을 입력해주세요.").max(2000, "내용이 너무 깁니다.").optional(),
+  content: z.string().trim().max(2000, "내용이 너무 깁니다.").optional(),
+  images: z.array(z.string()).max(3, "사진은 최대 3장까지 올릴 수 있어요.").optional(),
 });
 
 /** PATCH /api/prayers/[id] — 내용 수정 또는 응답됨 표시 (작성자만, 모더레이션 권한 없음) */
@@ -29,7 +30,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     );
   }
 
-  const prayer = await prisma.prayer.findUnique({ where: { id }, select: { userId: true } });
+  const prayer = await prisma.prayer.findUnique({
+    where: { id },
+    select: { userId: true, content: true, images: { select: { id: true, url: true } } },
+  });
   if (!prayer) return NextResponse.json({ ok: false, error: "기도제목을 찾을 수 없습니다." }, { status: 404 });
   // 본인 글 수정만 허용 — 운영진도 타인 글 내용은 고칠 수 없음(삭제만 가능).
   if (prayer.userId !== user.dbUserId)
@@ -40,9 +44,29 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (!parsed.success) {
     const fieldErrors = parsed.error.flatten().fieldErrors;
     return NextResponse.json(
-      { ok: false, error: fieldErrors.content?.[0] ?? "입력값 오류" },
+      { ok: false, error: fieldErrors.content?.[0] ?? fieldErrors.images?.[0] ?? "입력값 오류" },
       { status: 400 },
     );
+  }
+
+  // 이미지는 삭제만 허용(추가 불가) — 제출된 URL이 모두 이 글에 이미 속한 이미지인지 검증.
+  let imagesToRemove: { id: string }[] = [];
+  if (parsed.data.images !== undefined) {
+    const currentUrls = new Set(prayer.images.map((im) => im.url));
+    const allOwned = parsed.data.images.every((url) => currentUrls.has(url));
+    if (!allOwned) {
+      return NextResponse.json({ ok: false, error: "유효하지 않은 이미지가 포함돼 있어요." }, { status: 400 });
+    }
+    const keepUrls = new Set(parsed.data.images);
+    imagesToRemove = prayer.images.filter((im) => !keepUrls.has(im.url));
+  }
+
+  const finalContent = (parsed.data.content ?? prayer.content).trim();
+  const finalImageCount = parsed.data.images !== undefined ? parsed.data.images.length : prayer.images.length;
+  if (parsed.data.content !== undefined || parsed.data.images !== undefined) {
+    if (!finalContent && finalImageCount === 0) {
+      return NextResponse.json({ ok: false, error: "내용이나 사진을 남겨주세요." }, { status: 400 });
+    }
   }
 
   const data: { content?: string; isAnswered?: boolean; answeredNote?: string | null; answeredAt?: Date | null } = {};
@@ -52,11 +76,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     data.answeredNote = parsed.data.isAnswered ? parsed.data.answeredNote ?? null : null;
     data.answeredAt = parsed.data.isAnswered ? new Date() : null;
   }
-  if (Object.keys(data).length === 0) {
+  if (Object.keys(data).length === 0 && imagesToRemove.length === 0) {
     return NextResponse.json({ ok: false, error: "수정할 내용이 없습니다." }, { status: 400 });
   }
 
-  await prisma.prayer.update({ where: { id }, data });
+  await prisma.$transaction(async (tx) => {
+    if (Object.keys(data).length > 0) await tx.prayer.update({ where: { id }, data });
+    if (imagesToRemove.length > 0) {
+      await tx.prayerImage.deleteMany({ where: { id: { in: imagesToRemove.map((im) => im.id) } } });
+    }
+  });
 
   return NextResponse.json({ ok: true });
 }
