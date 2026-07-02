@@ -58,3 +58,23 @@ DROP POLICY IF EXISTS "PrayerIntercession_all" ON "PrayerIntercession";
 DROP POLICY IF EXISTS "avatars_select"      ON storage.objects;
 DROP POLICY IF EXISTS "club_images_select"  ON storage.objects;
 DROP POLICY IF EXISTS "plaza_images_select" ON storage.objects;
+
+-- ----------------------------------------------------------------------------
+-- ⚠️ 위 SELECT 전면 제거가 업로드 자체를 깨뜨렸다(2026-07-02 발견).
+-- Supabase Storage는 업로드(INSERT) 시 내부적으로 INSERT ... RETURNING *을
+-- 실행해 결과를 클라이언트에 돌려주는데, 이 RETURNING은 SELECT RLS가 있어야
+-- 통과한다. SELECT 정책이 아예 없으면 업로드 자체가
+-- "new row violates row-level security policy"로 실패한다
+-- (avatars 프로필 사진 업로드에서 실측 재현·확인됨; club-images/plaza-images도
+-- 동일 구조라 SQL 시뮬레이션으로 동일 실패 확인).
+-- anon의 버킷 전체 목록 조회를 막으려던 원래 의도는 유지하면서, 본인이
+-- 소유한 객체만 보이는 owner 범위 SELECT 정책으로 복원한다(anon 미포함).
+-- restore_owner_scoped_select_policies_storage_buckets 마이그레이션에서 적용됨.
+CREATE POLICY "avatars_select_own" ON storage.objects FOR SELECT TO authenticated
+  USING (bucket_id = 'avatars' AND owner = auth.uid());
+
+CREATE POLICY "club_images_select_own" ON storage.objects FOR SELECT TO authenticated
+  USING (bucket_id = 'club-images' AND owner = auth.uid());
+
+CREATE POLICY "plaza_images_select_own" ON storage.objects FOR SELECT TO authenticated
+  USING (bucket_id = 'plaza-images' AND owner = auth.uid());
