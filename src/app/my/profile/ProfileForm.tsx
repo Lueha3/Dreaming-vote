@@ -77,10 +77,18 @@ export function ProfileForm({
     if (!avatarFile) return null;
     const supabase = createClient();
     const path = `${supabaseId}.${avatarExt}`;
+    const contentType = avatarFile.type || "image/webp";
     const { data, error } = await supabase.storage
       .from("avatars")
-      .upload(path, avatarFile, { upsert: true, cacheControl: "3600" });
-    if (error || !data) return null;
+      .upload(path, avatarFile, { upsert: true, cacheControl: "3600", contentType });
+    if (error || !data) {
+      // 원인 진단용 — Supabase Storage가 반환한 실제 사유를 콘솔에 남긴다.
+      console.error("아바타 업로드 실패:", error);
+      setError(
+        `사진 업로드에 실패했습니다.${error?.message ? ` (${error.message})` : ""} 다시 시도해주세요.`,
+      );
+      return null;
+    }
     const {
       data: { publicUrl },
     } = supabase.storage.from("avatars").getPublicUrl(data.path);
@@ -93,9 +101,9 @@ export function ProfileForm({
     setError(null);
     setSaving(true);
 
+    // 실패 사유는 uploadAvatar 내부에서 이미 구체적으로 setError 처리함.
     const newAvatarUrl = await uploadAvatar();
     if (!newAvatarUrl) {
-      setError("사진 업로드에 실패했습니다. 다시 시도해주세요.");
       setSaving(false);
       return;
     }
