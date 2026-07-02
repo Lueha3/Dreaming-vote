@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { createAdminNotification } from "@/lib/notifications";
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
@@ -48,6 +49,21 @@ export async function POST(req: NextRequest) {
   });
 
   console.log(`[withdraw] userId=${user.dbUserId} supabaseId=${user.supabaseId}`);
+
+  // 운영진에게 탈퇴 공유 (best-effort — 익명화 전에 확보한 닉네임만 사용, 실명/연락처 없음)
+  try {
+    await createAdminNotification(
+      {
+        type: "admin_member_withdrawn",
+        title: "회원 탈퇴 — 자진",
+        body: `${user.nickname ?? "한 멤버"}님이 스스로 탈퇴했어요.`,
+        link: "/manage/members",
+      },
+      user.dbUserId,
+    );
+  } catch {
+    /* best-effort */
+  }
 
   return NextResponse.json({ ok: true });
 }

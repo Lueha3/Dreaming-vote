@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getAuthUser, membershipGate } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { createAdminNotification } from "@/lib/notifications";
 
 const schema = z.object({
   targetType: z.enum(["prayer", "comment", "club"]),
@@ -92,6 +93,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, already: true });
     }
     throw e;
+  }
+
+  // 운영진에게 새 신고 접수 알림 (best-effort)
+  try {
+    await createAdminNotification({
+      type: "admin_content_reported",
+      title: "새 신고가 접수됐어요",
+      body: `${targetType === "prayer" ? "광장 글" : targetType === "comment" ? "댓글" : "동아리"} 신고 — 사유: ${reason}`,
+      link: "/manage/reports",
+    });
+  } catch {
+    /* best-effort */
   }
 
   return NextResponse.json({ ok: true });

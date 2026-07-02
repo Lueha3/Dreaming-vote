@@ -4,6 +4,7 @@ import { getAuthUser, roleGate } from "@/lib/auth";
 import { canForceWithdraw, type Role } from "@/lib/roles";
 import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
 import { recordAudit } from "@/lib/audit";
+import { createAdminNotification } from "@/lib/notifications";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -91,6 +92,21 @@ export async function POST(req: NextRequest, { params }: Params) {
     });
   } catch (e) {
     console.error("[audit] membership_force_withdraw 기록 실패:", e);
+  }
+
+  // 다른 운영진에게 강제 탈퇴 공유 (best-effort — 실행한 본인은 제외, PII 없이 닉네임만)
+  try {
+    await createAdminNotification(
+      {
+        type: "admin_member_withdrawn",
+        title: "회원 탈퇴 — 강제",
+        body: `${target.nickname ?? "한 멤버"}님이 ${actor!.nickname ?? "운영진"}님에 의해 탈퇴 처리됐어요.`,
+        link: "/manage/members",
+      },
+      actor!.dbUserId,
+    );
+  } catch {
+    /* best-effort */
   }
 
   return NextResponse.json({ ok: true });

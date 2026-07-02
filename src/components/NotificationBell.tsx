@@ -29,7 +29,16 @@ const ICON: Record<string, string> = {
   prayer_comment_reply: "↩️",
   prayer_intercession: "🙏",
   announcement: "📢",
+  admin_membership_applied: "📝",
+  admin_member_withdrawn: "🚪",
+  admin_club_created: "🏛️",
+  admin_content_reported: "🚨",
 };
+
+// 운영자 전용 알림(admin_*) — 벨 목록에서 살짝 다른 톤으로 구분 표시.
+function isAdminNotice(type: string): boolean {
+  return type.startsWith("admin_");
+}
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -180,14 +189,21 @@ export function NotificationBell() {
                   key={n.id}
                   onClick={() => handleClick(n)}
                   className={`flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-white/90 ${
-                    n.isRead ? "" : "bg-skyx/[0.06]"
+                    isAdminNotice(n.type) ? "bg-gold/[0.06]" : n.isRead ? "" : "bg-skyx/[0.06]"
                   }`}
                 >
                   <span className="mt-0.5 shrink-0 text-lg" aria-hidden>
                     {ICON[n.type] ?? "🔔"}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-ink">{n.title}</p>
+                    <p className="text-sm font-semibold text-ink">
+                      {isAdminNotice(n.type) && (
+                        <span className="mr-1.5 rounded-full bg-gold/20 px-1.5 py-0.5 text-[10px] font-bold text-gold-ink">
+                          운영
+                        </span>
+                      )}
+                      {n.title}
+                    </p>
                     {n.body && (
                       <p className="mt-0.5 whitespace-pre-wrap break-words text-xs leading-relaxed text-ink-soft">
                         {n.body}

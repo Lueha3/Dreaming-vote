@@ -6,6 +6,7 @@ import Link from "next/link";
 import imageCompression from "browser-image-compression";
 import { createClient } from "@/lib/supabase/client";
 import { fetchJson } from "@/lib/http";
+import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 
 /**
  * 프로필 수정 폼 (프로필 사진 전용) — 클라이언트.
@@ -214,6 +215,9 @@ export function ProfileForm({
               onChange={handleFileSelect}
             />
           </div>
+
+          {/* 휴대폰 푸시 알림 켜기/끄기 */}
+          <PushNotificationToggle />
 
           {/* 활동 닉네임 — 읽기 전용 (가입 신청 폼에 종속) */}
           <div className="glass-card p-5">

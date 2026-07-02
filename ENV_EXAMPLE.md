@@ -34,6 +34,11 @@ CRON_SECRET=generate-a-long-random-string
 
 # 앱 기본 URL (배포 후 실제 URL로 변경)
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# 휴대폰 푸시 알림(Web Push) VAPID 키 쌍 — `npx web-push generate-vapid-keys`로 1회 생성.
+# PUBLIC은 브라우저에 노출(구독 시 사용), PRIVATE은 서버 전용(발송 서명).
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=BJ...
+VAPID_PRIVATE_KEY=9w...
 ```
 
 ### `.env` (선택사항, Git에 커밋하지 않음)
@@ -84,6 +89,12 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 - **위치**: `.env.local` (로컬), Vercel 환경 변수 (프로덕션)
 - **필수**: 아니오 (없으면 합리적 기본값으로 대체)
 - **설명**: 로그아웃 리다이렉트 등 절대 URL 생성에 사용됩니다. 로컬은 `http://localhost:3000`, 프로덕션은 실제 배포 URL.
+
+### `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`
+- **용도**: 휴대폰 푸시 알림(Web Push) 발송 서명 키 쌍
+- **위치**: `.env.local` (로컬), Vercel 환경 변수 (프로덕션)
+- **필수**: 아니오 (없으면 인앱 알림 벨만 동작, 휴대폰 푸시는 조용히 비활성화)
+- **설명**: `npx web-push generate-vapid-keys`로 한 번 생성해 두 값을 모두 저장하세요. PUBLIC은 브라우저 구독(`pushManager.subscribe`)에, PRIVATE은 서버 발송 서명(`src/lib/push.ts`)에 사용됩니다. PRIVATE은 절대 `NEXT_PUBLIC_` 접두사를 붙이지 마세요.
 
 ### `NODE_ENV`
 - **용도**: 실행 환경 구분 (development/production)

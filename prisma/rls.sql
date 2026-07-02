@@ -32,6 +32,7 @@ ALTER TABLE "ClubMeetingReview"  ENABLE ROW LEVEL SECURITY;  -- 모임 후기. �
 ALTER TABLE "ClubMeetingImage"   ENABLE ROW LEVEL SECURITY;  -- 모임 갤러리 사진(URL만 저장, 업로드 자체는 Storage). 〃
 ALTER TABLE "PrayerImage"        ENABLE ROW LEVEL SECURITY;  -- 광장 글 첨부 이미지(URL만 저장). 〃
 ALTER TABLE "PrayerComment"      ENABLE ROW LEVEL SECURITY;  -- 광장 댓글/대댓글. 〃
+ALTER TABLE "PushSubscription"   ENABLE ROW LEVEL SECURITY;  -- 휴대폰 푸시 구독(기기별 키). create_push_subscription_table 마이그레이션에서 이미 적용됨.
 
 -- 정책은 의도적으로 생성하지 않습니다.
 -- (anon/authenticated 직접 접근 전면 차단; 서비스는 Prisma 소유자 연결로만 동작)

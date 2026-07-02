@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { GENDERS, normalizePhone } from "@/lib/membership";
+import { createAdminNotification } from "@/lib/notifications";
 
 const applySchema = z.object({
   realName: z
@@ -90,6 +91,18 @@ export async function POST(req: NextRequest) {
       membershipNote: null,
     },
   });
+
+  // 운영진에게 새 가입 신청 알림 (best-effort — PII 없이 닉네임만 노출)
+  try {
+    await createAdminNotification({
+      type: "admin_membership_applied",
+      title: "새 가입 신청이 도착했어요",
+      body: `${user.nickname ?? "새 신청자"}님이 가입을 신청했어요.`,
+      link: "/manage/membership",
+    });
+  } catch {
+    /* best-effort */
+  }
 
   return NextResponse.json({ ok: true });
 }

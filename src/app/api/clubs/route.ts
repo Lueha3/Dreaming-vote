@@ -5,6 +5,7 @@ import { getAuthUser, membershipGate } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { isClubCategory } from "@/lib/clubCategories";
 import { clubCreateSchema } from "@/lib/clubSchema";
+import { createAdminNotification } from "@/lib/notifications";
 
 /**
  * GET /api/clubs
@@ -117,6 +118,18 @@ export async function POST(req: NextRequest) {
         order: img.order,
       })),
     });
+  }
+
+  // 운영진에게 새 동아리 승인 요청 알림 (best-effort)
+  try {
+    await createAdminNotification({
+      type: "admin_club_created",
+      title: "동아리 승인 요청이 도착했어요",
+      body: `${user.nickname ?? "누군가"}님이 '${name}' 동아리를 개설했어요.`,
+      link: "/manage/clubs",
+    });
+  } catch {
+    /* best-effort */
   }
 
   return NextResponse.json({ ok: true, id: club.id });

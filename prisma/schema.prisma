@@ -49,8 +49,25 @@ model User {
   auditLogs           AuditLog[]           @relation("AuditActor")
   contentReports      ContentReport[]      @relation("ReportReporter")
   resolvedReports     ContentReport[]      @relation("ReportResolver")
+  pushSubscriptions   PushSubscription[]
 
   @@index([membershipStatus, membershipAppliedAt])
+}
+
+// 휴대폰 푸시 알림(Web Push) 구독 — 유저 1명이 여러 기기(폰·PC)를 등록할 수 있다.
+// endpoint가 기기+브라우저별 고유 식별자. 발송 실패(410 Gone 등) 시 lib/push.ts가 정리한다.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String // 암호화 공개키
+  auth      String // 인증 시크릿
+  userAgent String? // 구독 등록 시점의 UA — 관리자 디버깅용
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // 사용자 신고 — 광장 글/댓글/동아리의 부적절 콘텐츠를 운영진이 검토·처리하는 큐.
