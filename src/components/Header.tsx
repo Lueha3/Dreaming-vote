@@ -12,6 +12,10 @@ import { canManage, displayRoles, type Role } from "@/lib/roles";
 
 export function Header() {
   const pathname = usePathname();
+  // 로그인 여부는 nickname 유무가 아니라 이 값으로 판단한다.
+  // nickname은 Prisma 컬럼이 null일 수 있어(예: 폴백값도 없던 구계정) 로그인 판정 기준으로 쓰면
+  // 로그인은 됐는데도 로그인 버튼이 계속 뜨고 로그아웃 진입점도 사라지는 버그가 생긴다.
+  const [loggedIn, setLoggedIn] = useState(false);
   const [nickname, setNickname] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [membershipStatus, setMembershipStatus] = useState<string | null>(null);
@@ -37,6 +41,7 @@ export function Header() {
       .then((json) => {
         if (!alive) return;
         if (json?.ok) {
+          setLoggedIn(true);
           setMembershipStatus(json.membership.membershipStatus);
           setRole(json.membership.role ?? null);
           setIsClubLeader(!!json.membership.isClubLeader);
@@ -112,7 +117,7 @@ export function Header() {
         <div className="ml-auto flex flex-shrink-0 items-center gap-0.5 sm:gap-2">
           {/* 비로그인 — 로그인 버튼(가입 신청과 동일한 골드 톤). 로그인하면 사라지고
               그 자리를 알림 벨이 대체한다. */}
-          {!loading && !nickname && (
+          {!loading && !loggedIn && (
             <Link href="/login" className="btn-gold rounded-full px-3.5 py-1.5 text-xs font-bold">
               로그인
             </Link>
@@ -140,9 +145,9 @@ export function Header() {
           {/* 드롭다운 메뉴 */}
           {menuOpen && (
             <div className="glass-card absolute right-0 top-[calc(100%+0.5rem)] w-56 py-2" style={{ background: "rgba(255,255,255,.92)" }}>
-              {!loading && nickname && (
+              {!loading && loggedIn && (
                 <div className="mb-1 flex flex-wrap items-center gap-1.5 border-b border-sky-line px-4 pb-2">
-                  <span className="truncate text-sm font-semibold text-ink">{nickname}</span>
+                  <span className="truncate text-sm font-semibold text-ink">{nickname ?? "회원"}</span>
                   {displayRoles(role, { isClubLeader }).map((r) => (
                     <RoleBadge key={r} role={r} size="sm" />
                   ))}
@@ -153,7 +158,7 @@ export function Header() {
               <MobileNavLink href="/notices" onClick={() => setMenuOpen(false)}>📢 공지</MobileNavLink>
               <MobileNavLink href="/prayer" onClick={() => setMenuOpen(false)}>🗣 광장</MobileNavLink>
               <MobileNavLink href="/clubs" onClick={() => setMenuOpen(false)}>목록</MobileNavLink>
-              {!loading && nickname && membershipStatus && membershipStatus !== "approved" && (
+              {!loading && loggedIn && membershipStatus && membershipStatus !== "approved" && (
                 <MobileNavLink href="/join" onClick={() => setMenuOpen(false)}>
                   <span className="flex items-center justify-between w-full">
                     <span>{membershipStatus === "pending" ? "가입 승인 대기 중" : "청년부 가입 신청"}</span>
@@ -161,7 +166,7 @@ export function Header() {
                   </span>
                 </MobileNavLink>
               )}
-              {!loading && nickname && (
+              {!loading && loggedIn && (
                 <>
                   <div className="my-1.5 mx-4 border-t border-sky-line" />
                   <MobileNavLink href="/my" onClick={() => setMenuOpen(false)}>🪪 내 정보</MobileNavLink>
