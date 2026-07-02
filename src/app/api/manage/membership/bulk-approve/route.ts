@@ -6,6 +6,7 @@ import { getAuthUser, roleGate } from "@/lib/auth";
 import { createMembershipNotification } from "@/lib/notifications";
 import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
 import { recordAudit } from "@/lib/audit";
+import { buildNickname } from "@/lib/membership";
 
 const schema = z.object({ ids: z.array(z.string().min(1)).min(1).max(100) });
 
@@ -30,12 +31,16 @@ export async function POST(req: NextRequest) {
 
   const targets = await prisma.user.findMany({
     where: { id: { in: ids }, membershipStatus: "pending" },
-    select: { id: true, nickname: true, age: true },
+    select: { id: true, nickname: true, realName: true, age: true },
   });
 
   let approved = 0;
   for (const t of targets) {
     try {
+      // 승인 시 닉네임을 신청서의 검증된 나이·이름으로 생성 — 단건 승인과 동일 규칙.
+      // (누락되면 승인된 멤버가 닉네임 없이 남는 버그가 생긴다 — 2026-07-02 실사용 계정에서 발견)
+      const autoNickname = t.realName && t.age ? buildNickname(t.age, t.realName) : null;
+
       // status:"pending" 조건부 갱신 — 동시 처리/단건 승인과 겹쳐도 한 번만 처리.
       const r = await prisma.user.updateMany({
         where: { id: t.id, membershipStatus: "pending" },
@@ -44,6 +49,7 @@ export async function POST(req: NextRequest) {
           membershipDecidedAt: new Date(),
           membershipNote: null,
           approvedAge: t.age, // 승인 시점 나이 스냅샷 고정
+          ...(autoNickname ? { nickname: autoNickname } : {}),
         },
       });
       if (r.count === 0) continue; // 이미 처리됨
@@ -60,7 +66,7 @@ export async function POST(req: NextRequest) {
           action: "membership_approve",
           targetType: "user",
           targetId: t.id,
-          summary: `가입 일괄 승인 (${t.nickname ?? "no-nickname"})`,
+          summary: `가입 일괄 승인 (${autoNickname ?? t.nickname ?? "no-nickname"})`,
           ip: getClientIp(req),
         });
       } catch {

@@ -147,17 +147,17 @@ export function Header() {
             <div className="glass-card absolute right-0 top-[calc(100%+0.5rem)] w-56 py-2" style={{ background: "rgba(255,255,255,.92)" }}>
               {!loading && loggedIn && (
                 <div className="mb-1 flex flex-wrap items-center gap-1.5 border-b border-sky-line px-4 pb-2">
-                  <span className="truncate text-sm font-semibold text-ink">{nickname ?? "회원"}</span>
+                  <span className="text-xs font-medium text-ink-faint">회원</span>
+                  <span className="truncate text-sm font-semibold text-ink">{nickname ?? "이름 미설정"}</span>
                   {displayRoles(role, { isClubLeader }).map((r) => (
                     <RoleBadge key={r} role={r} size="sm" />
                   ))}
                 </div>
               )}
-              <MobileNavLink href="/" onClick={() => setMenuOpen(false)}>홈</MobileNavLink>
-              <MobileNavLink href="/start" onClick={() => setMenuOpen(false)}>🧭 성격유형 고르기</MobileNavLink>
-              <MobileNavLink href="/notices" onClick={() => setMenuOpen(false)}>📢 공지</MobileNavLink>
+              <MobileNavLink href="/" onClick={() => setMenuOpen(false)}>🏠 홈</MobileNavLink>
+              <MobileNavLink href="/clubs" onClick={() => setMenuOpen(false)}>👥 동아리 목록</MobileNavLink>
               <MobileNavLink href="/prayer" onClick={() => setMenuOpen(false)}>🗣 광장</MobileNavLink>
-              <MobileNavLink href="/clubs" onClick={() => setMenuOpen(false)}>목록</MobileNavLink>
+              <MobileNavLink href="/start" onClick={() => setMenuOpen(false)}>🧭 성격유형 고르기</MobileNavLink>
               {!loading && loggedIn && membershipStatus && membershipStatus !== "approved" && (
                 <MobileNavLink href="/join" onClick={() => setMenuOpen(false)}>
                   <span className="flex items-center justify-between w-full">
@@ -175,6 +175,12 @@ export function Header() {
                       🛠 운영 관리
                     </MobileNavLink>
                   )}
+                </>
+              )}
+              {/* 공지는 비로그인 유저도 볼 수 있어야 하므로 loggedIn 게이트 밖에 둔다. */}
+              <MobileNavLink href="/notices" onClick={() => setMenuOpen(false)}>📢 공지</MobileNavLink>
+              {!loading && loggedIn && (
+                <>
                   <div className="my-1.5 mx-4 border-t border-sky-line" />
                   <button
                     onClick={handleLogout}

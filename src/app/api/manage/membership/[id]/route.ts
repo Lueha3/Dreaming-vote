@@ -5,6 +5,7 @@ import { getAuthUser, roleGate } from "@/lib/auth";
 import { createMembershipNotification } from "@/lib/notifications";
 import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
 import { recordAudit } from "@/lib/audit";
+import { buildNickname } from "@/lib/membership";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -33,7 +34,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const target = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, membershipStatus: true, nickname: true, age: true },
+    select: { id: true, membershipStatus: true, nickname: true, realName: true, age: true },
   });
 
   if (!target) {
@@ -47,6 +48,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     );
   }
 
+  // 승인 시 닉네임을 신청서의 검증된 나이·이름으로 생성 — admin/members/[id]/approve와 동일 규칙.
+  // (누락되면 승인된 멤버가 닉네임 없이 남는 버그가 생긴다 — 2026-07-02 실사용 계정에서 발견)
+  const autoNickname =
+    action === "approve" && target.realName && target.age
+      ? buildNickname(target.age, target.realName)
+      : null;
+
   await prisma.user.update({
     where: { id },
     data: {
@@ -55,6 +63,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       membershipNote: action === "reject" && note?.trim() ? note.trim() : null,
       // 승인 시점 나이를 불변 스냅샷으로 고정 — 이후 닉네임 집단/나이 검증의 기준.
       ...(action === "approve" ? { approvedAge: target.age } : {}),
+      ...(autoNickname ? { nickname: autoNickname } : {}),
     },
   });
 
@@ -74,7 +83,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       targetId: id,
       summary:
         action === "approve"
-          ? `가입 승인 (${target.nickname ?? "no-nickname"})`
+          ? `가입 승인 (${autoNickname ?? target.nickname ?? "no-nickname"})`
           : `가입 거절 (${target.nickname ?? "no-nickname"})${note?.trim() ? `: ${note.trim()}` : ""}`,
       ip: getClientIp(req),
     });
