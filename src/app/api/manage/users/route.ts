@@ -15,6 +15,7 @@ const ROLE_ORDER: Record<string, number> = {
  * GET /api/manage/users
  * 역할 관리용 사용자 목록 — 운영진 이상 열람. PII(전화/이메일) 미노출.
  * viewerRole/viewerId를 함께 내려 클라이언트가 가능한 조작을 판단한다.
+ * 이미 탈퇴(소프트 삭제)된 계정은 제외 — /api/manage/members(멤버관리 탭)와 동일 규칙.
  */
 export async function GET() {
   const user = await getAuthUser();
@@ -22,6 +23,7 @@ export async function GET() {
   if (gate) return gate;
 
   const users = await prisma.user.findMany({
+    where: { deletedAt: null },
     select: {
       id: true,
       nickname: true,
