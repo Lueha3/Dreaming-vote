@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import imageCompression from "browser-image-compression";
 import { createClient } from "@/lib/supabase/client";
 import { fetchJson } from "@/lib/http";
 
@@ -27,8 +28,10 @@ export function ProfileForm({
 
   const [currentAvatar] = useState<string | null>(initialAvatar);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initialAvatar);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | Blob | null>(null);
+  const [avatarExt, setAvatarExt] = useState("jpg");
 
+  const [compressing, setCompressing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -39,23 +42,41 @@ export function ProfileForm({
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const [withdrawn, setWithdrawn] = useState(false);
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      setError("사진은 2MB 이하만 업로드 가능합니다.");
+    if (file.size > 20 * 1024 * 1024) {
+      setError("사진은 20MB 이하만 업로드 가능합니다.");
       return;
     }
-    setAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
     setError(null);
+    setAvatarPreview(URL.createObjectURL(file));
+    setCompressing(true);
+    try {
+      // 프로필 사진은 아바타(작은 원형 표시)일 뿐이라 300KB로 충분히 압축한다.
+      const compressed = await imageCompression(file, {
+        maxSizeMB: 0.3,
+        maxWidthOrHeight: 512,
+        initialQuality: 0.85,
+        useWebWorker: true,
+        fileType: "image/webp" as const,
+      });
+      setAvatarFile(compressed);
+      setAvatarExt("webp");
+      setAvatarPreview(URL.createObjectURL(compressed));
+    } catch (err) {
+      console.error("이미지 압축 실패:", err);
+      setError("사진 압축에 실패했습니다. 다른 사진으로 시도해주세요.");
+      setAvatarPreview(currentAvatar);
+    } finally {
+      setCompressing(false);
+    }
   }
 
   async function uploadAvatar(): Promise<string | null> {
     if (!avatarFile) return null;
     const supabase = createClient();
-    const ext = avatarFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
-    const path = `${supabaseId}.${ext}`;
+    const path = `${supabaseId}.${avatarExt}`;
     const { data, error } = await supabase.storage
       .from("avatars")
       .upload(path, avatarFile, { upsert: true, cacheControl: "3600" });
@@ -174,7 +195,9 @@ export function ProfileForm({
                 <span className="text-xs font-semibold text-ink">변경</span>
               </div>
             </button>
-            <p className="text-xs text-ink-faint">클릭해서 사진 변경 · JPG·PNG·WebP · 최대 2MB</p>
+            <p className="text-xs text-ink-faint">
+              {compressing ? "사진 압축 중..." : "클릭해서 사진 변경 · JPG·PNG·WebP · 자동으로 300KB 이하로 압축돼요"}
+            </p>
             <input
               ref={fileInputRef}
               type="file"
@@ -216,7 +239,7 @@ export function ProfileForm({
 
           <button
             type="submit"
-            disabled={!avatarFile || saving}
+            disabled={!avatarFile || saving || compressing}
             className="btn-gold btn-glow w-full rounded-xl py-3 text-sm font-semibold disabled:opacity-40"
           >
             {saving ? "저장 중..." : "사진 저장하기"}
