@@ -158,6 +158,8 @@ export function Header() {
               <MobileNavLink href="/clubs" onClick={() => setMenuOpen(false)}>👥 동아리 목록</MobileNavLink>
               <MobileNavLink href="/prayer" onClick={() => setMenuOpen(false)}>🗣 광장</MobileNavLink>
               <MobileNavLink href="/start" onClick={() => setMenuOpen(false)}>🧭 성격유형 고르기</MobileNavLink>
+              {/* 공지는 비로그인 유저도 볼 수 있어야 하므로 loggedIn 게이트 밖에 둔다. */}
+              <MobileNavLink href="/notices" onClick={() => setMenuOpen(false)}>📢 공지</MobileNavLink>
               {!loading && loggedIn && membershipStatus && membershipStatus !== "approved" && (
                 <MobileNavLink href="/join" onClick={() => setMenuOpen(false)}>
                   <span className="flex items-center justify-between w-full">
@@ -166,6 +168,7 @@ export function Header() {
                   </span>
                 </MobileNavLink>
               )}
+              {/* 내 정보(+운영 관리)는 항상 로그아웃 바로 위에 오도록 마지막 그룹으로 둔다. */}
               {!loading && loggedIn && (
                 <>
                   <div className="my-1.5 mx-4 border-t border-sky-line" />
@@ -175,12 +178,6 @@ export function Header() {
                       🛠 운영 관리
                     </MobileNavLink>
                   )}
-                </>
-              )}
-              {/* 공지는 비로그인 유저도 볼 수 있어야 하므로 loggedIn 게이트 밖에 둔다. */}
-              <MobileNavLink href="/notices" onClick={() => setMenuOpen(false)}>📢 공지</MobileNavLink>
-              {!loading && loggedIn && (
-                <>
                   <div className="my-1.5 mx-4 border-t border-sky-line" />
                   <button
                     onClick={handleLogout}
