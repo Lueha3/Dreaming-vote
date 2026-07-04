@@ -28,13 +28,19 @@ export function ClubImageCarousel({ images, fullBleed, showCaption = true, initi
 
   return (
     <div className={`${fullBleed ? "w-full" : "glass-card mb-6 overflow-hidden"}`}>
-      {/* 이미지 영역 */}
-      <div className={`relative bg-skyx/15 ${fullBleed ? "w-full" : ""}`}>
+      {/* 이미지 영역 — 잘림 없이 전체 노출(object-contain) + 여백은 브랜드 그라데이션으로 융합 */}
+      <div
+        className={
+          fullBleed
+            ? "relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-skyx/30 to-teal/15 sm:aspect-[16/9]"
+            : "relative overflow-hidden bg-skyx/15"
+        }
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={images[current].url}
           alt={images[current].caption || `카드 ${current + 1}`}
-          className={`w-full ${fullBleed ? "object-cover aspect-[4/3] sm:aspect-[16/9]" : "object-contain"}`}
+          className={`w-full object-contain ${fullBleed ? "h-full" : ""}`}
           style={fullBleed ? {} : { maxHeight: 420 }}
         />
 
