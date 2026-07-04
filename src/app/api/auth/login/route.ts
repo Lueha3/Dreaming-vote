@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
     provider: "google",
     options: {
       redirectTo: `${origin}/api/auth/callback?next=${encodeURIComponent(next)}`,
+      // 이전 로그인 계정으로 자동 로그인되지 않고 매번 계정 선택 화면을 띄운다.
+      queryParams: { prompt: "select_account" },
     },
   });
 
