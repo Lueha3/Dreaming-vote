@@ -169,13 +169,23 @@ export default function ClubsPage() {
                     href={`/clubs/${club.id}`}
                     className="group block h-full overflow-hidden glass-card transition-all hover:border-teal/40 hover:bg-white/90 card-glow"
                   >
-                    {club.imageUrl && (
+                    {club.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={club.imageUrl}
                         alt=""
                         className="aspect-[2/1] w-full object-cover"
                       />
+                    ) : (
+                      <div
+                        className={`flex aspect-[2/1] w-full items-center justify-center bg-gradient-to-br ${
+                          CLUB_CATEGORY_META[club.category]?.gradient ?? "from-skyx/30 to-teal/15"
+                        }`}
+                      >
+                        <span className="text-4xl opacity-80">
+                          {CLUB_CATEGORY_META[club.category]?.emoji ?? "✨"}
+                        </span>
+                      </div>
                     )}
 
                     <div className="p-5">

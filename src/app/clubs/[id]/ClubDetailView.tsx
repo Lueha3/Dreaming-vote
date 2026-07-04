@@ -77,6 +77,7 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
   const tags = splitTags(club.tags);
   const pending = !club.isApproved || !club.isActive;
   const emoji = CLUB_CATEGORY_META[club.category]?.emoji ?? "✨";
+  const categoryGradient = CLUB_CATEGORY_META[club.category]?.gradient ?? "from-skyx/30 to-teal/15";
   const hasImages = club.images?.length > 0;
 
   // 정원·진행도 (maxMembers 있을 때만)
@@ -264,7 +265,7 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
               </div>
             </>
           ) : (
-            <div className="flex aspect-[16/9] w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-skyx/30 to-teal/15">
+            <div className={`flex aspect-[16/9] w-full flex-col items-center justify-center gap-2 bg-gradient-to-br ${categoryGradient}`}>
               <span className="text-5xl">{emoji}</span>
               <h1 className="px-6 text-center text-2xl font-bold text-ink sm:text-3xl">{club.name}</h1>
             </div>
