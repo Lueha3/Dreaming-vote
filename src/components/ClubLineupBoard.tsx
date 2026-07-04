@@ -38,12 +38,12 @@ export function ClubLineupBoard({
       <LineupDefs />
 
       <div className="mb-1 flex items-center gap-2">
-        <h2 className="text-base font-bold text-ink">우리 라인업</h2>
+        <h2 className="text-base font-bold text-ink">라인업</h2>
         <span className="glass-soft rounded-full px-2.5 py-0.5 text-[11px] text-teal-ink">
           함께 세워가요
         </span>
       </div>
-      <p className="mb-5 text-xs text-ink-faint">서로 다른 우리가, 한 팀이 되어가요</p>
+      <p className="mb-5 text-xs text-ink-faint">서로 다른 우리지만, 한 팀이 되어볼까요?</p>
 
       <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
         {lineup.map((m, i) => {
@@ -102,7 +102,7 @@ export function ClubLineupBoard({
       <div className="mt-4 rounded-2xl border border-white/85 bg-gradient-to-r from-gold/10 to-teal/10 px-4 py-3 text-[11.5px] leading-relaxed text-ink">
         💛 {isFull
           ? "라인업이 가득 찼어요 — 모두가 한 몸으로 세워가는 중이에요."
-          : "어떤 인물형이든, 이 빈자리는 모두의 자리예요. 너의 자리가 여기 있어요."}
+          : "당신이 어떤 유형이든 상관 없어요. 이 빈자리는 모두의 자리예요."}
       </div>
 
       {open && <ArchetypeModal archetype={open} onClose={() => setOpen(null)} />}

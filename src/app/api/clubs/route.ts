@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
       viewCount: true,
       createdAt: true,
       _count: { select: { applications: { where: { status: "accepted" } } } },
+      images: { select: { url: true }, orderBy: { order: "asc" }, take: 1 },
     },
   });
 
@@ -53,6 +54,7 @@ export async function GET(req: NextRequest) {
     viewCount: c.viewCount,
     createdAt: c.createdAt,
     memberCount: c._count.applications,
+    imageUrl: c.images[0]?.url ?? null,
   }));
 
   return NextResponse.json({ ok: true, items });

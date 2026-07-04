@@ -16,6 +16,7 @@ type ClubItem = {
   viewCount: number;
   createdAt: string;
   memberCount: number;
+  imageUrl: string | null;
 };
 
 function splitTags(tags: string): string[] {
@@ -166,45 +167,56 @@ export default function ClubsPage() {
                 <li key={club.id}>
                   <Link
                     href={`/clubs/${club.id}`}
-                    className="group block h-full glass-card p-5 transition-all hover:border-teal/40 hover:bg-white/90 card-glow"
+                    className="group block h-full overflow-hidden glass-card transition-all hover:border-teal/40 hover:bg-white/90 card-glow"
                   >
-                    <div className="mb-2 flex items-center gap-2">
-                      <span className="text-lg">
-                        {CLUB_CATEGORY_META[club.category]?.emoji ?? "✨"}
-                      </span>
-                      <h3 className="min-w-0 flex-1 truncate font-semibold text-ink group-hover:text-teal-ink">
-                        {club.name}
-                      </h3>
-                    </div>
-
-                    <span className="glass-soft mb-2 inline-block rounded-full px-2 py-0.5 text-xs text-ink-soft">
-                      {club.category}
-                    </span>
-
-                    <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-ink-soft">
-                      {club.description}
-                    </p>
-
-                    {tags.length > 0 && (
-                      <div className="mb-3 flex flex-wrap gap-1.5">
-                        {tags.map((t, i) => (
-                          <span
-                            key={i}
-                            className="rounded-full border border-gold/35 bg-gold/10 px-2 py-0.5 text-xs text-gold-ink"
-                          >
-                            {t}
-                          </span>
-                        ))}
-                      </div>
+                    {club.imageUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={club.imageUrl}
+                        alt=""
+                        className="aspect-[2/1] w-full object-cover"
+                      />
                     )}
 
-                    <div className="flex items-center gap-3 text-xs text-ink-faint">
-                      <span>
-                        멤버 {club.memberCount}
-                        {club.maxMembers ? `/${club.maxMembers}` : ""}명
+                    <div className="p-5">
+                      <div className="mb-2 flex items-center gap-2">
+                        <span className="text-lg">
+                          {CLUB_CATEGORY_META[club.category]?.emoji ?? "✨"}
+                        </span>
+                        <h3 className="min-w-0 flex-1 truncate font-semibold text-ink group-hover:text-teal-ink">
+                          {club.name}
+                        </h3>
+                      </div>
+
+                      <span className="glass-soft mb-2 inline-block rounded-full px-2 py-0.5 text-xs text-ink-soft">
+                        {club.category}
                       </span>
-                      <span>·</span>
-                      <span>조회 {club.viewCount}</span>
+
+                      <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-ink-soft">
+                        {club.description}
+                      </p>
+
+                      {tags.length > 0 && (
+                        <div className="mb-3 flex flex-wrap gap-1.5">
+                          {tags.map((t, i) => (
+                            <span
+                              key={i}
+                              className="rounded-full border border-gold/35 bg-gold/10 px-2 py-0.5 text-xs text-gold-ink"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-3 text-xs text-ink-faint">
+                        <span>
+                          멤버 {club.memberCount}
+                          {club.maxMembers ? `/${club.maxMembers}` : ""}명
+                        </span>
+                        <span>·</span>
+                        <span>조회 {club.viewCount}</span>
+                      </div>
                     </div>
                   </Link>
                 </li>
