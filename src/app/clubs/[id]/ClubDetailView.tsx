@@ -352,7 +352,7 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
                   ? `${club.ownerNickname ?? "개설자"}님과 ${club.memberCount}명이 함께해요`
                   : `${club.ownerNickname ?? "개설자"}님이 첫 자리를 지키고 있어요`}
               </p>
-              <p className="text-[11px] text-ink-faint">너를 기다리는 자리도 있어요 →</p>
+              <p className="text-[11px] text-ink-faint">여기 사람이 있어요! →</p>
             </div>
           </button>
 
