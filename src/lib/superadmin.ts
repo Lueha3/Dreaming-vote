@@ -16,3 +16,8 @@ const SUPERADMIN_EMAILS = new Set(
 export function isSuperadminEmail(email: string | null | undefined): boolean {
   return !!email && SUPERADMIN_EMAILS.has(email.trim().toLowerCase());
 }
+
+/** 슈퍼관리자 이메일 목록(소문자, 배열) — DB role과 무관한 env 부트스트랩 목록을 조회할 때 사용. */
+export function getSuperadminEmails(): string[] {
+  return [...SUPERADMIN_EMAILS];
+}

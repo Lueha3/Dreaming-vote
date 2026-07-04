@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { sendPushToUser, sendPushToUsers } from "@/lib/push";
+import { getSuperadminEmails } from "@/lib/superadmin";
 
 /**
  * 인앱 알림 타입. Header 알림 벨이 type별 아이콘을 그리는 데 쓴다.
@@ -117,17 +118,30 @@ export async function createMembershipNotification(
   });
 }
 
-/** 운영진 이상(staff|admin|superadmin) 전원의 유저 id — 운영자 알림 브로드캐스트 대상 조회용. */
+/**
+ * 운영진 이상(staff|admin|superadmin) 전원의 유저 id — 운영자 알림 브로드캐스트 대상 조회용.
+ * DB role 컬럼(staff/admin/superadmin) 뿐 아니라, SUPERADMIN_EMAILS 부트스트랩으로만
+ * superadmin 권한을 갖고 DB role은 여전히 "member"인 계정(auth.users.email 매칭)도 포함한다 —
+ * 그렇지 않으면 getAuthUser()가 런타임에 승격시키는 superadmin이 여기서는 누락된다.
+ */
 export async function getStaffUserIds(excludeUserId?: string): Promise<string[]> {
-  const staff = await prisma.user.findMany({
-    where: {
-      role: { in: ["staff", "admin", "superadmin"] },
-      deletedAt: null,
-      ...(excludeUserId ? { id: { not: excludeUserId } } : {}),
-    },
+  const dbStaff = await prisma.user.findMany({
+    where: { role: { in: ["staff", "admin", "superadmin"] }, deletedAt: null },
     select: { id: true },
   });
-  return staff.map((u) => u.id);
+
+  const superadminEmails = getSuperadminEmails();
+  const envSuperadmins = superadminEmails.length
+    ? await prisma.$queryRaw<{ id: string }[]>`
+        SELECT u.id FROM "User" u
+        JOIN auth.users au ON au.id::text = u."supabaseId"
+        WHERE LOWER(au.email) = ANY(${superadminEmails}) AND u."deletedAt" IS NULL
+      `
+    : [];
+
+  const ids = new Set<string>([...dbStaff.map((u) => u.id), ...envSuperadmins.map((u) => u.id)]);
+  if (excludeUserId) ids.delete(excludeUserId);
+  return [...ids];
 }
 
 /**
