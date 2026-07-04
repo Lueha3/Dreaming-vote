@@ -108,7 +108,7 @@ export default function Home() {
         </div>
 
         <p className="pb-6 pt-7 text-center text-[12.5px] font-medium text-ink/55">
-          Dreaming Church — 꿈꾸는 하늘 위 <span className="mx-1 text-ink/30">·</span> 꿈꾸는교회 청년부{" "}
+          Dreaming Church <span className="mx-1 text-ink/30">·</span> 꿈꾸는교회 청년부{" "}
           <span className="mx-1 text-ink/30">·</span> BlueHumanity
         </p>
       </main>
