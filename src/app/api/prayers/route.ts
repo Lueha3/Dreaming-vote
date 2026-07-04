@@ -16,6 +16,7 @@ const createSchema = z.object({
   content: z.string().trim().max(2000, "내용이 너무 깁니다.").default(""),
   isAnonymous: z.boolean().default(false),
   images: z.array(z.string()).max(3, "사진은 최대 3장까지 올릴 수 있어요.").default([]),
+  clubId: z.string().trim().min(1).optional(),
 });
 
 function resolveCategory(raw: string | null): Category {
@@ -24,8 +25,9 @@ function resolveCategory(raw: string | null): Category {
 
 /**
  * GET /api/prayers?category=일상|기도해주세요|동아리광고
- * 카테고리별 광장 글 목록. 동아리 기도(clubId) 레거시는 제외.
- * (집단 러비아/유디코 구분은 폐기 — 카테고리가 유일한 분류)
+ * 카테고리별 광장 글 목록.
+ * - 일상/기도해주세요: 레거시 동아리 기도 코너(clubId 있는 글)는 제외.
+ * - 동아리광고: 반대로 clubId가 반드시 붙는 글이라 필터 없이 그대로 노출.
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -33,8 +35,10 @@ export async function GET(req: NextRequest) {
 
   const user = await getAuthUser();
 
+  const where = category === "동아리광고" ? { category } : { category, clubId: null };
+
   const prayers = await prisma.prayer.findMany({
-    where: { category, clubId: null },
+    where,
     orderBy: [{ isAnswered: "asc" }, { createdAt: "desc" }],
     take: 100,
     select: {
@@ -50,6 +54,19 @@ export async function GET(req: NextRequest) {
       userId: true,
       user: { select: { nickname: true, avatarUrl: true, role: true } },
       images: { select: { url: true }, orderBy: { order: "asc" } },
+      club: {
+        select: {
+          id: true,
+          name: true,
+          category: true,
+          isApproved: true,
+          isActive: true,
+          maxMembers: true,
+          ownerUserId: true,
+          images: { select: { url: true }, orderBy: { order: "asc" }, take: 1 },
+          _count: { select: { applications: { where: { status: "accepted" } } } },
+        },
+      },
       _count: { select: { intercessions: true, comments: true } },
       intercessions: user
         ? { where: { userId: user.dbUserId }, select: { id: true } }
@@ -77,6 +94,25 @@ export async function GET(req: NextRequest) {
     // 익명 글은 작성자 배지도 숨긴다(관리자/운영진 신원 노출 방지)
     authorRole: p.isAnonymous ? null : p.user?.role ?? null,
     images: p.images.map((im) => im.url),
+    // 미승인/비활성 동아리는 clubDetail.ts와 동일한 기준(개설자·운영진만 열람)으로 숨긴다 —
+    // 광고 글의 clubId는 사후 반려·비활성화 후에도 남아있어 원본 검증 없이 그대로 노출하면 안 됨.
+    club:
+      p.club && (
+        (p.club.isApproved && p.club.isActive) ||
+        isStaff ||
+        (!!user && p.club.ownerUserId === user.dbUserId)
+      )
+        ? {
+            id: p.club.id,
+            name: p.club.name,
+            category: p.club.category,
+            isApproved: p.club.isApproved,
+            isActive: p.club.isActive,
+            maxMembers: p.club.maxMembers,
+            imageUrl: p.club.images[0]?.url ?? null,
+            memberCount: p.club._count.applications,
+          }
+        : null,
     reactionCount: p._count.intercessions,
     iReacted: Array.isArray(p.intercessions) ? p.intercessions.length > 0 : false,
     commentCount: p._count.comments,
@@ -115,10 +151,41 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: msg }, { status: 400 });
   }
 
-  const { category, content, images } = parsed.data;
+  const { category, content, images, clubId } = parsed.data;
   const trimmed = content.trim();
   // 익명은 민감한 기도제목 보호용 — 기도해주세요에서만 허용(클라 우회 방지, 서버 강제)
   const isAnonymous = category === "기도해주세요" ? parsed.data.isAnonymous : false;
+
+  // 동아리광고 — 소속(개설자 또는 승인 멤버)이 확인된 공개 동아리만 첨부 허용.
+  let attachedClubId: string | null = null;
+  if (category === "동아리광고") {
+    if (!clubId) {
+      return NextResponse.json({ ok: false, error: "광고할 동아리를 선택해주세요." }, { status: 400 });
+    }
+    const club = await prisma.club.findUnique({
+      where: { id: clubId },
+      select: { id: true, ownerUserId: true, isApproved: true, isActive: true },
+    });
+    if (!club || !club.isApproved || !club.isActive) {
+      return NextResponse.json(
+        { ok: false, error: "존재하지 않거나 공개되지 않은 동아리예요." },
+        { status: 400 },
+      );
+    }
+    if (club.ownerUserId !== user.dbUserId) {
+      const application = await prisma.clubApplication.findUnique({
+        where: { clubId_userId: { clubId, userId: user.dbUserId } },
+        select: { status: true },
+      });
+      if (application?.status !== "accepted") {
+        return NextResponse.json(
+          { ok: false, error: "소속된 동아리만 광고할 수 있어요." },
+          { status: 403 },
+        );
+      }
+    }
+    attachedClubId = clubId;
+  }
 
   // 이미지 URL 화이트리스트 검증 — 우리 plaza-images 버킷 외 URL은 fail-closed 차단.
   const validImages = images.filter(isValidPlazaImageUrl);
@@ -143,6 +210,7 @@ export async function POST(req: NextRequest) {
       content: trimmed,
       isAnonymous,
       scope: "ALL",
+      clubId: attachedClubId,
       images: validImages.length
         ? { create: validImages.map((url, i) => ({ url, order: i })) }
         : undefined,

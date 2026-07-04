@@ -105,12 +105,22 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
     // 개설자 본인
     if (isOwner) {
       return (
-        <Link
-          href="/my/clubs"
-          className="glass-card block w-full bg-white/80 px-5 py-3.5 text-center text-sm font-medium text-ink-soft transition-all hover:border-teal/40 hover:text-ink"
-        >
-          내가 개설한 동아리예요 · 신청 관리하기 →
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/my/clubs"
+            className="glass-card block flex-1 bg-white/80 px-5 py-3.5 text-center text-sm font-medium text-ink-soft transition-all hover:border-teal/40 hover:text-ink"
+          >
+            내가 개설한 동아리예요 · 신청 관리하기 →
+          </Link>
+          {!pending && (
+            <Link
+              href={`/prayer?category=${encodeURIComponent("동아리광고")}&club=${club.id}`}
+              className="glass-card shrink-0 bg-white/80 px-4 py-3.5 text-center text-sm font-medium text-gold-ink transition-all hover:border-gold/40"
+            >
+              📣 광고하기
+            </Link>
+          )}
+        </div>
       );
     }
 
@@ -139,8 +149,18 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
     }
     if (status === "accepted") {
       return (
-        <div className="w-full rounded-xl border border-teal/35 bg-teal/10 px-5 py-3.5 text-center text-sm font-medium text-teal-ink">
-          ✓ 함께하고 있는 동아리예요!
+        <div className="flex items-center gap-2">
+          <div className="flex-1 rounded-xl border border-teal/35 bg-teal/10 px-5 py-3.5 text-center text-sm font-medium text-teal-ink">
+            ✓ 함께하고 있는 동아리예요!
+          </div>
+          {!pending && (
+            <Link
+              href={`/prayer?category=${encodeURIComponent("동아리광고")}&club=${club.id}`}
+              className="shrink-0 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3.5 text-center text-sm font-medium text-gold-ink transition-all hover:bg-gold/20"
+            >
+              📣 광고하기
+            </Link>
+          )}
         </div>
       );
     }

@@ -3,11 +3,26 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, fetchJson } from "@/lib/http";
+import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
 import { PlazaImageUploader } from "./PlazaImageUploader";
 import { PlazaPostCard } from "./PlazaPostCard";
 import { CATEGORIES, CATEGORY_META, type Category, type PlazaPost } from "./types";
 
 type ListResponse = { ok: true; items: PlazaPost[]; loggedIn: boolean };
+
+type EligibleClub = { id: string; name: string; category: string };
+
+type MyClubsResponse = {
+  ok: true;
+  owned: { id: string; name: string; category: string; isApproved: boolean; isActive: boolean }[];
+  applied: {
+    status: string;
+    clubId: string;
+    clubName: string;
+    category: string;
+    clubVisible: boolean;
+  }[];
+};
 
 export default function PlazaPage() {
   const [category, setCategory] = useState<Category>("일상");
@@ -25,9 +40,15 @@ export default function PlazaPage() {
   const [error, setError] = useState<string | null>(null);
   const [needJoin, setNeedJoin] = useState(false);
 
-  const isPrayer = category === "기도해주세요";
+  // 동아리광고 — 내 동아리 목록 + 선택
+  const [myClubs, setMyClubs] = useState<EligibleClub[]>([]);
+  const [myClubsLoaded, setMyClubsLoaded] = useState(false);
+  const [selectedClubId, setSelectedClubId] = useState("");
 
-  // 카테고리 전환 시 작성 폼의 카테고리-종속 상태(이미지·익명)는 초기화한다(내용은 유지).
+  const isPrayer = category === "기도해주세요";
+  const isClubAd = category === "동아리광고";
+
+  // 카테고리 전환 시 작성 폼의 카테고리-종속 상태(이미지·익명·동아리 선택)는 초기화한다(내용은 유지).
   function switchCategory(c: Category) {
     if (c === category) return;
     setCategory(c);
@@ -37,6 +58,7 @@ export default function PlazaPage() {
     setUploaderKey((k) => k + 1);
     setError(null);
     setNeedJoin(false);
+    setSelectedClubId("");
   }
 
   // 목록 페치 실패에도 로그인 UI가 어긋나지 않도록 쿠키로 초기 힌트만 시드(서버가 최종 집행).
@@ -60,11 +82,37 @@ export default function PlazaPage() {
     load();
   }, [load]);
 
-  // 알림 딥링크(/prayer?category=..#<글id>)로 진입 시 해당 카테고리 탭을 먼저 연다.
+  // 알림/동아리 딥링크(/prayer?category=..&club=..)로 진입 시 탭·동아리를 미리 선택해둔다.
   useEffect(() => {
-    const c = new URLSearchParams(window.location.search).get("category");
+    const sp = new URLSearchParams(window.location.search);
+    const c = sp.get("category");
     if (c && (CATEGORIES as readonly string[]).includes(c)) setCategory(c as Category);
+    const clubParam = sp.get("club");
+    if (clubParam) setSelectedClubId(clubParam);
   }, []);
+
+  // 동아리광고 탭을 열면 내가 속한(개설·승인 가입) 공개 동아리 목록을 한 번만 불러온다.
+  useEffect(() => {
+    if (!isClubAd || !loggedIn || myClubsLoaded) return;
+    (async () => {
+      try {
+        const data = await fetchJson<MyClubsResponse>("/api/my/clubs");
+        const eligible: EligibleClub[] = [
+          ...data.owned
+            .filter((c) => c.isApproved && c.isActive)
+            .map((c) => ({ id: c.id, name: c.name, category: c.category })),
+          ...data.applied
+            .filter((a) => a.status === "accepted" && a.clubVisible)
+            .map((a) => ({ id: a.clubId, name: a.clubName, category: a.category })),
+        ];
+        setMyClubs(eligible);
+        setSelectedClubId((prev) => (eligible.some((c) => c.id === prev) ? prev : ""));
+      } catch {
+        setMyClubs([]);
+      }
+      setMyClubsLoaded(true);
+    })();
+  }, [isClubAd, loggedIn, myClubsLoaded]);
 
   // 로드 완료 후 URL 해시(#<글id>)가 가리키는 글로 1회 스크롤(해당 글이 현재 목록에 있을 때).
   const scrolledRef = useRef(false);
@@ -93,6 +141,7 @@ export default function PlazaPage() {
     e.preventDefault();
     const text = content.trim();
     if ((!text && images.length === 0) || posting) return;
+    if (isClubAd && !selectedClubId) return;
     setPosting(true);
     setError(null);
     setNeedJoin(false);
@@ -105,11 +154,13 @@ export default function PlazaPage() {
           content: text,
           isAnonymous: isPrayer ? isAnonymous : false,
           images,
+          clubId: isClubAd ? selectedClubId : undefined,
         }),
       });
       setContent("");
       setIsAnonymous(false);
       setImages([]);
+      setSelectedClubId("");
       setUploaderKey((k) => k + 1); // 업로더 리셋
       await load();
     } catch (err) {
@@ -234,6 +285,35 @@ export default function PlazaPage() {
               className="w-full resize-none rounded-xl border border-white/95 bg-white/70 px-4 py-3 text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:border-teal focus:outline-none"
             />
 
+            {/* 동아리광고 — 광고할 동아리 선택 */}
+            {isClubAd && (
+              <div className="mt-3">
+                {!myClubsLoaded ? (
+                  <p className="text-xs text-ink-faint">내 동아리를 불러오는 중...</p>
+                ) : myClubs.length === 0 ? (
+                  <p className="text-xs text-ink-faint">
+                    가입한 동아리가 있어야 광고할 수 있어요.{" "}
+                    <Link href="/clubs" className="font-semibold text-gold-ink underline underline-offset-2">
+                      동아리 둘러보기 →
+                    </Link>
+                  </p>
+                ) : (
+                  <select
+                    value={selectedClubId}
+                    onChange={(e) => setSelectedClubId(e.target.value)}
+                    className="w-full rounded-xl border border-white/95 bg-white/70 px-4 py-2.5 text-sm text-ink focus:border-teal focus:outline-none"
+                  >
+                    <option value="">광고할 동아리를 선택하세요</option>
+                    {myClubs.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {CLUB_CATEGORY_META[c.category]?.emoji ?? ""} {c.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+
             {/* 이미지 업로더 */}
             <div className="mt-3">
               <PlazaImageUploader
@@ -260,7 +340,12 @@ export default function PlazaPage() {
               )}
               <button
                 type="submit"
-                disabled={(!content.trim() && images.length === 0) || posting || uploadingImages}
+                disabled={
+                  (!content.trim() && images.length === 0) ||
+                  posting ||
+                  uploadingImages ||
+                  (isClubAd && !selectedClubId)
+                }
                 className="btn-gold rounded-xl px-5 py-2 text-sm disabled:opacity-40"
               >
                 {uploadingImages ? "사진 올리는 중..." : posting ? "올리는 중..." : "올리기"}

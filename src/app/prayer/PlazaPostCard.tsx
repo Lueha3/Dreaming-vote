@@ -1,12 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { RoleBadge } from "@/components/RoleBadge";
 import { ReportButton } from "@/components/ReportButton";
+import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
 import { displayRoles } from "@/lib/roles";
 import { timeAgo, isEdited } from "@/lib/time";
 import { PlazaComments } from "./PlazaComments";
-import type { PlazaPost } from "./types";
+import type { PlazaClubRef, PlazaPost } from "./types";
 
 /** 글당 1~3장 이미지 — 가로 스와이프 캐러셀 */
 function ImageCarousel({ images, onOpen }: { images: string[]; onOpen: (index: number) => void }) {
@@ -63,6 +65,51 @@ function ImageCarousel({ images, onOpen }: { images: string[]; onOpen: (index: n
         ))}
       </div>
     </div>
+  );
+}
+
+/** 동아리광고 글 하단 — 첨부된 동아리로 바로 이동하는 미리보기 카드 */
+function ClubAdCard({ club }: { club: PlazaClubRef }) {
+  const meta = CLUB_CATEGORY_META[club.category];
+  const visible = club.isApproved && club.isActive;
+  const isFull = club.maxMembers != null && club.memberCount >= club.maxMembers;
+
+  const cover = club.imageUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={club.imageUrl} alt="" className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+  ) : (
+    <div
+      className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${
+        meta?.gradient ?? "from-skyx/30 to-teal/15"
+      }`}
+    >
+      <span className="text-2xl">{meta?.emoji ?? "✨"}</span>
+    </div>
+  );
+
+  const body = (
+    <div className="flex items-center gap-3 rounded-2xl border border-white/85 bg-white/60 p-3 transition-all hover:bg-white/85">
+      {cover}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-bold text-ink">{club.name}</p>
+        <p className="truncate text-xs text-ink-faint">
+          {!visible
+            ? "지금은 모집하지 않는 동아리예요"
+            : isFull
+              ? `${club.category} · 정원이 가득 찼어요`
+              : `${club.category} · 멤버 ${club.memberCount}${club.maxMembers ? `/${club.maxMembers}` : ""}명`}
+        </p>
+      </div>
+      {visible && <span className="shrink-0 text-xs font-semibold text-teal-ink">구경하기 →</span>}
+    </div>
+  );
+
+  if (!visible) return <div className="mt-3 opacity-60">{body}</div>;
+
+  return (
+    <Link href={`/clubs/${club.id}`} className="mt-3 block">
+      {body}
+    </Link>
   );
 }
 
@@ -194,6 +241,9 @@ export function PlazaPostCard({
 
       {/* 이미지 캐러셀 */}
       {!editing && <ImageCarousel images={post.images} onOpen={setLightboxIndex} />}
+
+      {/* 동아리 광고 — 첨부된 동아리 미리보기 카드 */}
+      {!editing && post.club && <ClubAdCard club={post.club} />}
 
       {/* 응답 간증 */}
       {isPrayer && post.isAnswered && post.answeredNote && (

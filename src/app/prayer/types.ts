@@ -21,6 +21,18 @@ export const CATEGORY_META: Record<Category, { emoji: string; placeholder: strin
   },
 };
 
+/** 동아리광고 글에 첨부된 동아리 미리보기 — 광고 카드 렌더링용. */
+export type PlazaClubRef = {
+  id: string;
+  name: string;
+  category: string;
+  isApproved: boolean;
+  isActive: boolean;
+  maxMembers: number | null;
+  memberCount: number;
+  imageUrl: string | null;
+};
+
 export type PlazaPost = {
   id: string;
   category: string;
@@ -37,6 +49,7 @@ export type PlazaPost = {
   authorAvatar: string | null;
   authorRole: Role | null;
   images: string[];
+  club: PlazaClubRef | null;
   reactionCount: number;
   iReacted: boolean;
   commentCount: number;
