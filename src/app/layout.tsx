@@ -3,6 +3,7 @@ import "./globals.css";
 
 import { Header } from "@/components/Header";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
+import { AutoPushPrompt } from "@/components/AutoPushPrompt";
 
 export const metadata: Metadata = {
   title: "BlueHumanity — 꿈꾸는교회 청년부",
@@ -86,6 +87,7 @@ export default function RootLayout({
         <SkyBackdrop />
         <Header />
         {children}
+        <AutoPushPrompt />
       </body>
     </html>
   );

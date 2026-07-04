@@ -1,29 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { fetchJson } from "@/lib/http";
-
-type IosNavigator = Navigator & { standalone?: boolean };
-
-function isIosDevice(): boolean {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
-}
-
-function isStandaloneDisplay(): boolean {
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (navigator as IosNavigator).standalone === true
-  );
-}
-
-function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = atob(base64);
-  const bytes = new Uint8Array(new ArrayBuffer(rawData.length));
-  for (let i = 0; i < rawData.length; i++) bytes[i] = rawData.charCodeAt(i);
-  return bytes;
-}
+import { usePushSubscription } from "@/lib/usePushSubscription";
 
 /**
  * 휴대폰 푸시 알림 켜기/끄기 토글 — /my/profile에 배치.
@@ -31,94 +8,9 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
  * 그 경우 구독 UI 대신 설치 안내만 보여준다(iOS 16.4+ 제약).
  */
 export function PushNotificationToggle() {
-  const [supported, setSupported] = useState(false);
-  const [needsIosInstall, setNeedsIosInstall] = useState(false);
-  const [permission, setPermission] = useState<NotificationPermission | null>(null);
-  const [subscribed, setSubscribed] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { support, permission, subscribed, loading, error, enable, disable } = usePushSubscription();
 
-  useEffect(() => {
-    if (isIosDevice() && !isStandaloneDisplay()) {
-      setNeedsIosInstall(true);
-      return;
-    }
-    const ok =
-      typeof navigator !== "undefined" &&
-      "serviceWorker" in navigator &&
-      "PushManager" in window &&
-      "Notification" in window;
-    setSupported(ok);
-    if (!ok) return;
-
-    setPermission(Notification.permission);
-    navigator.serviceWorker
-      .register("/sw.js")
-      .then(async (reg) => {
-        const sub = await reg.pushManager.getSubscription();
-        setSubscribed(!!sub);
-      })
-      .catch(() => {});
-  }, []);
-
-  async function handleEnable() {
-    setError(null);
-    setLoading(true);
-    try {
-      const reg = await navigator.serviceWorker.register("/sw.js");
-      const perm = await Notification.requestPermission();
-      setPermission(perm);
-      if (perm !== "granted") {
-        setError("알림 권한이 허용되지 않았어요. 브라우저 설정에서 알림을 허용해주세요.");
-        setLoading(false);
-        return;
-      }
-
-      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!vapidKey) {
-        setError("알림 설정이 아직 준비되지 않았어요.");
-        setLoading(false);
-        return;
-      }
-
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey),
-      });
-      await fetchJson("/api/push/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(sub.toJSON()),
-      });
-      setSubscribed(true);
-    } catch {
-      setError("알림 켜기에 실패했어요. 잠시 후 다시 시도해주세요.");
-    }
-    setLoading(false);
-  }
-
-  async function handleDisable() {
-    setError(null);
-    setLoading(true);
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.getSubscription();
-      if (sub) {
-        await fetchJson("/api/push/subscribe", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ endpoint: sub.endpoint }),
-        });
-        await sub.unsubscribe();
-      }
-      setSubscribed(false);
-    } catch {
-      setError("알림 끄기에 실패했어요.");
-    }
-    setLoading(false);
-  }
-
-  if (needsIosInstall) {
+  if (support === "ios-needs-install") {
     return (
       <div className="glass-card p-5">
         <p className="mb-1.5 text-xs font-semibold text-ink">📲 휴대폰 알림</p>
@@ -131,7 +23,7 @@ export function PushNotificationToggle() {
     );
   }
 
-  if (!supported) return null;
+  if (support !== "supported") return null;
 
   return (
     <div className="glass-card p-5">
@@ -146,7 +38,7 @@ export function PushNotificationToggle() {
         </div>
         <button
           type="button"
-          onClick={subscribed ? handleDisable : handleEnable}
+          onClick={subscribed ? disable : enable}
           disabled={loading || permission === "denied"}
           className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition-all disabled:opacity-40 ${
             subscribed ? "glass-soft text-ink-soft hover:bg-white/90 hover:text-ink" : "btn-gold btn-glow"
