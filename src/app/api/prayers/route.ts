@@ -6,6 +6,7 @@ import { getAuthUser, membershipGate } from "@/lib/auth";
 import { hasAtLeast } from "@/lib/roles";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { isValidPlazaImageUrl } from "@/lib/storage";
+import { isNewcomer } from "@/lib/newcomer";
 
 // 광장 카테고리 — 일상 | 기도해주세요 | 동아리광고
 export const CATEGORIES = ["일상", "기도해주세요", "동아리광고"] as const;
@@ -52,7 +53,8 @@ export async function GET(req: NextRequest) {
       createdAt: true,
       updatedAt: true,
       userId: true,
-      user: { select: { nickname: true, avatarUrl: true, role: true } },
+      systemType: true,
+      user: { select: { nickname: true, avatarUrl: true, role: true, membershipDecidedAt: true } },
       images: { select: { url: true }, orderBy: { order: "asc" } },
       club: {
         select: {
@@ -93,6 +95,8 @@ export async function GET(req: NextRequest) {
     authorAvatar: p.isAnonymous ? null : p.user?.avatarUrl ?? null,
     // 익명 글은 작성자 배지도 숨긴다(관리자/운영진 신원 노출 방지)
     authorRole: p.isAnonymous ? null : p.user?.role ?? null,
+    isNewcomer: p.isAnonymous ? false : isNewcomer(p.user?.membershipDecidedAt ?? null),
+    systemType: p.systemType,
     images: p.images.map((im) => im.url),
     // 미승인/비활성 동아리는 clubDetail.ts와 동일한 기준(개설자·운영진만 열람)으로 숨긴다 —
     // 광고 글의 clubId는 사후 반려·비활성화 후에도 남아있어 원본 검증 없이 그대로 노출하면 안 됨.

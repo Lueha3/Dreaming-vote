@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, fetchJson } from "@/lib/http";
 import { RoleBadge } from "@/components/RoleBadge";
+import { NewcomerBadge } from "@/components/NewcomerBadge";
 import { ReportButton } from "@/components/ReportButton";
 import { displayRoles, type Role } from "@/lib/roles";
 import { timeAgo, isEdited } from "@/lib/time";
@@ -15,6 +16,7 @@ type CommentItem = {
   authorName: string;
   authorAvatar: string | null;
   authorRole: Role | null;
+  isNewcomer: boolean;
   isMine: boolean;
   canDelete: boolean;
   canEdit: boolean;
@@ -106,6 +108,7 @@ function CommentRow({
           {displayRoles(comment.authorRole).map((r) => (
             <RoleBadge key={r} role={r} size="sm" />
           ))}
+          {comment.isNewcomer && <NewcomerBadge size="sm" />}
           <span className="text-xs text-ink-faint">· {timeAgo(comment.createdAt)}</span>
           {isEdited(comment.createdAt, comment.updatedAt) && (
             <span className="text-xs text-ink-faint">· 수정됨</span>

@@ -6,6 +6,7 @@ import { getAuthUser, membershipGate } from "@/lib/auth";
 import { hasAtLeast } from "@/lib/roles";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { createNotification } from "@/lib/notifications";
+import { isNewcomer } from "@/lib/newcomer";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       updatedAt: true,
       userId: true,
       parentId: true,
-      user: { select: { nickname: true, avatarUrl: true, role: true } },
+      user: { select: { nickname: true, avatarUrl: true, role: true, membershipDecidedAt: true } },
     },
   });
 
@@ -48,6 +49,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       authorName: c.user?.nickname ?? "탈퇴한 멤버",
       authorAvatar: c.user?.avatarUrl ?? null,
       authorRole: c.user?.role ?? null,
+      isNewcomer: isNewcomer(c.user?.membershipDecidedAt ?? null),
       isMine: !!user && c.userId === user.dbUserId,
       // 작성자 본인 · 글쓴이(글 모더레이션) · 운영진+ 가 삭제 가능
       canDelete: !!user && (c.userId === user.dbUserId || postAuthorId === user.dbUserId || isStaff),

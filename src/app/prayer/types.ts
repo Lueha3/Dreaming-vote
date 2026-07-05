@@ -48,6 +48,8 @@ export type PlazaPost = {
   authorName: string;
   authorAvatar: string | null;
   authorRole: Role | null;
+  isNewcomer: boolean;
+  systemType: string | null;
   images: string[];
   club: PlazaClubRef | null;
   reactionCount: number;

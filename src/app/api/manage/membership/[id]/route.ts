@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthUser, roleGate } from "@/lib/auth";
 import { createMembershipNotification } from "@/lib/notifications";
+import { createWelcomeCard } from "@/lib/welcomeCard";
 import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
 import { recordAudit } from "@/lib/audit";
 import { buildNickname } from "@/lib/membership";
@@ -72,6 +73,15 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     await createMembershipNotification(id, action, note);
   } catch (e) {
     console.error("[membership-notify] 알림 생성 실패:", e);
+  }
+
+  // 새가족 환영 카드 자동 게시 — best-effort.
+  if (action === "approve") {
+    try {
+      await createWelcomeCard(id, autoNickname ?? target.nickname);
+    } catch (e) {
+      console.error("[welcome-card] 생성 실패:", e);
+    }
   }
 
   // 감사 로그 — best-effort.

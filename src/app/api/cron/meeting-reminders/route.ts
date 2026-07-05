@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { createNotifications } from "@/lib/notifications";
+import { computeWeeklyMetrics } from "@/lib/metrics";
 
 // 매 호출마다 최신 데이터로 동작해야 하므로 정적 최적화 비활성.
 export const dynamic = "force-dynamic";
@@ -68,5 +69,26 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, meetings: meetings.length, notified });
+  // 주간 지표 스냅샷 — 매일 도는 이 cron에 얹어서, KST 기준 월요일에만 지난 한 주치를 계산한다.
+  // (별도 cron 엔트리를 늘리지 않기 위함. 09:00 KST 실행 오차는 주간 집계엔 무의미해 무시한다.)
+  let metricSnapshot: { weekOf: string } | null = null;
+  const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  if (kstNow.getUTCDay() === 1) {
+    try {
+      const weekEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      const weekStart = new Date(weekEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const metrics = await computeWeeklyMetrics(weekStart, weekEnd);
+      const snapshot = await prisma.metricSnapshot.upsert({
+        where: { weekOf: weekStart },
+        update: metrics,
+        create: { weekOf: weekStart, ...metrics },
+        select: { weekOf: true },
+      });
+      metricSnapshot = { weekOf: snapshot.weekOf.toISOString() };
+    } catch (e) {
+      console.error("[metrics] 주간 스냅샷 계산 실패:", e);
+    }
+  }
+
+  return NextResponse.json({ ok: true, meetings: meetings.length, notified, metricSnapshot });
 }

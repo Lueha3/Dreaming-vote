@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getAuthUser, roleGate } from "@/lib/auth";
 import { createMembershipNotification } from "@/lib/notifications";
+import { createWelcomeCard } from "@/lib/welcomeCard";
 import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
 import { recordAudit } from "@/lib/audit";
 import { buildNickname } from "@/lib/membership";
@@ -57,6 +58,11 @@ export async function POST(req: NextRequest) {
 
       try {
         await createMembershipNotification(t.id, "approve");
+      } catch {
+        /* best-effort */
+      }
+      try {
+        await createWelcomeCard(t.id, autoNickname ?? t.nickname);
       } catch {
         /* best-effort */
       }

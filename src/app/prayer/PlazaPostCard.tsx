@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { RoleBadge } from "@/components/RoleBadge";
+import { NewcomerBadge } from "@/components/NewcomerBadge";
 import { ReportButton } from "@/components/ReportButton";
 import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
 import { displayRoles } from "@/lib/roles";
@@ -131,6 +132,7 @@ export function PlazaPostCard({
   onCommentDelta: (postId: string, delta: number) => void;
 }) {
   const isPrayer = post.category === "기도해주세요";
+  const isWelcome = post.systemType === "welcome";
 
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [answering, setAnswering] = useState(false);
@@ -157,7 +159,16 @@ export function PlazaPostCard({
   }, [lightboxIndex, post.images.length]);
 
   return (
-    <li id={post.id} className={`glass-card scroll-mt-24 p-5 transition-all ${post.isAnswered ? "border-teal/45!" : ""}`}>
+    <li
+      id={post.id}
+      className={`glass-card scroll-mt-24 p-5 transition-all ${
+        post.isAnswered ? "border-teal/45!" : isWelcome ? "border-gold/45!" : ""
+      }`}
+    >
+      {/* 시스템 카드(환영 등) 표시줄 */}
+      {isWelcome && (
+        <p className="mb-2 text-xs font-semibold text-gold-ink">🎉 새가족이 왔어요</p>
+      )}
       {/* 작성자 + 시간 */}
       <div className="mb-2.5 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -173,6 +184,7 @@ export function PlazaPostCard({
           {displayRoles(post.authorRole).map((r) => (
             <RoleBadge key={r} role={r} size="sm" />
           ))}
+          {post.isNewcomer && <NewcomerBadge size="sm" />}
           <span className="text-xs text-ink-faint">· {timeAgo(post.createdAt)}</span>
           {isEdited(post.createdAt, post.updatedAt) && (
             <span className="text-xs text-ink-faint">· 수정됨</span>
@@ -262,12 +274,16 @@ export function PlazaPostCard({
               post.iReacted
                 ? isPrayer
                   ? "border border-gold/45 bg-gold/15 text-gold-ink"
-                  : "border border-rose-300/60 bg-rose-50 text-rose-500"
+                  : isWelcome
+                    ? "border border-gold/45 bg-gold/15 text-gold-ink"
+                    : "border border-rose-300/60 bg-rose-50 text-rose-500"
                 : "glass-soft text-ink-soft hover:bg-white/90 hover:text-ink"
             }`}
           >
             {isPrayer ? (
               <>🙏 {post.iReacted ? "기도했어요" : "기도할게요"}</>
+            ) : isWelcome ? (
+              <>👋 환영해요</>
             ) : (
               <>{post.iReacted ? "💙" : "🤍"} 공감</>
             )}

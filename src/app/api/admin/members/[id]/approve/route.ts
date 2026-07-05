@@ -4,6 +4,7 @@ import { buildNickname } from "@/lib/membership";
 import { hasAdminAreaAccess } from "@/lib/manageAuth";
 import { getAuthUser } from "@/lib/auth";
 import { createMembershipNotification } from "@/lib/notifications";
+import { createWelcomeCard } from "@/lib/welcomeCard";
 import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
 import { recordAudit } from "@/lib/audit";
 
@@ -58,6 +59,13 @@ export async function POST(req: NextRequest, { params }: Params) {
     await createMembershipNotification(id, "approve");
   } catch (e) {
     console.error("[membership-notify] 알림 생성 실패:", e);
+  }
+
+  // 새가족 환영 카드 자동 게시 — best-effort.
+  try {
+    await createWelcomeCard(id, autoNickname ?? user.nickname);
+  } catch (e) {
+    console.error("[welcome-card] 생성 실패:", e);
   }
 
   // 감사 로그 — best-effort.
