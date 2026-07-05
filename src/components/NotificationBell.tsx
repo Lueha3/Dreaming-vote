@@ -33,6 +33,8 @@ const ICON: Record<string, string> = {
   admin_member_withdrawn: "🚪",
   admin_club_created: "🏛️",
   admin_content_reported: "🚨",
+  buddy_assigned: "🤝",
+  buddy_matched: "🤝",
 };
 
 // 운영자 전용 알림(admin_*) — 벨 목록에서 살짝 다른 톤으로 구분 표시.

@@ -24,7 +24,9 @@ export type NotificationType =
   | "admin_membership_applied" // 새 가입 신청 제출 (→ 운영진+)
   | "admin_member_withdrawn" // 회원 탈퇴(자진/강제) (→ 운영진+)
   | "admin_club_created" // 새 동아리 개설(승인 대기) (→ 운영진+)
-  | "admin_content_reported"; // 새 콘텐츠 신고 접수 (→ 운영진+)
+  | "admin_content_reported" // 새 콘텐츠 신고 접수 (→ 운영진+)
+  | "buddy_assigned" // 새가족의 환영 짝꿍으로 지정됨 (→ 짝꿍)
+  | "buddy_matched"; // 나의 환영 짝꿍이 정해짐 (→ 새가족)
 
 type NotificationInput = {
   userId: string;

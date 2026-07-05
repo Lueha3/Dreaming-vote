@@ -17,6 +17,19 @@ type MembershipUser = {
   membershipAppliedAt: string | null;
   membershipDecidedAt: string | null;
   membershipNote: string | null;
+  buddyId: string | null;
+  buddyNickname: string | null;
+};
+
+type BuddyCandidate = {
+  id: string;
+  nickname: string | null;
+  avatarUrl: string | null;
+  dreamGroup: string | null;
+  group: string | null;
+  sameGroup: boolean;
+  sameDreamGroup: boolean;
+  traitOverlap: number;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -51,6 +64,10 @@ export default function ManageMembershipPage() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [buddyPickerId, setBuddyPickerId] = useState<string | null>(null);
+  const [buddyCandidates, setBuddyCandidates] = useState<BuddyCandidate[]>([]);
+  const [buddyLoading, setBuddyLoading] = useState(false);
+  const [buddyAssigning, setBuddyAssigning] = useState<string | null>(null);
 
   useEffect(() => {
     load();
@@ -140,6 +157,42 @@ export default function ManageMembershipPage() {
       setError(e instanceof Error ? e.message : `${verb} 처리에 실패했어요. 다시 시도해주세요.`);
     }
     setBusyId(null);
+  }
+
+  async function openBuddyPicker(id: string) {
+    if (buddyPickerId === id) {
+      setBuddyPickerId(null);
+      return;
+    }
+    setBuddyPickerId(id);
+    setBuddyLoading(true);
+    setBuddyCandidates([]);
+    try {
+      const data = await fetchJson<{ ok: true; items: BuddyCandidate[] }>(
+        `/api/manage/membership/${id}/buddy-candidates`,
+      );
+      setBuddyCandidates(data.items ?? []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "짝꿍 후보를 불러오지 못했어요.");
+    }
+    setBuddyLoading(false);
+  }
+
+  async function assignBuddy(newcomerId: string, buddyId: string) {
+    setBuddyAssigning(buddyId);
+    setError(null);
+    try {
+      await fetchJson(`/api/manage/membership/${newcomerId}/buddy`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ buddyId }),
+      });
+      setBuddyPickerId(null);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "짝꿍 지정에 실패했어요.");
+    }
+    setBuddyAssigning(null);
   }
 
   const pendingCount = items.filter((u) => u.membershipStatus === "pending").length;
@@ -328,6 +381,68 @@ export default function ManageMembershipPage() {
                     <p className="mt-2 rounded-lg border border-red-200 bg-red-50/60 px-3 py-2 text-xs text-red-600">
                       반려 사유: {u.membershipNote}
                     </p>
+                  )}
+
+                  {/* 환영 짝꿍 지정 — 승인된 멤버만 */}
+                  {u.membershipStatus === "approved" && (
+                    <div className="mt-2.5 flex items-center gap-2">
+                      {u.buddyNickname && (
+                        <span className="rounded-full border border-teal/35 bg-teal/10 px-2.5 py-1 text-xs font-medium text-teal-ink">
+                          🤝 짝꿍: {u.buddyNickname}
+                        </span>
+                      )}
+                      <button
+                        onClick={() => openBuddyPicker(u.id)}
+                        className="rounded-full border border-sky-line bg-white/55 px-3 py-1 text-xs font-medium text-ink-soft transition-all hover:bg-white/85 hover:text-ink"
+                      >
+                        {u.buddyNickname ? "🤝 재지정" : "🤝 짝꿍 지정"}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* 짝꿍 후보 선택 패널 */}
+                  {buddyPickerId === u.id && (
+                    <div className="mt-3 rounded-xl border border-sky-line bg-white/60 p-3">
+                      {buddyLoading ? (
+                        <p className="text-xs text-ink-faint">후보를 불러오는 중...</p>
+                      ) : buddyCandidates.length === 0 ? (
+                        <p className="text-xs text-ink-faint">추천할 후보가 없어요.</p>
+                      ) : (
+                        <ul className="max-h-64 space-y-1.5 overflow-y-auto">
+                          {buddyCandidates.map((c) => (
+                            <li key={c.id}>
+                              <button
+                                onClick={() => assignBuddy(u.id, c.id)}
+                                disabled={buddyAssigning === c.id}
+                                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-white/90 disabled:opacity-50"
+                              >
+                                {c.avatarUrl ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={c.avatarUrl} alt="" className="h-6 w-6 shrink-0 rounded-full object-cover" />
+                                ) : (
+                                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-skyx/20 text-[10px] text-skyx-ink">
+                                    {c.nickname?.[0] ?? "?"}
+                                  </div>
+                                )}
+                                <span className="min-w-0 flex-1 truncate font-medium text-ink">
+                                  {c.nickname ?? "닉네임 없음"}
+                                </span>
+                                <span className="shrink-0 text-ink-faint">
+                                  {[
+                                    c.sameGroup && "같은 집단",
+                                    c.sameDreamGroup && "같은 꿈터",
+                                    c.traitOverlap > 0 && `성향 겹침 ${c.traitOverlap}`,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                                </span>
+                                {buddyAssigning === c.id && <span className="shrink-0">지정 중…</span>}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   )}
                 </div>
 

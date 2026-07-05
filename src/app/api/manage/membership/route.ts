@@ -35,15 +35,22 @@ export async function GET(req: NextRequest) {
       membershipAppliedAt: true,
       membershipDecidedAt: true,
       membershipNote: true,
+      buddyAsNewcomer: {
+        where: { status: "active" },
+        select: { buddy: { select: { id: true, nickname: true } } },
+        take: 1,
+      },
     },
     orderBy: { membershipAppliedAt: "asc" },
   });
 
   const isAdmin = hasAtLeast(user!.role, "admin");
-  const items = raw.map(({ phone, ...rest }) => ({
+  const items = raw.map(({ phone, buddyAsNewcomer, ...rest }) => ({
     ...rest,
     membershipAppliedAt: rest.membershipAppliedAt?.toISOString() ?? null,
     membershipDecidedAt: rest.membershipDecidedAt?.toISOString() ?? null,
+    buddyId: buddyAsNewcomer[0]?.buddy.id ?? null,
+    buddyNickname: buddyAsNewcomer[0]?.buddy.nickname ?? null,
     ...(isAdmin ? { phone } : {}),
   }));
 

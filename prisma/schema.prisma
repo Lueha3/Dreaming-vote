@@ -50,6 +50,9 @@ model User {
   contentReports      ContentReport[]      @relation("ReportReporter")
   resolvedReports     ContentReport[]      @relation("ReportResolver")
   pushSubscriptions   PushSubscription[]
+  buddyAsNewcomer     BuddyMatch[]         @relation("BuddyNewcomer")
+  buddyAsBuddy        BuddyMatch[]         @relation("BuddyBuddy")
+  buddyMatchesMade    BuddyMatch[]         @relation("BuddyMatchedBy")
 
   @@index([membershipStatus, membershipAppliedAt])
 }
@@ -438,4 +441,22 @@ model MetricSnapshot {
   clubJoinRate             Float // 승인 멤버 중 accepted 동아리 1개 이상 비율(0~1)
   activeMemberCount        Int // 그 주 활동(글·댓글·공감·RSVP)이 있었던 승인 멤버 수
   createdAt                DateTime @default(now())
+}
+
+// 새가족 환영 짝꿍 매칭 — 운영진이 승인 직후 지정. 새가족당 활성 짝꿍은 1명(newcomerId unique).
+// 채팅 등 인앱 상호작용은 만들지 않는다 — 매칭 기록·상호 알림·프로필 표시까지만(오프라인 소통을 유도).
+model BuddyMatch {
+  id          String    @id @default(cuid())
+  newcomerId  String    @unique
+  buddyId     String
+  matchedById String? // 지정한 운영진 — 감사 로그와 동일하게 삭제돼도 매칭 기록은 보존(SetNull)
+  status      String    @default("active") // active | ended
+  createdAt   DateTime  @default(now())
+  endedAt     DateTime?
+
+  newcomer  User  @relation("BuddyNewcomer", fields: [newcomerId], references: [id], onDelete: Cascade)
+  buddy     User  @relation("BuddyBuddy", fields: [buddyId], references: [id], onDelete: Cascade)
+  matchedBy User? @relation("BuddyMatchedBy", fields: [matchedById], references: [id], onDelete: SetNull)
+
+  @@index([buddyId])
 }

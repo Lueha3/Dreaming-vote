@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { timeAgo } from "@/lib/time";
 import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
+import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import type { FeedData } from "@/lib/feed";
 
 type Feed = FeedData;
@@ -106,6 +107,9 @@ export function HomeFeed({ initial }: { initial?: HomeView }) {
   return (
     <div className="mt-8 space-y-3">
       {/* 3) 승인 멤버 — 최신 활동 피드를 상단에 우선 노출(인스타·스레드형). */}
+
+      {/* 새가족 체크리스트 — 새가족 기간에만 서버 판정으로 노출 */}
+      <OnboardingChecklist />
 
       {/* 다가오는 내 동아리 모임 */}
       {upcomingMeetings.length > 0 && (

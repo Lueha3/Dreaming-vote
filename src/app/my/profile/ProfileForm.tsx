@@ -7,6 +7,7 @@ import imageCompression from "browser-image-compression";
 import { createClient } from "@/lib/supabase/client";
 import { fetchJson } from "@/lib/http";
 import { PushNotificationToggle } from "@/components/PushNotificationToggle";
+import { BuddyInfoCard } from "@/components/BuddyInfoCard";
 
 /**
  * 프로필 수정 폼 (프로필 사진 전용) — 클라이언트.
@@ -218,6 +219,9 @@ export function ProfileForm({
 
           {/* 휴대폰 푸시 알림 켜기/끄기 */}
           <PushNotificationToggle />
+
+          {/* 환영 짝꿍 표시 — 짝꿍이 없으면 렌더 안 함 */}
+          <BuddyInfoCard />
 
           {/* 활동 닉네임 — 읽기 전용 (가입 신청 폼에 종속) */}
           <div className="glass-card p-5">
