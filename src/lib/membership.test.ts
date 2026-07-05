@@ -15,9 +15,9 @@ describe("getGroup — 나이→집단", () => {
     expect(getGroup(27)).toBe("유디코");
     expect(getGroup(34)).toBe("유디코");
   });
-  it("엘리야 35세~", () => {
-    expect(getGroup(35)).toBe("엘리야");
-    expect(getGroup(60)).toBe("엘리야");
+  it("엘리온 35세~", () => {
+    expect(getGroup(35)).toBe("엘리온");
+    expect(getGroup(60)).toBe("엘리온");
   });
   it("범위 밖은 null", () => {
     expect(getGroup(19)).toBeNull();
@@ -29,7 +29,7 @@ describe("buildNickname — 집단-나이-이름", () => {
   it("정상 생성", () => {
     expect(buildNickname(25, "홍길동")).toBe("러비아-25-홍길동");
     expect(buildNickname(30, "김철수")).toBe("유디코-30-김철수");
-    expect(buildNickname(40, "박엘리")).toBe("엘리야-40-박엘리");
+    expect(buildNickname(40, "박엘리")).toBe("엘리온-40-박엘리");
   });
   it("이름 공백 트림", () => {
     expect(buildNickname(22, "  이영희  ")).toBe("러비아-22-이영희");
@@ -49,7 +49,7 @@ describe("NICKNAME_RE — 활동 닉네임 형식", () => {
     expect(m?.[2]).toBe("25");
     expect(m?.[3]).toBe("홍길동");
     expect(NICKNAME_RE.test("유디코-30-김")).toBe(true);
-    expect(NICKNAME_RE.test("엘리야-40-박엘리")).toBe(true);
+    expect(NICKNAME_RE.test("엘리온-40-박엘리")).toBe(true);
   });
   it("형식 위반은 거부", () => {
     expect(NICKNAME_RE.test("철수")).toBe(false); // 형식 없음(구글 이름 폴백)

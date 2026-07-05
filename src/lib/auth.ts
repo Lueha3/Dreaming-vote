@@ -26,7 +26,7 @@ export type AuthUser = {
   avatarUrl: string | null;
   membershipStatus: string; // none | pending | approved | rejected
   age: number | null; // 가입신청서의 나이 — pending 중 재제출로 변경 가능(미확정)
-  approvedAge: number | null; // 승인 시점 고정 나이 — 집단(러비아/유디코/엘리야) 판정의 불변 근거
+  approvedAge: number | null; // 승인 시점 고정 나이 — 집단(러비아/유디코/엘리온) 판정의 불변 근거
   role: Role; // 전역 등급. 동아리장은 여기 없음(소유 동아리에서 파생). superadmin은 env로 승격
 };
 
