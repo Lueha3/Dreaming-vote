@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { getAuthUser, roleGate } from "@/lib/auth";
 import { createMembershipNotification } from "@/lib/notifications";
 import { createWelcomeCard } from "@/lib/welcomeCard";
+import { ensureSystemClubMembership } from "@/lib/systemClub";
 import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
 import { recordAudit } from "@/lib/audit";
 import { buildNickname } from "@/lib/membership";
@@ -63,6 +64,11 @@ export async function POST(req: NextRequest) {
       }
       try {
         await createWelcomeCard(t.id, autoNickname ?? t.nickname);
+      } catch {
+        /* best-effort */
+      }
+      try {
+        await ensureSystemClubMembership(t.id);
       } catch {
         /* best-effort */
       }

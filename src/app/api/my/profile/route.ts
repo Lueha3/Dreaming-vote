@@ -6,10 +6,24 @@ import { getGroup, NICKNAME_RE } from "@/lib/membership";
 import { createClient } from "@/lib/supabase/server";
 import { removeStorageObjects } from "@/lib/storage";
 
-const schema = z.object({
-  nickname: z.string().min(1).max(50).optional(),
-  avatarUrl: z.string().url().optional(),
-});
+// 2월 29일까지 허용(연도 미저장이라 윤년 여부를 알 수 없음 — permissive하게 취급).
+const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+const schema = z
+  .object({
+    nickname: z.string().min(1).max(50).optional(),
+    avatarUrl: z.string().url().optional(),
+    birthMonth: z.number().int().min(1).max(12).optional(),
+    birthDay: z.number().int().min(1).max(31).optional(),
+  })
+  .refine(
+    (v) => (v.birthMonth == null) === (v.birthDay == null),
+    { message: "생일은 월·일을 함께 입력해주세요.", path: ["birthDay"] },
+  )
+  .refine(
+    (v) => v.birthMonth == null || v.birthDay! <= DAYS_IN_MONTH[v.birthMonth - 1],
+    { message: "존재하지 않는 날짜예요.", path: ["birthDay"] },
+  );
 
 /**
  * PATCH /api/my/profile — 닉네임 / 프로필 사진 업데이트
@@ -28,7 +42,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ ok: false, error: parsed.error.flatten().fieldErrors }, { status: 400 });
   }
 
-  const data: { nickname?: string; avatarUrl?: string } = {};
+  const data: { nickname?: string; avatarUrl?: string; birthMonth?: number; birthDay?: number } = {};
 
   if (parsed.data.nickname) {
     const gate = membershipGate(user);
@@ -56,6 +70,10 @@ export async function PATCH(req: NextRequest) {
   }
 
   if (parsed.data.avatarUrl) data.avatarUrl = parsed.data.avatarUrl;
+  if (parsed.data.birthMonth != null && parsed.data.birthDay != null) {
+    data.birthMonth = parsed.data.birthMonth;
+    data.birthDay = parsed.data.birthDay;
+  }
 
   // 아바타가 실제로 바뀌면 옛 사진을 정리하기 위해 교체 전 값을 확보한다.
   let oldAvatarUrl: string | null = null;

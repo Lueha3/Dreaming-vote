@@ -5,6 +5,7 @@ import { hasAdminAreaAccess } from "@/lib/manageAuth";
 import { getAuthUser } from "@/lib/auth";
 import { createMembershipNotification } from "@/lib/notifications";
 import { createWelcomeCard } from "@/lib/welcomeCard";
+import { ensureSystemClubMembership } from "@/lib/systemClub";
 import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
 import { recordAudit } from "@/lib/audit";
 
@@ -66,6 +67,13 @@ export async function POST(req: NextRequest, { params }: Params) {
     await createWelcomeCard(id, autoNickname ?? user.nickname);
   } catch (e) {
     console.error("[welcome-card] 생성 실패:", e);
+  }
+
+  // 청년부 전체 행사 보드 자동 멤버 등록 — best-effort.
+  try {
+    await ensureSystemClubMembership(id);
+  } catch (e) {
+    console.error("[system-club] 자동 등록 실패:", e);
   }
 
   // 감사 로그 — best-effort.

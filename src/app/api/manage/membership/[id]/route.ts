@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { getAuthUser, roleGate } from "@/lib/auth";
 import { createMembershipNotification } from "@/lib/notifications";
 import { createWelcomeCard } from "@/lib/welcomeCard";
+import { ensureSystemClubMembership } from "@/lib/systemClub";
 import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
 import { recordAudit } from "@/lib/audit";
 import { buildNickname } from "@/lib/membership";
@@ -81,6 +82,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       await createWelcomeCard(id, autoNickname ?? target.nickname);
     } catch (e) {
       console.error("[welcome-card] 생성 실패:", e);
+    }
+    try {
+      await ensureSystemClubMembership(id);
+    } catch (e) {
+      console.error("[system-club] 자동 등록 실패:", e);
     }
   }
 

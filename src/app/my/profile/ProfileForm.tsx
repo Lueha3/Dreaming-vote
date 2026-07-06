@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { fetchJson } from "@/lib/http";
 import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { BuddyInfoCard } from "@/components/BuddyInfoCard";
+import { BirthdayField } from "@/components/BirthdayField";
 
 /**
  * 프로필 수정 폼 (프로필 사진 전용) — 클라이언트.
@@ -19,11 +20,15 @@ export function ProfileForm({
   initialAvatar,
   nickname,
   membershipStatus,
+  initialBirthMonth,
+  initialBirthDay,
 }: {
   supabaseId: string;
   initialAvatar: string | null;
   nickname: string | null;
   membershipStatus: string;
+  initialBirthMonth: number | null;
+  initialBirthDay: number | null;
 }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -222,6 +227,9 @@ export function ProfileForm({
 
           {/* 환영 짝꿍 표시 — 짝꿍이 없으면 렌더 안 함 */}
           <BuddyInfoCard />
+
+          {/* 생일 등록 — 등록하면 생일 당일 광장 축하 카드 자동 게시 */}
+          <BirthdayField initialMonth={initialBirthMonth} initialDay={initialBirthDay} />
 
           {/* 활동 닉네임 — 읽기 전용 (가입 신청 폼에 종속) */}
           <div className="glass-card p-5">

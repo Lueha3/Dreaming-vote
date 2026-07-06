@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const category = searchParams.get("category")?.trim();
   const q = searchParams.get("q")?.trim();
 
-  const where: Record<string, unknown> = { isApproved: true, isActive: true };
+  const where: Record<string, unknown> = { isApproved: true, isActive: true, isSystem: false };
   if (category && isClubCategory(category)) where.category = category;
   if (q) {
     where.OR = [

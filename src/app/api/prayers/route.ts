@@ -18,6 +18,7 @@ const createSchema = z.object({
   isAnonymous: z.boolean().default(false),
   images: z.array(z.string()).max(3, "사진은 최대 3장까지 올릴 수 있어요.").default([]),
   clubId: z.string().trim().min(1).optional(),
+  promptId: z.string().trim().min(1).optional(),
 });
 
 function resolveCategory(raw: string | null): Category {
@@ -54,6 +55,7 @@ export async function GET(req: NextRequest) {
       updatedAt: true,
       userId: true,
       systemType: true,
+      promptId: true,
       user: { select: { nickname: true, avatarUrl: true, role: true, membershipDecidedAt: true } },
       images: { select: { url: true }, orderBy: { order: "asc" } },
       club: {
@@ -97,6 +99,7 @@ export async function GET(req: NextRequest) {
     authorRole: p.isAnonymous ? null : p.user?.role ?? null,
     isNewcomer: p.isAnonymous ? false : isNewcomer(p.user?.membershipDecidedAt ?? null),
     systemType: p.systemType,
+    promptId: p.promptId,
     images: p.images.map((im) => im.url),
     // 미승인/비활성 동아리는 clubDetail.ts와 동일한 기준(개설자·운영진만 열람)으로 숨긴다 —
     // 광고 글의 clubId는 사후 반려·비활성화 후에도 남아있어 원본 검증 없이 그대로 노출하면 안 됨.
@@ -155,8 +158,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: msg }, { status: 400 });
   }
 
-  const { category, content, images, clubId } = parsed.data;
+  const { category, content, images, clubId, promptId } = parsed.data;
   const trimmed = content.trim();
+
+  // 아이스브레이커 답변 태깅 — 존재하는 질문에만 연결(위조 방지).
+  let attachedPromptId: string | null = null;
+  if (promptId) {
+    const prompt = await prisma.icebreakerPrompt.findUnique({ where: { id: promptId }, select: { id: true } });
+    if (!prompt) {
+      return NextResponse.json({ ok: false, error: "존재하지 않는 질문이에요." }, { status: 400 });
+    }
+    attachedPromptId = promptId;
+  }
   // 익명은 민감한 기도제목 보호용 — 기도해주세요에서만 허용(클라 우회 방지, 서버 강제)
   const isAnonymous = category === "기도해주세요" ? parsed.data.isAnonymous : false;
 
@@ -215,6 +228,7 @@ export async function POST(req: NextRequest) {
       isAnonymous,
       scope: "ALL",
       clubId: attachedClubId,
+      promptId: attachedPromptId,
       images: validImages.length
         ? { create: validImages.map((url, i) => ({ url, order: i })) }
         : undefined,

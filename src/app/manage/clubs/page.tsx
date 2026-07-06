@@ -29,15 +29,42 @@ function fmtDate(iso: string) {
   });
 }
 
+type EventBoardStatus = { exists: boolean; clubId: string | null; name: string | null; memberCount: number };
+
 export default function ManageClubsPage() {
   const [items, setItems] = useState<ManageClub[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"pending" | "all">("pending");
 
+  const [eventBoard, setEventBoard] = useState<EventBoardStatus | null>(null);
+  const [eventBoardBusy, setEventBoardBusy] = useState(false);
+
   useEffect(() => {
     load();
+    loadEventBoard();
   }, []);
+
+  async function loadEventBoard() {
+    try {
+      const data = await fetchJson<{ ok: true } & EventBoardStatus>("/api/manage/events/setup");
+      setEventBoard(data);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function setupEventBoard() {
+    setEventBoardBusy(true);
+    try {
+      await fetchJson("/api/manage/events/setup", { method: "POST" });
+      await loadEventBoard();
+    } catch {
+      /* ignore */
+    } finally {
+      setEventBoardBusy(false);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -69,6 +96,48 @@ export default function ManageClubsPage() {
       <p className="mb-4 text-sm text-ink-soft">
         유저가 개설한 동아리를 검토하고 노출 여부를 결정합니다.
       </p>
+
+      {/* 청년부 전체 행사 보드 — 시스템 동아리 설정 */}
+      <div className="glass-card mb-5 p-4">
+        <p className="mb-1 text-sm font-semibold text-ink">📅 청년부 전체 행사 보드</p>
+        {eventBoard?.exists ? (
+          <>
+            <p className="mb-3 text-xs leading-relaxed text-ink-soft">
+              운영 중이에요. 승인 멤버 {eventBoard.memberCount}명이 자동으로 참여하고 있어요.
+              모임은 동아리 상세 페이지에서 등록해요.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <a
+                href={`/clubs/${eventBoard.clubId}`}
+                className="glass-soft rounded-full px-3.5 py-1.5 text-xs font-medium text-ink-soft hover:text-ink"
+              >
+                보드 열기 →
+              </a>
+              <button
+                onClick={setupEventBoard}
+                disabled={eventBoardBusy}
+                className="glass-soft rounded-full px-3.5 py-1.5 text-xs font-medium text-ink-soft hover:text-ink disabled:opacity-50"
+              >
+                {eventBoardBusy ? "동기화 중…" : "승인 멤버 다시 동기화"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="mb-3 text-xs leading-relaxed text-ink-soft">
+              아직 만들어지지 않았어요. 만들면 승인 멤버 전원이 자동으로 참여하고, 홈 화면
+              &apos;다가오는 모임&apos;에 전체 행사가 함께 표시돼요.
+            </p>
+            <button
+              onClick={setupEventBoard}
+              disabled={eventBoardBusy}
+              className="btn-gold rounded-full px-4 py-1.5 text-xs font-medium disabled:opacity-50"
+            >
+              {eventBoardBusy ? "만드는 중…" : "만들기"}
+            </button>
+          </>
+        )}
+      </div>
 
       {/* 필터 */}
       <div className="mb-5 flex items-center gap-2">

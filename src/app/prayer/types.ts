@@ -50,6 +50,7 @@ export type PlazaPost = {
   authorRole: Role | null;
   isNewcomer: boolean;
   systemType: string | null;
+  promptId: string | null;
   images: string[];
   club: PlazaClubRef | null;
   reactionCount: number;

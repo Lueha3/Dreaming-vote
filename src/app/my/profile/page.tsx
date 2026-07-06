@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAuthUser } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 import { NICKNAME_RE } from "@/lib/membership";
 import { ProfileForm } from "./ProfileForm";
 
@@ -33,12 +34,19 @@ export default async function ProfilePage() {
   // 구글 이름 폴백이 '활동 닉네임'으로 보이지 않게 형식(집단-나이-이름) 통과한 값만 표시.
   const formalNickname = user.nickname && NICKNAME_RE.test(user.nickname) ? user.nickname : null;
 
+  const birthday = await prisma.user.findUnique({
+    where: { id: user.dbUserId },
+    select: { birthMonth: true, birthDay: true },
+  });
+
   return (
     <ProfileForm
       supabaseId={user.supabaseId}
       initialAvatar={user.avatarUrl}
       nickname={formalNickname}
       membershipStatus={user.membershipStatus}
+      initialBirthMonth={birthday?.birthMonth ?? null}
+      initialBirthDay={birthday?.birthDay ?? null}
     />
   );
 }

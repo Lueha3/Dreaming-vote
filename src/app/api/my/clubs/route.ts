@@ -32,7 +32,8 @@ export async function GET() {
       },
     }),
     prisma.clubApplication.findMany({
-      where: { userId: user.dbUserId },
+      // 시스템 동아리(전체 행사 보드)는 자동 등록이라 '내가 신청한 동아리' 목록에선 숨긴다.
+      where: { userId: user.dbUserId, club: { isSystem: false } },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,

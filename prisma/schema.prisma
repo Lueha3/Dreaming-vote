@@ -34,6 +34,9 @@ model User {
   membershipDecidedAt DateTime?
   membershipNote      String? // 거절 사유 (신청자에게 표시)
   deletedAt           DateTime? // 탈퇴 처리 일시 — null이면 활성. 재로그인 시 즉시 해제(쿨다운 없음).
+  // 생일 축하 카드 발송용 — 연도는 받지 않는다(개인정보 최소화, 나이는 age로 이미 별도 수집).
+  birthMonth          Int?
+  birthDay            Int?
 
   ownedClubs          Club[]               @relation("OwnedClubs")
   clubApplications    ClubApplication[]
@@ -53,6 +56,7 @@ model User {
   buddyAsNewcomer     BuddyMatch[]         @relation("BuddyNewcomer")
   buddyAsBuddy        BuddyMatch[]         @relation("BuddyBuddy")
   buddyMatchesMade    BuddyMatch[]         @relation("BuddyMatchedBy")
+  icebreakerPrompts   IcebreakerPrompt[]
 
   @@index([membershipStatus, membershipAppliedAt])
 }
@@ -204,6 +208,9 @@ model Club {
   isActive    Boolean  @default(true)
   viewCount   Int      @default(0)
   createdAt   DateTime @default(now())
+  // 청년부 전체 행사용 시스템 동아리(운영진 생성, 최대 1개 운용 전제) — 일반 동아리 목록에서
+  // 숨기고 승인 멤버 전원을 자동 멤버로 취급한다. 기존 모임/RSVP/리마인더 기능을 그대로 재사용.
+  isSystem    Boolean  @default(false)
 
   owner           User                 @relation("OwnedClubs", fields: [ownerUserId], references: [id], onDelete: Cascade)
   applications    ClubApplication[]
@@ -301,20 +308,24 @@ model Prayer {
   isAnswered   Boolean   @default(false) // 기도해주세요 전용
   answeredNote String? // 응답 간증 한 줄 (선택)
   answeredAt   DateTime?
-  // 시스템이 자동 생성한 카드 구분(null=일반 글) — "welcome"(새가족 환영 카드).
+  // 시스템이 자동 생성한 카드 구분(null=일반 글) — "welcome"(새가족 환영 카드) · "birthday"(생일 축하).
   // 작성자를 당사자 본인으로 두어 기존 댓글/공감 알림 파이프라인을 그대로 재사용한다.
   systemType   String?
+  // 이번 주 아이스브레이커 질문에 대한 답변 글이면 연결(선택) — 질문 카드에서 답변 모아보기용.
+  promptId     String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt // 글 수정 시 갱신 — createdAt과 다르면 "수정됨" 표시
 
   user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   club          Club?                @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  prompt        IcebreakerPrompt?    @relation(fields: [promptId], references: [id], onDelete: SetNull)
   intercessions PrayerIntercession[]
   images        PrayerImage[]
   comments      PrayerComment[]
 
   @@index([category, isAnswered, createdAt])
   @@index([userId])
+  @@index([promptId])
   @@index([clubId])
 }
 
@@ -459,4 +470,17 @@ model BuddyMatch {
   matchedBy User? @relation("BuddyMatchedBy", fields: [matchedById], references: [id], onDelete: SetNull)
 
   @@index([buddyId])
+}
+
+// 주간 아이스브레이커 질문 — 운영진이 /manage에서 등록하거나, 없으면 cron이 프리셋 풀에서
+// 자동 선택한다. 광장 상단에 고정 카드로 노출되고, "답변하기"로 작성한 일상 글이 Prayer.promptId로 연결된다.
+model IcebreakerPrompt {
+  id          String   @id @default(cuid())
+  weekOf      DateTime @unique
+  question    String
+  createdById String? // 운영진이 직접 등록했으면 그 사람, cron 자동 선택이면 null
+  createdAt   DateTime @default(now())
+
+  createdBy User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  answers   Prayer[]
 }

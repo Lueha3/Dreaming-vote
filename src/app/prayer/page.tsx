@@ -10,6 +10,9 @@ import { CATEGORIES, CATEGORY_META, type Category, type PlazaPost } from "./type
 
 type ListResponse = { ok: true; items: PlazaPost[]; loggedIn: boolean };
 
+type IcebreakerPrompt = { id: string; question: string; answerCount: number };
+type IcebreakerResponse = { ok: true; prompt: IcebreakerPrompt | null };
+
 type EligibleClub = { id: string; name: string; category: string };
 
 type MyClubsResponse = {
@@ -40,6 +43,11 @@ export default function PlazaPage() {
   const [error, setError] = useState<string | null>(null);
   const [needJoin, setNeedJoin] = useState(false);
 
+  // 이번 주 아이스브레이커 질문 — 광장 상단 고정 카드 + "답변하기" 태깅
+  const [prompt, setPrompt] = useState<IcebreakerPrompt | null>(null);
+  const [answeringPrompt, setAnsweringPrompt] = useState(false);
+  const composerRef = useRef<HTMLTextAreaElement | null>(null);
+
   // 동아리광고 — 내 동아리 목록 + 선택
   const [myClubs, setMyClubs] = useState<EligibleClub[]>([]);
   const [myClubsLoaded, setMyClubsLoaded] = useState(false);
@@ -59,6 +67,7 @@ export default function PlazaPage() {
     setError(null);
     setNeedJoin(false);
     setSelectedClubId("");
+    setAnsweringPrompt(false);
   }
 
   // 목록 페치 실패에도 로그인 UI가 어긋나지 않도록 쿠키로 초기 힌트만 시드(서버가 최종 집행).
@@ -81,6 +90,18 @@ export default function PlazaPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    fetchJson<IcebreakerResponse>("/api/icebreaker/current")
+      .then((data) => setPrompt(data.prompt))
+      .catch(() => setPrompt(null));
+  }, []);
+
+  function startAnswering() {
+    if (category !== "일상") switchCategory("일상");
+    setAnsweringPrompt(true);
+    setTimeout(() => composerRef.current?.focus(), 0);
+  }
 
   // 알림/동아리 딥링크(/prayer?category=..&club=..)로 진입 시 탭·동아리를 미리 선택해둔다.
   useEffect(() => {
@@ -155,6 +176,7 @@ export default function PlazaPage() {
           isAnonymous: isPrayer ? isAnonymous : false,
           images,
           clubId: isClubAd ? selectedClubId : undefined,
+          promptId: answeringPrompt ? prompt?.id : undefined,
         }),
       });
       setContent("");
@@ -162,6 +184,10 @@ export default function PlazaPage() {
       setImages([]);
       setSelectedClubId("");
       setUploaderKey((k) => k + 1); // 업로더 리셋
+      if (answeringPrompt && prompt) {
+        setPrompt({ ...prompt, answerCount: prompt.answerCount + 1 });
+        setAnsweringPrompt(false);
+      }
       await load();
     } catch (err) {
       surfaceApiError(err, "올리지 못했어요. 다시 시도해주세요.");
@@ -273,15 +299,48 @@ export default function PlazaPage() {
           ))}
         </div>
 
+        {/* 이번 주 질문 — 일상 탭에서만 고정 노출 */}
+        {category === "일상" && prompt && (
+          <div className="glass-card mb-5 border border-gold/30 bg-gold/5 p-4">
+            <p className="mb-1 text-[11px] font-medium text-gold-ink">💬 이번 주 질문</p>
+            <p className="mb-2.5 text-sm font-semibold text-ink">{prompt.question}</p>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-ink-faint">답변 {prompt.answerCount}개</span>
+              {loggedIn && !answeringPrompt && (
+                <button
+                  type="button"
+                  onClick={startAnswering}
+                  className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-medium text-gold-ink transition-colors hover:bg-gold/20"
+                >
+                  답변하기
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 작성 폼 */}
         {loggedIn ? (
           <form onSubmit={handlePost} className="glass-card mb-6 p-4">
+            {answeringPrompt && prompt && (
+              <div className="mb-2.5 flex items-center justify-between rounded-lg bg-gold/10 px-3 py-1.5 text-xs text-gold-ink">
+                <span>💬 &quot;{prompt.question}&quot;에 답하는 중</span>
+                <button
+                  type="button"
+                  onClick={() => setAnsweringPrompt(false)}
+                  className="text-ink-faint hover:text-ink"
+                >
+                  취소
+                </button>
+              </div>
+            )}
             <textarea
+              ref={composerRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={3}
               maxLength={2000}
-              placeholder={meta.placeholder}
+              placeholder={answeringPrompt ? "이 질문에 대한 답을 나눠보세요..." : meta.placeholder}
               className="w-full resize-none rounded-xl border border-white/95 bg-white/70 px-4 py-3 text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:border-teal focus:outline-none"
             />
 

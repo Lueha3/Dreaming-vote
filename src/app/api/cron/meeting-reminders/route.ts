@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createNotifications } from "@/lib/notifications";
 import { computeWeeklyMetrics } from "@/lib/metrics";
+import { getWeekMonday } from "@/lib/week";
+import { ICEBREAKER_PRESETS } from "@/lib/icebreakerPresets";
+import { createBirthdayCard } from "@/lib/birthdayCard";
 
 // 매 호출마다 최신 데이터로 동작해야 하므로 정적 최적화 비활성.
 export const dynamic = "force-dynamic";
@@ -90,5 +93,66 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, meetings: meetings.length, notified, metricSnapshot });
+  // 이번 주 아이스브레이커 질문 자동 채우기 — 운영진이 안 정했으면 월요일에 프리셋 순환 배정.
+  let icebreakerPrompt: { weekOf: string; question: string } | null = null;
+  if (kstNow.getUTCDay() === 1) {
+    try {
+      const weekOf = getWeekMonday(now);
+      const existing = await prisma.icebreakerPrompt.findUnique({ where: { weekOf }, select: { id: true } });
+      if (!existing) {
+        const totalPrompts = await prisma.icebreakerPrompt.count();
+        const question = ICEBREAKER_PRESETS[totalPrompts % ICEBREAKER_PRESETS.length];
+        const created = await prisma.icebreakerPrompt.create({
+          data: { weekOf, question, createdById: null },
+          select: { weekOf: true, question: true },
+        });
+        icebreakerPrompt = { weekOf: created.weekOf.toISOString(), question: created.question };
+      }
+    } catch (e) {
+      console.error("[icebreaker] 자동 질문 배정 실패:", e);
+    }
+  }
+
+  // 생일 축하 카드 — 오늘(KST)이 생일인 승인 멤버에게 자동 게시. 같은 날 중복 게시 방지.
+  let birthdaysPosted = 0;
+  try {
+    const todayMonth = kstNow.getUTCMonth() + 1;
+    const todayDay = kstNow.getUTCDate();
+    const birthdayUsers = await prisma.user.findMany({
+      where: {
+        membershipStatus: "approved",
+        deletedAt: null,
+        birthMonth: todayMonth,
+        birthDay: todayDay,
+      },
+      select: { id: true, nickname: true },
+    });
+    const kstDayStart = new Date(
+      Date.UTC(kstNow.getUTCFullYear(), kstNow.getUTCMonth(), kstNow.getUTCDate()) - 9 * 60 * 60 * 1000,
+    );
+    for (const u of birthdayUsers) {
+      try {
+        const already = await prisma.prayer.findFirst({
+          where: { userId: u.id, systemType: "birthday", createdAt: { gte: kstDayStart } },
+          select: { id: true },
+        });
+        if (already) continue;
+        await createBirthdayCard(u.id, u.nickname);
+        birthdaysPosted++;
+      } catch (e) {
+        console.error("[birthday] 카드 게시 실패:", u.id, e);
+      }
+    }
+  } catch (e) {
+    console.error("[birthday] 생일자 조회 실패:", e);
+  }
+
+  return NextResponse.json({
+    ok: true,
+    meetings: meetings.length,
+    notified,
+    metricSnapshot,
+    icebreakerPrompt,
+    birthdaysPosted,
+  });
 }
