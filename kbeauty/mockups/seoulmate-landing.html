@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Seoulmate — Scan K-Beauty. Know your match.</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<style>
+/* ============================================================
+   Seoulmate — K-Beauty Ingredient Matcher
+   디자인: 올리브영(클린 화이트 커머스 + 올리브그린 CTA)
+        × BlueHumanity(하늘 글래스 + 잉크 텍스트 + 골드/틸 포인트)
+   ============================================================ */
+:root{
+  --sky-top:#EAF6FD; --sky-mid:#D3E9F8; --sky-low:#C2E0F4;
+  --ink:#333B44; --ink-soft:#5E6973; --ink-faint:#8A95A1;
+  --olive:#9BCE26; --olive-deep:#7CB318; --olive-ink:#5E8A0E;
+  --teal:#35C3B4; --teal-deep:#1A9D8F; --teal-ink:#15837A;
+  --gold:#F0B429; --gold-ink:#A6780B;
+  --skyx:#7FBDE4; --skyx-deep:#4A90C2; --skyx-ink:#2E6E9E;
+  --line:rgba(122,150,176,.30);
+  --glass:rgba(255,255,255,.78);
+  --shadow:0 24px 60px -18px rgba(74,144,194,.35);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{
+  font-family:"Pretendard Variable",Pretendard,-apple-system,"Segoe UI",Arial,sans-serif;
+  color:var(--ink);
+  background:var(--sky-mid);
+  overflow-x:hidden; word-break:keep-all;
+}
+/* iOS 사파리 등 background-attachment:fixed 미지원 대응 — 고정 레이어로 하늘 그라데이션 */
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-mid) 55%,var(--sky-low) 100%)}
+::selection{background:rgba(53,195,180,.25)}
+.wrap{max-width:520px;width:100%;margin:0 auto;padding:0 20px;position:relative}
+
+/* ---------- 헬퍼 ---------- */
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(22px) saturate(1.4);backdrop-filter:blur(22px) saturate(1.4);
+  border:1px solid rgba(255,255,255,.88);border-radius:24px;box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.9)}
+.grad-text{background:linear-gradient(115deg,var(--olive-deep) 0%,var(--teal) 55%,var(--skyx-deep) 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;cursor:pointer;
+  font:inherit;font-weight:800;border-radius:999px;padding:16px 26px;font-size:16px;text-decoration:none;
+  transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}
+.btn-olive{background:linear-gradient(120deg,var(--olive) 0%,#7FCB4B 45%,var(--teal) 100%);color:#173A0B;
+  box-shadow:0 10px 24px -8px rgba(124,179,24,.55),0 6px 18px -6px rgba(53,195,180,.45)}
+.btn-olive:hover{transform:translateY(-2px);filter:brightness(1.05)}
+.btn-ghost{background:rgba(255,255,255,.62);color:var(--ink-soft);border:1px solid rgba(255,255,255,.95);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.btn-ghost:hover{background:rgba(255,255,255,.92);color:var(--ink)}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--teal-ink);background:rgba(53,195,180,.12);border:1px solid rgba(53,195,180,.35);
+  padding:7px 14px;border-radius:999px}
+.sec-title{font-size:clamp(26px,7vw,34px);font-weight:900;line-height:1.22;letter-spacing:-.02em;margin:14px 0 10px}
+.sec-sub{color:var(--ink-soft);font-size:15.5px;line-height:1.65}
+
+/* ---------- 스크롤 리빌 ---------- */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+.rv.in{opacity:1;transform:none}
+.rv[data-d="1"]{transition-delay:.08s}.rv[data-d="2"]{transition-delay:.16s}.rv[data-d="3"]{transition-delay:.24s}
+
+/* ============ 헤더 ============ */
+header{position:fixed;inset:0 0 auto 0;z-index:50;transition:box-shadow .3s,background .3s}
+header .bar{max-width:520px;margin:10px auto;padding:10px 16px;display:flex;align-items:center;gap:10px;
+  border-radius:999px;background:rgba(255,255,255,.55);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);
+  border:1px solid rgba(255,255,255,.85);margin-left:14px;margin-right:14px}
+@media(min-width:552px){header .bar{margin-left:auto;margin-right:auto}}
+header.scrolled .bar{background:rgba(255,255,255,.82);box-shadow:0 12px 32px -14px rgba(74,144,194,.45)}
+.logo{font-weight:900;font-size:18px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.logo .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(120deg,var(--olive),var(--teal));box-shadow:0 0 0 4px rgba(53,195,180,.18)}
+.lang{margin-left:auto;font-size:12px;font-weight:800;color:var(--skyx-ink);background:rgba(127,189,228,.18);
+  border:1px solid rgba(127,189,228,.4);padding:6px 11px;border-radius:999px}
+.hd-cta{font-size:13px;font-weight:800;padding:9px 16px;border-radius:999px;color:#173A0B;text-decoration:none;
+  background:linear-gradient(120deg,var(--olive),var(--teal))}
+
+/* ============ 히어로 ============ */
+.hero{min-height:100svh;display:flex;flex-direction:column;justify-content:flex-end;position:relative;padding-bottom:34px}
+.hero-copy{padding-top:96px;position:relative;z-index:3;
+  transform:translateY(calc(var(--hp,0)*-30px));opacity:calc(1 - var(--hp,0)*.9)}
+.hero h1{font-size:clamp(36px,10.5vw,52px);font-weight:900;letter-spacing:-.035em;line-height:1.06;margin:14px 0 12px}
+.hero p.lead{color:var(--ink-soft);font-size:16px;line-height:1.62;max-width:34ch}
+.hero-ctas{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+.hero-ctas .btn{padding:14px 22px;font-size:15px}
+
+/* 앰플 스테이지 — 스크롤에 반응하는 제품 비주얼 */
+.stage{position:relative;height:320px;margin-top:4px;z-index:2}
+.ampoule{position:absolute;left:50%;bottom:-34px;width:190px;transform-origin:50% 85%;will-change:transform;
+  transform:translateX(-50%) translateY(calc(var(--hp,0)*110px)) rotate(calc(6deg + var(--hp,0)*22deg)) scale(calc(1 - var(--hp,0)*.12));
+  filter:drop-shadow(0 40px 50px rgba(46,110,158,.35))}
+.chip-orbit{position:absolute;padding:9px 14px;border-radius:999px;font-size:12.5px;font-weight:800;white-space:nowrap;
+  background:rgba(255,255,255,.85);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.95);box-shadow:0 10px 26px -10px rgba(74,144,194,.4);will-change:transform;z-index:3}
+.chip-orbit b{color:var(--teal-ink)}
+.co1{top:64px;left:10px;color:var(--ink-soft);transform:translateY(calc(var(--hp,0)*160px));animation:bob 5.2s ease-in-out infinite}
+.co2{top:12px;right:10px;color:var(--ink-soft);transform:translateY(calc(var(--hp,0)*220px));animation:bob 6.1s .6s ease-in-out infinite}
+.co3{top:158px;right:5%;color:var(--gold-ink);background:rgba(240,180,41,.14);border-color:rgba(240,180,41,.45);
+  transform:translateY(calc(var(--hp,0)*120px));animation:bob 5.7s .3s ease-in-out infinite}
+.co4{top:212px;left:2%;color:var(--olive-ink);background:rgba(155,206,38,.16);border-color:rgba(155,206,38,.5);
+  transform:translateY(calc(var(--hp,0)*190px));animation:bob 6.5s .9s ease-in-out infinite}
+@keyframes bob{0%,100%{margin-top:0}50%{margin-top:-12px}}
+.droplet{position:absolute;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,rgba(53,195,180,.5),rgba(127,189,228,.55));
+  transform:rotate(45deg) translateY(calc(var(--hp,0)*-90px))}
+.dp1{width:16px;height:16px;top:90px;left:22%}
+.dp2{width:10px;height:10px;top:250px;right:20%}
+.dp3{width:22px;height:22px;top:300px;left:10%;opacity:.6}
+.scroll-hint{position:absolute;left:26px;bottom:14px;z-index:4;color:var(--skyx-ink);
+  font-size:11.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:calc(1 - var(--hp,0)*2.4);text-align:center}
+.scroll-hint::after{content:"";display:block;width:1.5px;height:34px;margin:8px auto 0;border-radius:2px;
+  background:linear-gradient(var(--skyx-deep),transparent);animation:hint 1.8s ease-in-out infinite}
+@keyframes hint{0%{transform:scaleY(.3);transform-origin:top}55%{transform:scaleY(1)}100%{transform:scaleY(.3);transform-origin:top;opacity:0}}
+
+/* ============ 마퀴 ============ */
+.marquee{overflow:hidden;padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  background:rgba(255,255,255,.4);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.marquee .track{display:flex;gap:38px;width:max-content;animation:mq 26s linear infinite}
+.marquee span{font-size:13px;font-weight:800;color:var(--ink-faint);letter-spacing:.04em;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.marquee i{font-style:normal;color:var(--teal)}
+@keyframes mq{to{transform:translateX(-50%)}}
+
+/* ============ 섹션 공통 ============ */
+section.block{padding:78px 0 26px}
+.steps{display:grid;gap:14px;margin-top:26px}
+.step{padding:22px;display:flex;gap:16px;align-items:flex-start}
+.step .n{flex:none;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-weight:900;font-size:18px;
+  background:linear-gradient(135deg,rgba(155,206,38,.2),rgba(53,195,180,.22));color:var(--teal-ink);border:1px solid rgba(53,195,180,.35)}
+.step h3{font-size:17px;font-weight:800;margin-bottom:5px}
+.step p{color:var(--ink-soft);font-size:14px;line-height:1.6}
+
+/* ============ 씬(스크럽) 공통 ============ */
+.scene{position:relative}
+.scene .sticky{position:sticky;top:0;min-height:100svh;display:flex;flex-direction:column;justify-content:center;overflow:hidden;padding:84px 0 40px}
+
+/* ---- 씬 A: OCR 스캔 ---- */
+#scan{height:300vh}
+.phone{width:min(310px,78vw);margin:26px auto 0;border-radius:38px;padding:12px;position:relative;
+  background:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.95);
+  box-shadow:0 34px 70px -22px rgba(46,110,158,.45),inset 0 1px 0 #fff}
+.phone .notch{width:88px;height:22px;border-radius:999px;background:#E3EEF6;margin:2px auto 10px}
+.screen{border-radius:28px;overflow:hidden;background:linear-gradient(180deg,#F4FAFE,#E7F2FA);position:relative;padding:14px 14px 18px}
+.label-card{background:#fff;border:1px solid #E2ECF4;border-radius:16px;padding:14px;position:relative;overflow:hidden}
+.label-card h4{font-size:11px;letter-spacing:.12em;color:var(--ink-faint);margin-bottom:10px;font-weight:800}
+.ing-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dashed #E8F0F7;font-size:13px}
+.ing-row:last-child{border-bottom:0}
+.ing-ko{color:var(--ink-soft);font-weight:600;min-width:96px}
+.ing-en{margin-left:auto;font-weight:800;font-size:12px;padding:5px 11px;border-radius:999px;color:var(--teal-ink);
+  background:rgba(53,195,180,.12);border:1px solid rgba(53,195,180,.35);
+  opacity:clamp(0,(var(--p,0) - var(--t)) * 7,1);transform:translateX(calc(clamp(0,1 - (var(--p,0) - var(--t)) * 7,1) * 14px))}
+.ing-en.warn{color:var(--gold-ink);background:rgba(240,180,41,.13);border-color:rgba(240,180,41,.45)}
+.beam{position:absolute;left:0;right:0;height:52px;pointer-events:none;
+  top:calc(-60px + clamp(0,var(--p,0)*1.8,1) * 115%);
+  background:linear-gradient(180deg,transparent,rgba(155,206,38,.25) 45%,rgba(53,195,180,.45) 50%,rgba(155,206,38,.25) 55%,transparent)}
+.beam::after{content:"";position:absolute;left:8px;right:8px;top:50%;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,var(--olive),var(--teal));box-shadow:0 0 18px 3px rgba(53,195,180,.65)}
+.corner{position:absolute;width:26px;height:26px;border:3px solid var(--teal);opacity:.85}
+.c1{top:8px;left:8px;border-right:0;border-bottom:0;border-radius:8px 0 0 0}
+.c2{top:8px;right:8px;border-left:0;border-bottom:0;border-radius:0 8px 0 0}
+.c3{bottom:8px;left:8px;border-right:0;border-top:0;border-radius:0 0 0 8px}
+.c4{bottom:8px;right:8px;border-left:0;border-top:0;border-radius:0 0 8px 0}
+.score-pop{display:flex;align-items:center;gap:14px;margin-top:12px;padding:13px 16px;border-radius:18px;
+  background:linear-gradient(120deg,rgba(155,206,38,.14),rgba(53,195,180,.16));border:1px solid rgba(53,195,180,.4);
+  opacity:clamp(0,(var(--p,0) - .62) * 6,1);transform:translateY(calc(clamp(0,1 - (var(--p,0) - .62)*6,1) * 18px))}
+.ring{flex:none;width:56px;height:56px;position:relative}
+.ring svg{transform:rotate(-90deg)}
+.ring .bg{stroke:rgba(74,144,194,.15)}
+.ring .fg{stroke:url(#ringGrad);stroke-linecap:round;transition:stroke-dashoffset .2s linear}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:15px;color:var(--teal-ink)}
+.score-pop .txt b{display:block;font-size:14.5px}
+.score-pop .txt span{font-size:12px;color:var(--ink-soft)}
+
+/* ---- 씬 B: 기후 매칭 ---- */
+#climate{height:300vh}
+.geo{margin:26px auto 0;width:min(340px,84vw);padding:24px 22px;position:relative}
+.geo-cities{display:flex;gap:8px;justify-content:center;margin-bottom:20px}
+.city{font-size:12.5px;font-weight:800;padding:8px 14px;border-radius:999px;border:1px solid var(--line);color:var(--ink-faint);
+  background:rgba(255,255,255,.5);transition:all .3s}
+.city.on{color:#fff;background:linear-gradient(120deg,var(--skyx-deep),var(--teal-deep));border-color:transparent;
+  box-shadow:0 8px 20px -8px rgba(74,144,194,.6)}
+.gauge{width:210px;margin:0 auto;position:relative}
+.gauge svg{overflow:visible}
+.gauge .arc-bg{stroke:rgba(74,144,194,.14)}
+.gauge .arc-fg{stroke:url(#gaugeGrad);stroke-linecap:round}
+.gauge .val{position:absolute;inset:auto 0 6px;text-align:center}
+.gauge .val b{font-size:42px;font-weight:900;letter-spacing:-.03em}
+.gauge .val span{display:block;font-size:11.5px;letter-spacing:.14em;font-weight:800;color:var(--ink-faint);text-transform:uppercase}
+.geo-meta{display:flex;justify-content:center;gap:10px;margin-top:16px;flex-wrap:wrap}
+.meta-chip{font-size:12px;font-weight:800;padding:7px 12px;border-radius:999px;background:rgba(127,189,228,.15);
+  border:1px solid rgba(127,189,228,.4);color:var(--skyx-ink)}
+.verdict{margin-top:16px;padding:16px 18px;border-radius:18px;background:rgba(255,255,255,.9);border:1px solid rgba(53,195,180,.35);
+  font-size:13.5px;line-height:1.6;color:var(--ink-soft);
+  opacity:clamp(0,(var(--p,0) - .55)*6,1);transform:translateY(calc(clamp(0,1 - (var(--p,0) - .55)*6,1)*20px))}
+.verdict b{color:var(--teal-ink)}
+
+/* ---- 클린 필터 ---- */
+.badges{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:26px}
+.badge{padding:20px 16px;text-align:center}
+.badge .ic{font-size:30px;display:block;margin-bottom:8px}
+.badge b{display:block;font-size:14.5px;margin-bottom:4px}
+.badge span{font-size:12px;color:var(--ink-faint);line-height:1.5;display:block}
+
+/* ---- 커머스(올리브영 레이어) ---- */
+.rail{display:flex;gap:14px;overflow-x:auto;padding:24px 20px 30px;margin:0 -20px;scroll-snap-type:x mandatory;scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+.pcard{flex:none;width:172px;scroll-snap-align:start;background:#fff;border-radius:20px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.95);box-shadow:0 16px 40px -16px rgba(74,144,194,.35);position:relative}
+.pcard .rank{position:absolute;top:0;left:0;width:34px;height:38px;display:grid;place-items:center;color:#fff;font-weight:900;
+  font-size:15px;background:linear-gradient(160deg,var(--olive-deep),var(--teal-deep));border-radius:0 0 14px 0;z-index:2}
+.pcard.gold .rank{background:linear-gradient(160deg,var(--gold),#D99B0B)}
+.pimg{height:130px;display:grid;place-items:center;font-size:44px;background:linear-gradient(180deg,#F2FAFE,#E4F1FA)}
+.pbody{padding:12px 14px 14px}
+.pbody .brand{font-size:10.5px;letter-spacing:.08em;font-weight:800;color:var(--ink-faint);text-transform:uppercase}
+.pbody h4{font-size:13.5px;font-weight:800;line-height:1.35;margin:3px 0 7px;min-height:36px}
+.match-mini{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;color:var(--teal-ink);
+  background:rgba(53,195,180,.12);padding:4px 9px;border-radius:999px;margin-bottom:8px}
+.prow{display:flex;align-items:center;justify-content:space-between}
+.prow .price{font-weight:900;font-size:15px}
+.prow .add{width:30px;height:30px;border-radius:999px;border:0;cursor:pointer;color:#173A0B;font-size:17px;font-weight:900;
+  background:linear-gradient(120deg,var(--olive),var(--teal));display:grid;place-items:center}
+.ship{margin-top:6px;padding:22px}
+.ship-top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.ship-top .flag{font-size:30px}
+.ship-top b{display:block;font-size:15.5px}
+.ship-top span{font-size:12.5px;color:var(--ink-soft)}
+.ship-bar{height:12px;border-radius:999px;background:rgba(74,144,194,.14);overflow:hidden;position:relative}
+.ship-bar i{position:absolute;inset:0;width:0;border-radius:999px;background:linear-gradient(90deg,var(--olive),var(--teal));
+  transition:width 1.2s cubic-bezier(.2,.7,.2,1)}
+.in .ship-bar i{width:75%}
+.ship-foot{display:flex;justify-content:space-between;margin-top:9px;font-size:12px;font-weight:800;color:var(--ink-faint)}
+.ship-foot b{color:var(--teal-ink)}
+
+/* ---- 리뷰 ---- */
+.reviews{display:grid;gap:12px;margin-top:26px}
+.review{padding:18px 20px}
+.review .who{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.review .av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:18px;
+  background:linear-gradient(135deg,rgba(127,189,228,.3),rgba(53,195,180,.28))}
+.review .who b{font-size:13.5px;display:block}
+.review .tags{font-size:11px;color:var(--ink-faint);font-weight:700}
+.review .stars{margin-left:auto;color:var(--gold);font-size:13px;letter-spacing:2px}
+.review p{font-size:13.5px;color:var(--ink-soft);line-height:1.62}
+
+/* ---- CTA / 푸터 ---- */
+.cta{margin:70px 0 30px;padding:36px 26px;text-align:center;position:relative;overflow:hidden}
+.cta::before{content:"";position:absolute;inset:0 0 auto;height:5px;
+  background:linear-gradient(90deg,var(--olive) 0%,var(--teal) 55%,var(--skyx) 100%)}
+.cta h2{font-size:clamp(24px,6.5vw,30px);font-weight:900;letter-spacing:-.02em;line-height:1.25}
+.cta p{color:var(--ink-soft);font-size:14.5px;margin:10px 0 20px}
+.cta form{display:flex;gap:8px}
+.cta input{flex:1;min-width:0;font:inherit;font-size:14.5px;padding:15px 18px;border-radius:999px;color:var(--ink);
+  background:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.95);outline:none}
+.cta input:focus{border-color:var(--teal)}
+.cta input::placeholder{color:var(--ink-faint)}
+footer{padding:26px 0 46px;text-align:center;color:var(--ink-faint);font-size:12.5px;line-height:1.8}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .rv{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#9BCE26"/><stop offset="1" stop-color="#35C3B4"/>
+  </linearGradient>
+  <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#7FBDE4"/><stop offset=".55" stop-color="#35C3B4"/><stop offset="1" stop-color="#9BCE26"/>
+  </linearGradient>
+  <linearGradient id="bottleGlass" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/><stop offset=".5" stop-color="#DDEEF9" stop-opacity=".75"/><stop offset="1" stop-color="#BFDDF0" stop-opacity=".9"/>
+  </linearGradient>
+  <linearGradient id="serum" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#B8E58A"/><stop offset=".6" stop-color="#6ED0BE"/><stop offset="1" stop-color="#35C3B4"/>
+  </linearGradient>
+  <linearGradient id="capGrad" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#F6FBFF"/><stop offset="1" stop-color="#CFE4F2"/>
+  </linearGradient>
+</defs></svg>
+
+<header id="hd">
+  <div class="bar">
+    <div class="logo"><span class="dot"></span>Seoulmate</div>
+    <span class="lang">🌐 EN</span>
+    <a class="hd-cta" href="#cta">Get access</a>
+  </div>
+</header>
+
+<!-- ================= HERO ================= -->
+<div class="hero" id="hero">
+  <div class="wrap hero-copy">
+    <span class="eyebrow">✦ K-Beauty, decoded for your skin</span>
+    <h1>Scan it.<br/>Know it.<br/><span class="grad-text">Glow.</span></h1>
+    <p class="lead">Point your camera at any Korean cosmetic — every ingredient translated to English, safety-graded, and matched to your climate &amp; skin type.</p>
+    <div class="hero-ctas">
+      <a class="btn btn-olive" href="#scan">📷 Scan a product</a>
+      <a class="btn btn-ghost" href="#shop">Browse top-rated</a>
+    </div>
+  </div>
+
+  <div class="wrap stage" aria-hidden="true">
+    <span class="chip-orbit co1">💧 <b>Hyaluronic Acid</b></span>
+    <span class="chip-orbit co2">나이아신아마이드 → <b>Niacinamide 10%</b></span>
+    <span class="chip-orbit co3">★ Safety A</span>
+    <span class="chip-orbit co4">🌱 Vegan · Cruelty-free</span>
+    <span class="droplet dp1"></span><span class="droplet dp2"></span><span class="droplet dp3"></span>
+
+    <!-- 앰플 병 (스크롤 반응) -->
+    <svg class="ampoule" viewBox="0 0 210 330" fill="none">
+      <ellipse cx="105" cy="318" rx="72" ry="10" fill="#2E6E9E" opacity=".12"/>
+      <!-- 스포이드 -->
+      <rect x="87" y="6" width="36" height="34" rx="12" fill="url(#capGrad)" stroke="#fff" stroke-width="1.5"/>
+      <rect x="96" y="40" width="18" height="26" rx="6" fill="#CFE4F2"/>
+      <rect x="100" y="66" width="10" height="58" rx="5" fill="url(#bottleGlass)" stroke="#fff"/>
+      <rect x="102.5" y="86" width="5" height="34" rx="2.5" fill="url(#serum)" opacity=".9"/>
+      <!-- 병 -->
+      <path d="M62 132 C62 116 78 108 105 108 C132 108 148 116 148 132 L150 284 C150 306 130 318 105 318 C80 318 60 306 60 284 Z"
+            fill="url(#bottleGlass)" stroke="#fff" stroke-width="2"/>
+      <path d="M67 196 L143 196 L144.6 284 C144.6 302 128 311 105 311 C82 311 65.4 302 65.4 284 Z" fill="url(#serum)" opacity=".92"/>
+      <ellipse cx="105.6" cy="196" rx="38.5" ry="8" fill="#D9F3D2" opacity=".95"/>
+      <!-- 하이라이트 -->
+      <path d="M74 140 C72 170 72 240 76 286" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".65"/>
+      <path d="M136 146 C138 176 138 236 135 280" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".4"/>
+      <!-- 라벨 -->
+      <rect x="72" y="216" width="66" height="66" rx="10" fill="#fff" opacity=".94"/>
+      <text x="105" y="240" text-anchor="middle" font-family="Pretendard,system-ui" font-size="9.5" font-weight="800" letter-spacing="2.5" fill="#8A95A1">SEOULMATE</text>
+      <text x="105" y="257" text-anchor="middle" font-family="Pretendard,system-ui" font-size="11.5" font-weight="900" fill="#333B44">AMPOULE</text>
+      <text x="105" y="272" text-anchor="middle" font-family="Pretendard,system-ui" font-size="8" font-weight="700" fill="#15837A">NIACINAMIDE 10%</text>
+    </svg>
+  </div>
+  <div class="scroll-hint">Scroll</div>
+</div>
+
+<!-- ================= 마퀴 ================= -->
+<div class="marquee" aria-hidden="true">
+  <div class="track">
+    <span><i>✦</i> 10,000+ K-Beauty products</span><span><i>✦</i> INCI-verified translations</span>
+    <span><i>✦</i> Climate-matched scores</span><span><i>✦</i> Vegan &amp; cruelty-free flags</span>
+    <span><i>✦</i> Ships to 42 countries</span>
+    <span><i>✦</i> 10,000+ K-Beauty products</span><span><i>✦</i> INCI-verified translations</span>
+    <span><i>✦</i> Climate-matched scores</span><span><i>✦</i> Vegan &amp; cruelty-free flags</span>
+    <span><i>✦</i> Ships to 42 countries</span>
+  </div>
+</div>
+
+<!-- ================= HOW IT WORKS ================= -->
+<section class="block">
+  <div class="wrap">
+    <span class="eyebrow rv">How it works</span>
+    <h2 class="sec-title rv" data-d="1">Hangul label? <span class="grad-text">No problem.</span></h2>
+    <p class="sec-sub rv" data-d="2">Three steps from mystery bottle to confident purchase.</p>
+    <div class="steps">
+      <div class="step glass rv"><span class="n">1</span><div><h3>Scan the back label</h3><p>Barcode or camera OCR reads the Korean ingredient list in seconds — even in a store aisle.</p></div></div>
+      <div class="step glass rv" data-d="1"><span class="n">2</span><div><h3>Get your Match Score</h3><p>Every ingredient translated to INCI English, safety-graded, and crossed with your local climate and skin profile.</p></div></div>
+      <div class="step glass rv" data-d="2"><span class="n">3</span><div><h3>Ship it home, split the cost</h3><p>Buy on the spot — weekly group shipments to your country split delivery fees up to 8 ways.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 씬 A: OCR 스캔 (스크럽) ================= -->
+<section class="scene" id="scan" data-scene>
+  <div class="sticky">
+    <div class="wrap">
+      <span class="eyebrow">📷 Feature · Smart Scanner</span>
+      <h2 class="sec-title">Watch Korean turn into <span class="grad-text">English, live.</span></h2>
+      <p class="sec-sub">Keep scrolling — the scanner reads the label as you go. Scroll back up and it rewinds.</p>
+
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="label-card">
+            <span class="corner c1"></span><span class="corner c2"></span><span class="corner c3"></span><span class="corner c4"></span>
+            <h4>전성분 · FULL INGREDIENTS</h4>
+            <div class="ing-row" style="--t:.10"><span class="ing-ko">정제수</span><span class="ing-en">Water ✓</span></div>
+            <div class="ing-row" style="--t:.20"><span class="ing-ko">나이아신아마이드</span><span class="ing-en">Niacinamide ✓</span></div>
+            <div class="ing-row" style="--t:.30"><span class="ing-ko">부틸렌글라이콜</span><span class="ing-en">Butylene Glycol ✓</span></div>
+            <div class="ing-row" style="--t:.40"><span class="ing-ko">병풀추출물</span><span class="ing-en">Centella Asiatica ✓</span></div>
+            <div class="ing-row" style="--t:.50"><span class="ing-ko">향료</span><span class="ing-en warn">Fragrance ⚠︎</span></div>
+            <div class="beam"></div>
+          </div>
+          <div class="score-pop">
+            <div class="ring">
+              <svg width="56" height="56" viewBox="0 0 56 56">
+                <circle class="bg" cx="28" cy="28" r="24" fill="none" stroke-width="6"/>
+                <circle class="fg" id="ringFg" cx="28" cy="28" r="24" fill="none" stroke-width="6" stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
+              </svg>
+              <b id="ringNum">0</b>
+            </div>
+            <div class="txt"><b>Great match for you</b><span>Oily skin · humid climate · 1 caution flagged</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 씬 B: 기후 매칭 (스크럽) ================= -->
+<section class="scene" id="climate" data-scene>
+  <div class="sticky">
+    <div class="wrap">
+      <span class="eyebrow">🌦 Feature · Climate Match</span>
+      <h2 class="sec-title">Your weather is part of <span class="grad-text">your skin.</span></h2>
+      <p class="sec-sub">The same cream behaves differently in Singapore humidity and Arizona dryness. We do that math for you.</p>
+
+      <div class="geo glass">
+        <div class="geo-cities">
+          <span class="city on">🇸🇬 Singapore</span><span class="city">🇺🇸 Phoenix</span><span class="city">🇬🇧 London</span>
+        </div>
+        <div class="gauge">
+          <svg width="210" height="120" viewBox="0 0 210 120">
+            <path class="arc-bg" d="M15 110 A 90 90 0 0 1 195 110" fill="none" stroke-width="14"/>
+            <path class="arc-fg" id="arcFg" d="M15 110 A 90 90 0 0 1 195 110" fill="none" stroke-width="14"
+                  stroke-dasharray="282.7" stroke-dashoffset="282.7"/>
+          </svg>
+          <div class="val"><b class="grad-text" id="gaugeNum">0</b><span>Match Score</span></div>
+        </div>
+        <div class="geo-meta">
+          <span class="meta-chip">💧 84% humidity</span><span class="meta-chip">🌡 31°C avg</span><span class="meta-chip">☀️ UV 11</span>
+        </div>
+        <div class="verdict"><b>Lightweight &amp; non-comedogenic</b> — this gel essence won't clog pores in hot, humid weather. Skip the heavy occlusives on top. 🙆‍♀️</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 클린 필터 ================= -->
+<section class="block">
+  <div class="wrap">
+    <span class="eyebrow rv">🧼 Feature · Clean Filters</span>
+    <h2 class="sec-title rv" data-d="1">Your values, <span class="grad-text">auto-checked.</span></h2>
+    <p class="sec-sub rv" data-d="2">We parse every label against the standards you care about — flagged instantly, every scan.</p>
+    <div class="badges">
+      <div class="badge glass rv"><span class="ic">🧪</span><b>Safety graded</b><span>CIR &amp; SCCS-based grade for all 23,000 INCI ingredients</span></div>
+      <div class="badge glass rv" data-d="1"><span class="ic">🌱</span><b>Vegan</b><span>Animal-derived ingredients detected automatically</span></div>
+      <div class="badge glass rv" data-d="2"><span class="ic">🐰</span><b>Cruelty-free</b><span>Brand certification status, always current</span></div>
+      <div class="badge glass rv" data-d="3"><span class="ic">🤰</span><b>Pregnancy-safe</b><span>Retinoids &amp; cautions flagged in red before you buy</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 커머스 ================= -->
+<section class="block" id="shop">
+  <div class="wrap">
+    <span class="eyebrow rv">🛍 Shop · Ships worldwide</span>
+    <h2 class="sec-title rv" data-d="1">Ranked by your <span class="grad-text">skin twins.</span></h2>
+    <p class="sec-sub rv" data-d="2">Top picks from users who share your skin type and your weather — not just anyone's five stars.</p>
+  </div>
+  <div class="wrap"><div class="rail rv">
+    <div class="pcard gold"><span class="rank">1</span><div class="pimg">🧴</div><div class="pbody">
+      <span class="brand">Round Lab</span><h4>Birch Juice Moisturizing Sunscreen</h4>
+      <span class="match-mini">✦ 96% match</span><div class="prow"><span class="price">$14</span><button class="add">+</button></div></div></div>
+    <div class="pcard"><span class="rank">2</span><div class="pimg">💧</div><div class="pbody">
+      <span class="brand">Beauty of Joseon</span><h4>Glow Serum : Propolis + Niacinamide</h4>
+      <span class="match-mini">✦ 94% match</span><div class="prow"><span class="price">$11</span><button class="add">+</button></div></div></div>
+    <div class="pcard"><span class="rank">3</span><div class="pimg">🫧</div><div class="pbody">
+      <span class="brand">Anua</span><h4>Heartleaf 77% Soothing Toner</h4>
+      <span class="match-mini">✦ 93% match</span><div class="prow"><span class="price">$18</span><button class="add">+</button></div></div></div>
+    <div class="pcard"><span class="rank">4</span><div class="pimg">🍯</div><div class="pbody">
+      <span class="brand">COSRX</span><h4>Advanced Snail 96 Mucin Power Essence</h4>
+      <span class="match-mini">✦ 91% match</span><div class="prow"><span class="price">$17</span><button class="add">+</button></div></div></div>
+  </div></div>
+  <div class="wrap">
+    <div class="ship glass rv">
+      <div class="ship-top"><span class="flag">🇸🇬</span><div><b>This week's Singapore box</b><span>Shipping cost split between everyone in the batch</span></div></div>
+      <div class="ship-bar"><i></i></div>
+      <div class="ship-foot"><span>6 of 8 spots filled</span><b>$3.20 shipping each · closes Fri</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 리뷰 ================= -->
+<section class="block">
+  <div class="wrap">
+    <span class="eyebrow rv">💬 Community</span>
+    <h2 class="sec-title rv" data-d="1">Reviews that share <span class="grad-text">your skin.</span></h2>
+    <div class="reviews">
+      <div class="review glass rv"><div class="who"><span class="av">🧖‍♀️</span><div><b>Maya · Singapore</b><span class="tags">Oily · Sensitive · Humid</span></div><span class="stars">★★★★★</span></div>
+        <p>"Scanned it at Olive Young in Myeongdong, saw the fragrance warning, picked the fragrance-free version instead. This app paid for my whole trip."</p></div>
+      <div class="review glass rv" data-d="1"><div class="who"><span class="av">🙆‍♂️</span><div><b>Dan · Toronto</b><span class="tags">Dry · Barrier-focused · Cold</span></div><span class="stars">★★★★☆</span></div>
+        <p>"Finally know what 병풀추출물 means without screenshotting labels into three different apps. The winter-dryness score is scarily accurate."</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CTA ================= -->
+<section class="wrap" id="cta">
+  <div class="cta glass rv">
+    <h2>Be first when we <span class="grad-text">launch.</span></h2>
+    <p>Join 4,000+ K-Beauty lovers on the waitlist. Early birds get free shipping on their first box.</p>
+    <form onsubmit="event.preventDefault();this.querySelector('button').textContent='Joined ✓'">
+      <input type="email" placeholder="you@email.com" required />
+      <button class="btn btn-olive" type="submit">Join</button>
+    </form>
+  </div>
+</section>
+
+<footer>
+  Seoulmate — your K-Beauty soulmate 🇰🇷<br/>
+  Design prototype · Olive Young × BlueHumanity sky-glass<br/>© 2026 Seoulmate
+</footer>
+
+<script>
+(function(){
+  var hero = document.getElementById('hero');
+  var hd = document.getElementById('hd');
+  var scenes = Array.prototype.slice.call(document.querySelectorAll('[data-scene]'));
+  var ringFg = document.getElementById('ringFg'), ringNum = document.getElementById('ringNum');
+  var arcFg = document.getElementById('arcFg'), gaugeNum = document.getElementById('gaugeNum');
+  var RING_C = 150.8, ARC_C = 282.7;
+  var ticking = false;
+
+  function clamp01(v){ return Math.max(0, Math.min(1, v)); }
+
+  function update(){
+    ticking = false;
+    var y = window.scrollY || 0;
+    hd.classList.toggle('scrolled', y > 24);
+
+    /* 히어로: 스크롤 진행도(0~1) → 앰플/칩/카피가 양방향으로 반응 */
+    var hp = clamp01(y / (window.innerHeight * 0.85));
+    hero.style.setProperty('--hp', hp.toFixed(4));
+
+    /* sticky 씬 스크럽 진행도 */
+    scenes.forEach(function(s){
+      var total = s.offsetHeight - window.innerHeight;
+      var p = clamp01((y - s.offsetTop) / Math.max(1, total));
+      s.style.setProperty('--p', p.toFixed(4));
+
+      if (s.id === 'scan'){
+        var sp = clamp01((p - 0.62) * 4);          // 스캔 완료 후 점수 링 채우기
+        ringFg.style.strokeDashoffset = (RING_C * (1 - 0.92 * sp)).toFixed(1);
+        ringNum.textContent = Math.round(92 * sp);
+      }
+      if (s.id === 'climate'){
+        var gp = clamp01(p * 1.35);
+        arcFg.style.strokeDashoffset = (ARC_C * (1 - 0.89 * gp)).toFixed(1);
+        gaugeNum.textContent = Math.round(89 * gp);
+      }
+    });
+  }
+
+  window.addEventListener('scroll', function(){
+    if (!ticking){ ticking = true; requestAnimationFrame(update); }
+  }, {passive:true});
+  window.addEventListener('resize', update);
+  update();
+
+  /* 진입 리빌 */
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, {threshold: 0.18});
+  document.querySelectorAll('.rv').forEach(function(el){ io.observe(el); });
+})();
+</script>
+</body>
+</html>
