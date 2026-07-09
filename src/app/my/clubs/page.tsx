@@ -17,6 +17,34 @@ type AppliedClub = {
   clubVisible: boolean;
 };
 
+type ScheduleItem = {
+  id: string;
+  clubId: string;
+  title: string;
+  meetsAt: string; // ISO
+  place: string;
+  clubName: string;
+  category: string;
+  going: boolean;
+};
+
+const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
+
+/** KST 기준 날짜/시간 포맷 — 서버(UTC)와 무관하게 일관 표시. */
+function fmtSchedule(iso: string): { date: string; time: string } {
+  const d = new Date(iso);
+  const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  const mm = kst.getUTCMonth() + 1;
+  const dd = kst.getUTCDate();
+  const day = DAY_LABELS[kst.getUTCDay()];
+  let h = kst.getUTCHours();
+  const min = kst.getUTCMinutes();
+  const ampm = h < 12 ? "오전" : "오후";
+  h = h % 12 || 12;
+  const time = min === 0 ? `${ampm} ${h}시` : `${ampm} ${h}:${String(min).padStart(2, "0")}`;
+  return { date: `${mm}/${dd}(${day})`, time };
+}
+
 /**
  * 내 동아리 — 서버 컴포넌트.
  * 기존: 클라 getUser()(네트워크) → /api/my/clubs 직렬 워터폴 → 서버 1패스 SSR.
@@ -110,6 +138,50 @@ export default async function MyClubsPage() {
       clubVisible: a.club.isApproved && a.club.isActive,
     }));
 
+  /* ── 내 모임 일정 — 개설 + 가입한 동아리(전체 행사 보드 포함)의 예정 모임을 한곳에 ──
+     참석 여부와 무관하게 등록된 모든 예정 모임을 노출하고, '가요' 표시한 모임엔 배지를 붙인다. */
+  const myClubIds = [
+    ...new Set([
+      ...ownedRaw.map((c) => c.id),
+      ...appliedRaw.filter((a) => a.status === "accepted").map((a) => a.club.id),
+    ]),
+  ];
+
+  // KST 기준 오늘 0시(=UTC로 환산)부터의 모임만 — 지난 모임은 일정표에서 제외.
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const kstTodayStart = new Date(
+    Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - 9 * 60 * 60 * 1000,
+  );
+
+  const meetingsRaw = myClubIds.length
+    ? await prisma.clubMeeting.findMany({
+        where: { clubId: { in: myClubIds }, meetsAt: { gte: kstTodayStart } },
+        orderBy: { meetsAt: "asc" },
+        take: 100,
+        select: {
+          id: true,
+          clubId: true,
+          title: true,
+          meetsAt: true,
+          place: true,
+          club: { select: { name: true, category: true } },
+          rsvps: { where: { userId: user.dbUserId }, select: { status: true } },
+        },
+      })
+    : [];
+
+  const schedule: ScheduleItem[] = meetingsRaw.map((m) => ({
+    id: m.id,
+    clubId: m.clubId,
+    title: m.title,
+    meetsAt: m.meetsAt.toISOString(),
+    place: m.place,
+    clubName: m.club.name,
+    category: m.club.category,
+    going: m.rsvps[0]?.status === "going",
+  }));
+
   /* ── 메인 ─────────────────────────────────────────────────── */
   return (
     <main className="mx-auto max-w-2xl px-4 pt-6 pb-16">
@@ -119,6 +191,28 @@ export default async function MyClubsPage() {
             + 동아리 개설
           </Link>
         </div>
+
+        {/* 내 모임 일정 — 가입/개설한 동아리의 예정 모임 모아보기 */}
+        <section className="mb-10">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink">
+            <span>📅</span> 내 모임 일정
+            <span className="text-ink-faint">({schedule.length})</span>
+          </h2>
+          {schedule.length === 0 ? (
+            <div className="glass-card px-6 py-10 text-center">
+              <p className="mb-1 text-sm text-ink-soft">예정된 모임이 없어요.</p>
+              <p className="text-xs text-ink-faint">
+                가입한 동아리에 새 모임이 등록되면 여기에 모여요.
+              </p>
+            </div>
+          ) : (
+            <ul className="space-y-2.5">
+              {schedule.map((m) => (
+                <MyScheduleRow key={m.id} item={m} />
+              ))}
+            </ul>
+          )}
+        </section>
 
         {/* 내가 개설한 동아리 */}
         <section className="mb-10">
@@ -177,6 +271,44 @@ export default async function MyClubsPage() {
           )}
         </section>
     </main>
+  );
+}
+
+/* ── 내 모임 일정 행 ──────────────────────────────────────────── */
+
+function MyScheduleRow({ item }: { item: ScheduleItem }) {
+  const { date, time } = fmtSchedule(item.meetsAt);
+  return (
+    <li>
+      <Link
+        href={`/clubs/${item.clubId}/meetings/${item.id}`}
+        className="glass-card flex items-center gap-3 px-4 py-3.5 transition-all hover:bg-white/85"
+      >
+        {/* 날짜 블록 */}
+        <div className="flex w-14 shrink-0 flex-col items-center rounded-xl border border-gold/40 bg-gold/10 py-1.5">
+          <span className="text-[11px] font-semibold text-gold-ink">{date}</span>
+          <span className="mt-0.5 text-[10px] text-ink-soft">{time}</span>
+        </div>
+
+        {/* 내용 */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-bold text-ink">{item.title}</span>
+            {item.going && (
+              <span className="shrink-0 rounded-full border border-teal/40 bg-teal/15 px-2 py-0.5 text-[10px] font-bold text-teal-ink">
+                🙋 가요!
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 truncate text-xs text-ink-soft">
+            {CLUB_CATEGORY_META[item.category]?.emoji ?? "✨"} {item.clubName}
+            {item.place ? ` · ${item.place}` : ""}
+          </p>
+        </div>
+
+        <span className="shrink-0 text-skyx-ink">→</span>
+      </Link>
+    </li>
   );
 }
 
