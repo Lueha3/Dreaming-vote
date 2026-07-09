@@ -58,6 +58,11 @@ body {
   word-break: keep-all; /* 한글 단어 단위 줄바꿈 */
 }
 
+/* 모바일 하단 탭바(BottomTabBar, sm 미만에서만 노출)에 본문이 가려지지 않게 여백 확보 */
+@media (max-width: 639px) {
+  body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+}
+
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(74, 144, 194, 0.25); border-radius: 3px; }
@@ -185,6 +190,32 @@ body {
 }
 .modal-pop-in {
   animation: modalPopIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 프로필 피크 바텀시트 (ProfilePeekProvider) */
+@keyframes sheetSlideIn {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.sheet-slide-in {
+  animation: sheetSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 더블탭 공감 하트 버스트 (PlazaPostCard 이미지 캐러셀) */
+@keyframes heartBurstPop {
+  0%   { opacity: 0; transform: scale(0.3); }
+  18%  { opacity: 1; transform: scale(1.15); }
+  38%  { transform: scale(0.95); }
+  55%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1) translateY(-20%); }
+}
+.heart-burst-play {
+  animation: heartBurstPop 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-slide-in { animation: none; }
+  .heart-burst-play { animation: none; opacity: 0; }
 }
 
 /* ---------- 홈 쇼케이스 (방문자용 랜딩) ---------- */

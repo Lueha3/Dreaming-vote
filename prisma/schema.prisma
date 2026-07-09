@@ -484,3 +484,21 @@ model IcebreakerPrompt {
   createdBy User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
   answers   Prayer[]
 }
+
+// 월간 리캡 — 매달 1일(KST) cron이 지난 한 달치를 계산해 1행 적재(전부 기존 테이블에서 파생).
+// 광장 상단 배너 → 스크롤 슬라이드 뷰어로 노출. monthOf는 그 달 1일(자정, UTC)로 정규화해 유니크.
+model MonthlyRecap {
+  id                  String   @id @default(cuid())
+  monthOf             DateTime @unique
+  postCount           Int // 그 달 광장 글 수(시스템 카드 제외)
+  reactionCount       Int // 그 달 공감(PrayerIntercession) 수
+  commentCount        Int // 그 달 댓글 수(대댓글 포함)
+  newcomerCount       Int // 그 달 승인된 새가족 수
+  birthdayCount       Int // 그 달 생일 축하 카드 수
+  answeredPrayerCount Int // 그 달 응답 표시된 기도 수
+  topPostId           String? // 그 달 가장 많은 공감을 받은 글(있으면)
+  topPostSnippet      String?
+  topPostAuthorName   String?
+  topPostReactionCount Int?
+  createdAt           DateTime @default(now())
+}

@@ -46,6 +46,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       content: c.content,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
+      authorId: c.userId,
       authorName: c.user?.nickname ?? "탈퇴한 멤버",
       authorAvatar: c.user?.avatarUrl ?? null,
       authorRole: c.user?.role ?? null,

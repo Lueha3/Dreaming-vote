@@ -4,6 +4,8 @@ import "./globals.css";
 import { Header } from "@/components/Header";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
 import { AutoPushPrompt } from "@/components/AutoPushPrompt";
+import { BottomTabBar } from "@/components/BottomTabBar";
+import { ProfilePeekProvider } from "@/components/ProfilePeek";
 
 export const metadata: Metadata = {
   title: "BlueHumanity — 꿈꾸는교회 청년부",
@@ -85,9 +87,12 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <SkyBackdrop />
-        <Header />
-        {children}
-        <AutoPushPrompt />
+        <ProfilePeekProvider>
+          <Header />
+          {children}
+          <AutoPushPrompt />
+          <BottomTabBar />
+        </ProfilePeekProvider>
       </body>
     </html>
   );

@@ -93,6 +93,7 @@ export async function GET(req: NextRequest) {
     canDelete: (!!user && p.userId === user.dbUserId) || isStaff,
     // 수정은 본인 글만 — 운영진도 타인 글 내용은 못 고침
     canEdit: !!user && p.userId === user.dbUserId,
+    authorId: p.isAnonymous ? null : p.userId,
     authorName: p.isAnonymous ? "익명" : p.user?.nickname ?? "익명",
     authorAvatar: p.isAnonymous ? null : p.user?.avatarUrl ?? null,
     // 익명 글은 작성자 배지도 숨긴다(관리자/운영진 신원 노출 방지)

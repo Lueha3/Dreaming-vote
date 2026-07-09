@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, fetchJson } from "@/lib/http";
 import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
+import { MonthlyRecapBanner } from "@/components/MonthlyRecap";
 import { PlazaImageUploader } from "./PlazaImageUploader";
 import { PlazaPostCard } from "./PlazaPostCard";
 import { CATEGORIES, CATEGORY_META, type Category, type PlazaPost } from "./types";
@@ -281,6 +282,9 @@ export default function PlazaPage() {
           <h1 className="text-2xl font-bold text-ink">🗣 광장</h1>
           <p className="mt-1 text-sm text-ink-soft">일상을 나누고, 기도제목을 올리고, 동아리를 알려요.</p>
         </div>
+
+        {/* 월간 리캡 — 로그인/승인 멤버가 아니면 조용히 아무것도 보여주지 않는다. */}
+        <MonthlyRecapBanner />
 
         {/* 카테고리 탭 */}
         <div className="mb-5 flex gap-2">
