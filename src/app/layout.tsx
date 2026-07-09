@@ -8,10 +8,10 @@ import { AutoPushPrompt } from "@/components/AutoPushPrompt";
 export const metadata: Metadata = {
   title: "BlueHumanity — 꿈꾸는교회 청년부",
   description:
-    "성격유형을 안다면 1분이면 충분해요. 내 성향에 맞는 동아리를 찾아드려요.",
+    "새 소식, 모임, 기도제목, 생일까지. 우리 청년부 이야기가 매일 여기 올라와요.",
   openGraph: {
-    title: "BlueHumanity — 꿈꾸는교회 청년부",
-    description: "내 성향에 맞는 동아리 찾기 · 꿈꾸는교회 청년부",
+    title: "오늘의, 청년부 — BlueHumanity",
+    description: "새 소식, 모임, 기도제목, 생일까지. 우리 청년부 이야기가 매일 여기 올라와요.",
     siteName: "BlueHumanity",
   },
   // iOS "홈 화면에 추가" 시 아이콘 아래 표시되는 이름 — 미설정 시 <title>이 길게 잘려 노출됨.
