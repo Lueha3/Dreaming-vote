@@ -6,12 +6,38 @@ import { HomeFeed, type HomeView } from "@/components/HomeFeed";
 import { HomeShowcase, type ShowcaseStatus } from "@/components/home/HomeShowcase";
 import { getAuthUser } from "@/lib/auth";
 import { getFeedData } from "@/lib/feed";
+import { NICKNAME_RE } from "@/lib/membership";
 import { hasAtLeast } from "@/lib/roles";
 
 // 승인 멤버용 — 피드 데이터를 서버에서 채워 스트리밍(Suspense).
 async function ApprovedFeedSection({ userId }: { userId: string }) {
   const initial: HomeView = { kind: "approved", feed: await getFeedData(userId) };
   return <HomeFeed initial={initial} />;
+}
+
+const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
+
+/** KST 시간대별 인사 — 매일 똑같던 정적 히어로 대신 '나'와 '오늘'이 담긴 한 줄. */
+function greetingParts(nickname: string | null): { date: string; line: string; emoji: string } {
+  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const hour = kst.getUTCHours();
+  const [line, emoji] =
+    hour < 5
+      ? (["늦은 밤이네요", "🌙"] as const)
+      : hour < 11
+        ? (["좋은 아침이에요", "☀️"] as const)
+        : hour < 18
+          ? (["오늘도 반가워요", "🌤️"] as const)
+          : (["오늘 하루도 수고했어요", "🌆"] as const);
+
+  // 닉네임 '집단-나이-이름'에서 이름만 — 형식이 아니면(구계정 폴백 등) 통째로 쓰지 않고 생략.
+  const name = nickname?.match(NICKNAME_RE)?.[3] ?? null;
+
+  return {
+    date: `${kst.getUTCMonth() + 1}월 ${kst.getUTCDate()}일 ${DAY_LABELS[kst.getUTCDay()]}요일`,
+    line: name ? `${name}님, ${line}` : line,
+    emoji,
+  };
 }
 
 /**
@@ -33,31 +59,23 @@ export default async function Home() {
     return <HomeShowcase status={status} />;
   }
 
+  const greet = greetingParts(user.nickname);
+
   return (
     <div className="relative min-h-screen overflow-hidden">
-      <main className="relative mx-auto max-w-2xl px-4 py-12">
+      <main className="relative mx-auto max-w-2xl px-4 py-8">
         {/* 전체 공지 배너 (최신 게시 1건, 닫기 가능) */}
         <AnnouncementBanner />
 
-        {/* 뱃지 */}
-        <div className="mb-5 flex justify-center">
-          <span className="glass-soft inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-skyx-ink shadow-[0_8px_24px_-8px_rgba(74,144,194,.22)]">
-            <span
-              className="h-[7px] w-[7px] rounded-full bg-teal"
-              style={{ boxShadow: "0 0 0 4px rgba(53,195,180,.18), 0 0 10px rgba(53,195,180,.7)" }}
-            />
-            꿈꾸는교회 청년부
-          </span>
-        </div>
-
-        {/* Hero — 피드 우선 정체성. '성격유형 고르기'는 헤더 메뉴(🧭)로 이동. */}
-        <div className="mb-8 text-center">
-          <h1 className="mb-3 text-[34px] sm:text-[42px] font-extrabold tracking-tight leading-[1.2] text-ink">
-            오늘의 <em className="not-italic gradient-text">청년부</em>
-          </h1>
-          <p className="text-[15px] sm:text-base text-ink-soft font-medium leading-relaxed">
-            우리 청년부의 새 소식과 모임이 모이는 곳이에요.
+        {/* 개인화 인사 — 매일 똑같던 대형 히어로 대신, '오늘'과 '나'가 담긴 컴팩트 헤더.
+            시선 끌기는 아래 브리핑 카드(이번 주 질문)가 맡는다. */}
+        <div className="mb-1 mt-2">
+          <p className="text-xs font-semibold text-ink-faint">
+            {greet.date} · 오늘의 <span className="gradient-text font-bold">청년부</span>
           </p>
+          <h1 className="mt-1.5 text-[26px] font-extrabold leading-tight tracking-tight text-ink sm:text-[30px]">
+            {greet.line} <span aria-hidden>{greet.emoji}</span>
+          </h1>
         </div>
 
         {/* 홈 본문: 피드를 서버에서 채워 스트리밍(Suspense).

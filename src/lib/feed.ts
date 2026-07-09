@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 
 import { prisma } from "@/lib/db";
+import { getWeekMonday } from "@/lib/week";
 
 /**
  * 홈 '오늘의 청년부' 피드 데이터 — API 라우트(/api/feed)와 홈 서버 렌더(page.tsx)가 공유한다.
@@ -25,6 +26,8 @@ export type FeedData = {
     category: string;
     snippet: string;
     authorName: string;
+    avatarUrl: string | null;
+    systemType: string | null; // welcome | birthday — 홈에서 골드 톤으로 구분 표시
     createdAt: string;
     reactionCount: number;
     commentCount: number;
@@ -36,9 +39,11 @@ export type FeedData = {
     answeredNote: string | null;
     createdAt: string | null;
   }[];
+  // 이번 주 아이스브레이커 질문 — 홈 최상단 브리핑 카드의 주인공(없으면 null).
+  prompt: { id: string; question: string; answerCount: number } | null;
 };
 
-type GlobalFeed = Pick<FeedData, "recentClubs" | "recentPosts" | "answeredPrayers">;
+type GlobalFeed = Pick<FeedData, "recentClubs" | "recentPosts" | "answeredPrayers" | "prompt">;
 
 /** 홈 피드의 전역 캐시 태그 — 새 동아리/광장글/응답기도 반영 시 revalidateTag로 즉시 무효화 가능. */
 export const HOME_FEED_TAG = "home-feed";
@@ -50,11 +55,12 @@ export const HOME_FEED_TAG = "home-feed";
  */
 const getGlobalFeed = unstable_cache(
   async (): Promise<GlobalFeed> => {
-    const [recentClubsRaw, recentPostsRaw, answeredPrayersRaw] = await Promise.all([
+    const [recentClubsRaw, recentPostsRaw, answeredPrayersRaw, promptRaw] = await Promise.all([
       prisma.club.findMany({
-        where: { isApproved: true, isActive: true },
+        // isSystem 제외 — 전체 행사 보드는 '새로 생긴 동아리'가 아니다.
+        where: { isApproved: true, isActive: true, isSystem: false },
         orderBy: { createdAt: "desc" },
-        take: 3,
+        take: 4,
         select: {
           id: true,
           name: true,
@@ -72,8 +78,9 @@ const getGlobalFeed = unstable_cache(
           category: true,
           content: true,
           isAnonymous: true,
+          systemType: true,
           createdAt: true,
-          user: { select: { nickname: true } },
+          user: { select: { nickname: true, avatarUrl: true } },
           _count: { select: { intercessions: true, comments: true } },
         },
       }),
@@ -82,6 +89,10 @@ const getGlobalFeed = unstable_cache(
         orderBy: { answeredAt: "desc" },
         take: 2,
         select: { id: true, category: true, content: true, answeredNote: true, answeredAt: true },
+      }),
+      prisma.icebreakerPrompt.findUnique({
+        where: { weekOf: getWeekMonday(new Date()) },
+        select: { id: true, question: true, _count: { select: { answers: true } } },
       }),
     ]);
 
@@ -97,6 +108,8 @@ const getGlobalFeed = unstable_cache(
         category: p.category,
         snippet: p.content.slice(0, 60),
         authorName: p.isAnonymous ? "익명" : p.user?.nickname ?? "탈퇴한 멤버",
+        avatarUrl: p.isAnonymous ? null : p.user?.avatarUrl ?? null,
+        systemType: p.systemType,
         createdAt: p.createdAt.toISOString(),
         reactionCount: p._count.intercessions,
         commentCount: p._count.comments,
@@ -108,6 +121,9 @@ const getGlobalFeed = unstable_cache(
         answeredNote: p.answeredNote,
         createdAt: p.answeredAt ? p.answeredAt.toISOString() : null,
       })),
+      prompt: promptRaw
+        ? { id: promptRaw.id, question: promptRaw.question, answerCount: promptRaw._count.answers }
+        : null,
     };
   },
   ["home-global-feed"],

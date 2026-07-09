@@ -39,6 +39,16 @@ function fmtMeeting(iso: string): string {
   });
 }
 
+/** KST 날짜 기준 D-day 라벨 — 시간이 아니라 '달력 날짜' 차이로 계산. */
+function dDayLabel(iso: string): string {
+  const DAY_MS = 86_400_000;
+  const kstDay = (t: number) => Math.floor((t + 9 * 60 * 60 * 1000) / DAY_MS);
+  const diff = kstDay(new Date(iso).getTime()) - kstDay(Date.now());
+  if (diff <= 0) return "오늘";
+  if (diff === 1) return "내일";
+  return `D-${diff}`;
+}
+
 /**
  * 홈 본문 — '오늘의 청년부' 피드 우선 화면의 동적 영역.
  * 홈(/)을 정적으로 유지하기 위해 클라에서 쿠키 확인 후 /api/feed를 페치하고,
@@ -96,22 +106,75 @@ export function HomeFeed({ initial }: { initial?: HomeView }) {
   if (view.kind === "pending") return <BlindFeed variant="pending" />;
 
   // 승인 멤버
-  const { upcomingMeetings, recentClubs, recentPosts, answeredPrayers, hasPersonalityReport } =
+  const { upcomingMeetings, recentClubs, recentPosts, answeredPrayers, hasPersonalityReport, prompt } =
     view.feed;
   const feedEmpty =
     !upcomingMeetings.length &&
     !recentClubs.length &&
     !recentPosts.length &&
     !answeredPrayers.length;
+  const nextMeeting = upcomingMeetings[0] ?? null;
 
   return (
-    <div className="mt-8 space-y-3">
+    <div className="mt-6 space-y-3">
       {/* 3) 승인 멤버 — 최신 활동 피드를 상단에 우선 노출(인스타·스레드형). */}
+
+      {/* 오늘의 브리핑 — 홈의 시선을 끄는 대표 카드. 이번 주 질문 > 다음 모임 순으로 하나만. */}
+      {prompt ? (
+        <Link
+          href="/prayer"
+          className="glass-card glass-ribbon card-glow relative block overflow-hidden p-5 transition-transform hover:-translate-y-0.5"
+        >
+          {/* 앰비언트 글로우 — 카드에 컬러 텍스처를 입힌다(콘텐츠 뒤, 클릭 방해 없음) */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-gold/25 blur-2xl"
+          />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -bottom-14 -left-8 h-32 w-32 rounded-full bg-teal/20 blur-2xl"
+          />
+          <p className="relative text-[11px] font-bold tracking-wide text-gold-ink">💬 이번 주 질문</p>
+          <p className="relative mt-2 text-[19px] font-extrabold leading-snug tracking-tight text-ink">
+            {prompt.question}
+          </p>
+          <div className="relative mt-3.5 flex items-center justify-between gap-3">
+            <span className="text-xs text-ink-soft">
+              {prompt.answerCount > 0 ? `${prompt.answerCount}명이 답했어요` : "첫 번째로 답해볼까요?"}
+            </span>
+            <span className="btn-gold shrink-0 rounded-full px-4 py-1.5 text-xs font-bold">
+              나도 답하기 →
+            </span>
+          </div>
+        </Link>
+      ) : nextMeeting ? (
+        <Link
+          href={`/clubs/${nextMeeting.clubId}/meetings/${nextMeeting.id}`}
+          className="glass-card glass-ribbon card-glow relative block overflow-hidden p-5 transition-transform hover:-translate-y-0.5"
+        >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-skyx/25 blur-2xl"
+          />
+          <p className="relative text-[11px] font-bold tracking-wide text-teal-ink">📅 다음 모임</p>
+          <p className="relative mt-2 text-[19px] font-extrabold leading-snug tracking-tight text-ink">
+            {nextMeeting.title}
+          </p>
+          <div className="relative mt-3.5 flex items-center justify-between gap-3">
+            <span className="min-w-0 truncate text-xs text-ink-soft">
+              {nextMeeting.clubName} · {fmtMeeting(nextMeeting.meetsAt)}
+            </span>
+            <span className="shrink-0 rounded-full border border-teal/40 bg-teal/15 px-3 py-1 text-xs font-bold text-teal-ink">
+              {dDayLabel(nextMeeting.meetsAt)}
+            </span>
+          </div>
+        </Link>
+      ) : null}
 
       {/* 새가족 체크리스트 — 새가족 기간에만 서버 판정으로 노출 */}
       <OnboardingChecklist />
 
-      {/* 다가오는 내 동아리 모임 */}
+      {/* 다가오는 내 동아리 모임 — D-day 칩과 함께 */}
       {upcomingMeetings.length > 0 && (
         <div className="glass-card p-4">
           <p className="mb-2.5 text-xs font-semibold text-teal-ink">📅 다가오는 모임</p>
@@ -120,13 +183,18 @@ export function HomeFeed({ initial }: { initial?: HomeView }) {
               <li key={m.id}>
                 <Link
                   href={`/clubs/${m.clubId}/meetings/${m.id}`}
-                  className="block rounded-xl border border-white/90 bg-white/55 px-3 py-2.5 transition-all hover:bg-white/80"
+                  className="flex items-center gap-3 rounded-xl border border-white/90 bg-white/55 px-3 py-2.5 transition-all hover:bg-white/80"
                 >
-                  <p className="text-sm font-semibold text-ink">{m.title}</p>
-                  <p className="mt-0.5 text-xs text-ink-soft">
-                    {m.clubName} · {fmtMeeting(m.meetsAt)}
-                    {m.place ? ` · ${m.place}` : ""}
-                  </p>
+                  <span className="shrink-0 rounded-lg border border-teal/35 bg-teal/10 px-2 py-1 text-[11px] font-bold text-teal-ink">
+                    {dDayLabel(m.meetsAt)}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-ink">{m.title}</span>
+                    <span className="mt-0.5 block truncate text-xs text-ink-soft">
+                      {m.clubName} · {fmtMeeting(m.meetsAt)}
+                      {m.place ? ` · ${m.place}` : ""}
+                    </span>
+                  </span>
                 </Link>
               </li>
             ))}
@@ -134,33 +202,46 @@ export function HomeFeed({ initial }: { initial?: HomeView }) {
         </div>
       )}
 
-      {/* 새로 생긴 동아리 */}
+      {/* 새로 생긴 동아리 — 카테고리 그라데이션 커버의 가로 스크롤 카드 */}
       {recentClubs.length > 0 && (
         <div className="glass-card p-4">
-          <div className="mb-2.5 flex items-center justify-between">
+          <div className="mb-3 flex items-center justify-between">
             <p className="text-xs font-semibold text-skyx-ink">✨ 새로 생긴 동아리</p>
             <Link href="/clubs" className="text-xs text-ink-faint hover:text-skyx-ink">
               전체 보기 →
             </Link>
           </div>
-          <ul className="space-y-1.5">
-            {recentClubs.map((c) => (
-              <li key={c.id}>
+          <div className="-mx-1 flex snap-x gap-2.5 overflow-x-auto px-1 pb-1" style={{ scrollbarWidth: "none" }}>
+            {recentClubs.map((c) => {
+              const meta = CLUB_CATEGORY_META[c.category];
+              return (
                 <Link
+                  key={c.id}
                   href={`/clubs/${c.id}`}
-                  className="flex items-center gap-2 rounded-xl border border-white/90 bg-white/55 px-3 py-2 transition-all hover:bg-white/80"
+                  className="w-[8.8rem] shrink-0 snap-start overflow-hidden rounded-2xl border border-white/90 bg-white/60 transition-all hover:-translate-y-0.5 hover:bg-white/85"
                 >
-                  <span aria-hidden>{CLUB_CATEGORY_META[c.category]?.emoji ?? "✨"}</span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{c.name}</span>
-                  <span className="shrink-0 text-xs text-ink-faint">멤버 {c.memberCount}</span>
+                  <span
+                    className={`grid h-16 place-items-center bg-gradient-to-br text-[28px] ${
+                      meta?.gradient ?? "from-skyx/30 to-teal/15"
+                    }`}
+                    aria-hidden
+                  >
+                    {meta?.emoji ?? "✨"}
+                  </span>
+                  <span className="block px-3 py-2.5">
+                    <span className="block truncate text-[13px] font-bold text-ink">{c.name}</span>
+                    <span className="mt-0.5 block truncate text-[11px] text-ink-faint">
+                      {c.category} · 멤버 {c.memberCount}
+                    </span>
+                  </span>
                 </Link>
-              </li>
-            ))}
-          </ul>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      {/* 광장 소식 */}
+      {/* 광장 소식 — 아바타·공감 배지로 사람 냄새 나게 */}
       {recentPosts.length > 0 && (
         <div className="glass-card p-4">
           <div className="mb-2.5 flex items-center justify-between">
@@ -170,26 +251,55 @@ export function HomeFeed({ initial }: { initial?: HomeView }) {
             </Link>
           </div>
           <ul className="space-y-1.5">
-            {recentPosts.map((p) => (
-              <li key={p.id}>
-                <Link
-                  href={plazaLink(p.category, p.id)}
-                  className="block rounded-xl border border-white/90 bg-white/55 px-3 py-2 transition-all hover:bg-white/80"
-                >
-                  <p className="truncate text-sm text-ink">
-                    <span className="mr-1" aria-hidden>
-                      {PLAZA_EMOJI[p.category] ?? "💬"}
+            {recentPosts.map((p) => {
+              const isSystem = !!p.systemType;
+              return (
+                <li key={p.id}>
+                  <Link
+                    href={plazaLink(p.category, p.id)}
+                    className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 transition-all hover:bg-white/85 ${
+                      isSystem ? "border-gold/40 bg-gold/[0.07]" : "border-white/90 bg-white/55"
+                    }`}
+                  >
+                    {p.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.avatarUrl} alt="" className="mt-0.5 h-7 w-7 shrink-0 rounded-full object-cover" />
+                    ) : (
+                      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-skyx/25 text-xs font-bold text-skyx-ink">
+                        {p.authorName[0]}
+                      </span>
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[11px] font-semibold text-ink-soft">
+                        {p.authorName} <span className="font-normal text-ink-faint">· {timeAgo(p.createdAt)}</span>
+                      </span>
+                      <span className="mt-0.5 block truncate text-sm text-ink">
+                        {!isSystem && (
+                          <span className="mr-1" aria-hidden>
+                            {PLAZA_EMOJI[p.category] ?? "💬"}
+                          </span>
+                        )}
+                        {p.snippet}
+                      </span>
+                      {(p.reactionCount > 0 || p.commentCount > 0) && (
+                        <span className="mt-1.5 flex gap-1.5">
+                          {p.reactionCount > 0 && (
+                            <span className="rounded-full border border-skyx/40 bg-skyx/10 px-2 py-0.5 text-[10px] font-bold text-skyx-ink">
+                              💙 {p.reactionCount}
+                            </span>
+                          )}
+                          {p.commentCount > 0 && (
+                            <span className="rounded-full border border-skyx/40 bg-skyx/10 px-2 py-0.5 text-[10px] font-bold text-skyx-ink">
+                              💬 {p.commentCount}
+                            </span>
+                          )}
+                        </span>
+                      )}
                     </span>
-                    {p.snippet}
-                  </p>
-                  <p className="mt-0.5 text-xs text-ink-faint">
-                    {p.authorName} · {timeAgo(p.createdAt)}
-                    {p.reactionCount > 0 ? ` · 💙 ${p.reactionCount}` : ""}
-                    {p.commentCount > 0 ? ` · 💬 ${p.commentCount}` : ""}
-                  </p>
-                </Link>
-              </li>
-            ))}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
