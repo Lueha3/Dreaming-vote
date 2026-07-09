@@ -36,6 +36,7 @@ ALTER TABLE "PushSubscription"   ENABLE ROW LEVEL SECURITY;  -- 휴대폰 푸시
 ALTER TABLE "MetricSnapshot"     ENABLE ROW LEVEL SECURITY;  -- 주간 운영 지표 스냅샷(운영 전용). add_metric_snapshot_and_prayer_system_type 마이그레이션에서 이미 적용됨.
 ALTER TABLE "BuddyMatch"         ENABLE ROW LEVEL SECURITY;  -- 새가족 환영 짝꿍 매칭. add_buddy_match_table 마이그레이션에서 이미 적용됨.
 ALTER TABLE "IcebreakerPrompt"   ENABLE ROW LEVEL SECURITY;  -- 주간 아이스브레이커 질문. add_birthday_club_system_flag_icebreaker_prompt 마이그레이션에서 이미 적용됨.
+ALTER TABLE "MonthlyRecap"       ENABLE ROW LEVEL SECURITY;  -- 월간 리캡 스냅샷(운영 조회 전용). add_monthly_recap_table 마이그레이션에서 이미 적용됨.
 
 -- 정책은 의도적으로 생성하지 않습니다.
 -- (anon/authenticated 직접 접근 전면 차단; 서비스는 Prisma 소유자 연결로만 동작)

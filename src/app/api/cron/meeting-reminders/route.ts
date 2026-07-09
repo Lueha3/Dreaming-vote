@@ -4,8 +4,10 @@ import { prisma } from "@/lib/db";
 import { createNotifications } from "@/lib/notifications";
 import { computeWeeklyMetrics } from "@/lib/metrics";
 import { getWeekMonday } from "@/lib/week";
+import { getMonthStart } from "@/lib/month";
 import { ICEBREAKER_PRESETS } from "@/lib/icebreakerPresets";
 import { createBirthdayCard } from "@/lib/birthdayCard";
+import { computeMonthlyRecap } from "@/lib/monthlyRecap";
 
 // 매 호출마다 최신 데이터로 동작해야 하므로 정적 최적화 비활성.
 export const dynamic = "force-dynamic";
@@ -147,6 +149,27 @@ export async function GET(req: NextRequest) {
     console.error("[birthday] 생일자 조회 실패:", e);
   }
 
+  // 월간 리캡 — 매달 1일(KST)에 지난 한 달치를 계산해 적재. 별도 cron 엔트리를 늘리지 않기 위함.
+  let monthlyRecap: { monthOf: string } | null = null;
+  if (kstNow.getUTCDate() === 1) {
+    try {
+      const thisMonthStart = getMonthStart(now);
+      const lastMonthStart = new Date(
+        Date.UTC(thisMonthStart.getUTCFullYear(), thisMonthStart.getUTCMonth() - 1, 1),
+      );
+      const recap = await computeMonthlyRecap(lastMonthStart, thisMonthStart);
+      const snapshot = await prisma.monthlyRecap.upsert({
+        where: { monthOf: lastMonthStart },
+        update: recap,
+        create: { monthOf: lastMonthStart, ...recap },
+        select: { monthOf: true },
+      });
+      monthlyRecap = { monthOf: snapshot.monthOf.toISOString() };
+    } catch (e) {
+      console.error("[monthly-recap] 계산 실패:", e);
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     meetings: meetings.length,
@@ -154,5 +177,6 @@ export async function GET(req: NextRequest) {
     metricSnapshot,
     icebreakerPrompt,
     birthdaysPosted,
+    monthlyRecap,
   });
 }

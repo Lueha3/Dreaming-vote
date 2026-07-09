@@ -40,7 +40,7 @@ export function AutoPushPrompt() {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-3"
+      className="fixed inset-x-0 bottom-16 z-30 flex justify-center px-3 pb-3 sm:bottom-0"
       style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
     >
       <div className="glass-card card-slide-in flex w-full max-w-sm items-start gap-3 p-4">

@@ -45,6 +45,7 @@ export type PlazaPost = {
   isMine: boolean;
   canDelete: boolean;
   canEdit: boolean;
+  authorId: string | null; // 익명 글은 null(프로필 피크 진입점 차단)
   authorName: string;
   authorAvatar: string | null;
   authorRole: Role | null;

@@ -7,18 +7,26 @@ type Props = {
   targetType: "prayer" | "comment" | "club";
   targetId: string;
   label?: string;
+  // ⋯ 메뉴 등 외부에서 "이미 펼친 상태"로 띄우고 싶을 때. 취소/제출 시 onClose로 부모가 걷어낸다.
+  forceOpen?: boolean;
+  onClose?: () => void;
 };
 
 /**
  * 신고 버튼 — 클릭 시 사유 입력 폼을 펼쳐 POST /api/moderation/report.
  * 광장 글/댓글/동아리 어디에나 드롭인. 접수되면 '신고 접수됨'으로 고정.
  */
-export function ReportButton({ targetType, targetId, label = "신고" }: Props) {
-  const [open, setOpen] = useState(false);
+export function ReportButton({ targetType, targetId, label = "신고", forceOpen, onClose }: Props) {
+  const [open, setOpen] = useState(!!forceOpen);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function cancel() {
+    setOpen(false);
+    onClose?.();
+  }
 
   async function submit() {
     if (!reason.trim()) {
@@ -35,6 +43,7 @@ export function ReportButton({ targetType, targetId, label = "신고" }: Props) 
       });
       setDone(true);
       setOpen(false);
+      onClose?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : "신고에 실패했어요.");
     }
@@ -46,6 +55,8 @@ export function ReportButton({ targetType, targetId, label = "신고" }: Props) 
   }
 
   if (!open) {
+    // forceOpen으로 띄웠다가 닫힌 경우엔 부모가 이 컴포넌트를 걷어내므로 트리거 버튼을 다시 보여줄 필요 없음.
+    if (forceOpen !== undefined) return null;
     return (
       <button
         onClick={() => setOpen(true)}
@@ -71,7 +82,7 @@ export function ReportButton({ targetType, targetId, label = "신고" }: Props) 
       <div className="flex justify-end gap-1.5">
         <button
           onClick={() => {
-            setOpen(false);
+            cancel();
             setError(null);
           }}
           className="glass-soft rounded-lg px-2.5 py-1 text-xs text-ink-soft hover:text-ink"

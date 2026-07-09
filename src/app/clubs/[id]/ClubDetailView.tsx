@@ -484,9 +484,9 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
         </div>
       )}
 
-      {/* ⑨ 하단 고정 CTA */}
+      {/* ⑨ 하단 고정 CTA — 모바일 하단 탭바(64px) 위에 뜨도록 오프셋 */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/40 bg-white/60 shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.05)] backdrop-blur-xl"
+        className="fixed bottom-16 left-0 right-0 z-30 border-t border-white/40 bg-white/60 shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.05)] backdrop-blur-xl sm:bottom-0"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="mx-auto max-w-2xl px-4 py-3">{renderCta()}</div>

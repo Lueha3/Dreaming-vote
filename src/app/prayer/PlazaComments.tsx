@@ -5,6 +5,7 @@ import { ApiError, fetchJson } from "@/lib/http";
 import { RoleBadge } from "@/components/RoleBadge";
 import { NewcomerBadge } from "@/components/NewcomerBadge";
 import { ReportButton } from "@/components/ReportButton";
+import { useProfilePeek } from "@/components/ProfilePeek";
 import { displayRoles, type Role } from "@/lib/roles";
 import { timeAgo, isEdited } from "@/lib/time";
 
@@ -13,6 +14,7 @@ type CommentItem = {
   content: string;
   createdAt: string;
   updatedAt: string;
+  authorId: string;
   authorName: string;
   authorAvatar: string | null;
   authorRole: Role | null;
@@ -91,17 +93,25 @@ function CommentRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
+  const { open: openPeek } = useProfilePeek();
 
   return (
     <div className="flex items-start gap-2">
-      {comment.authorAvatar ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={comment.authorAvatar} alt="" className="mt-0.5 h-6 w-6 shrink-0 rounded-full object-cover" />
-      ) : (
-        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-skyx/20 text-[10px] text-skyx-ink">
-          {comment.authorName[0]}
-        </div>
-      )}
+      <button
+        type="button"
+        onClick={() => openPeek(comment.authorId)}
+        aria-label={`${comment.authorName} 프로필 보기`}
+        className="mt-0.5 shrink-0"
+      >
+        {comment.authorAvatar ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={comment.authorAvatar} alt="" className="h-6 w-6 rounded-full object-cover" />
+        ) : (
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-skyx/20 text-[10px] text-skyx-ink">
+            {comment.authorName[0]}
+          </div>
+        )}
+      </button>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs font-medium text-ink">{comment.authorName}</span>
