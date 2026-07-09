@@ -191,7 +191,7 @@ function ScreenContent({ index }: { index: number }) {
         <>
           <STitle>🎯 동아리</STitle>
           <SCard>
-            <b className="block text-[11.5px]">📚 수요 성경 스터디</b>
+            <b className="block text-[11.5px]">🎲 보드게임 모임</b>
             <Sub>멤버 14명 · 나와 성향 일치 70%</Sub>
             <SRow>
               <TapBtn>가입 신청</TapBtn>
