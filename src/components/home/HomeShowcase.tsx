@@ -86,6 +86,17 @@ export function HomeShowcase({ status }: { status: ShowcaseStatus }) {
           <GoldStar size={11} fill="#FFFFFF" />
         </span>
 
+        {/* 화면이 작아 아래쪽 스크롤 힌트가 첫 화면에 안 보일 수 있어, 상단에도 작게 하나 더 둔다. */}
+        <div
+          className="absolute top-2 left-1/2 flex -translate-x-1/2 items-center gap-1 text-[11px] font-semibold text-ink-faint/80"
+          aria-hidden
+        >
+          아래로 내려보세요
+          <svg className="cue-bob" width="13" height="13" viewBox="0 0 16 16" fill="none">
+            <path d="M3 6l5 5 5-5" stroke="#8A95A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+
         <div className="relative z-[1]">
           <span className="glass-soft inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-skyx-ink shadow-[0_8px_24px_-8px_rgba(74,144,194,.22)]">
             <span
@@ -115,7 +126,7 @@ export function HomeShowcase({ status }: { status: ShowcaseStatus }) {
           </div>
         </div>
 
-        <div className="absolute bottom-6 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1.5 text-[12.5px] font-semibold text-ink-faint" aria-hidden>
+        <div className="absolute bottom-9 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1.5 text-[12.5px] font-semibold text-ink-faint" aria-hidden>
           아래로 내려보세요
           <svg className="cue-bob" width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M3 6l5 5 5-5" stroke="#8A95A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
