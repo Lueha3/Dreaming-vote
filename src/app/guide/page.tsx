@@ -234,6 +234,19 @@ function HomeScreenSection() {
       <Callout>
         <b className="text-skyx-ink">왜 해야 하나요?</b> 아이콘을 눌러 바로 열리고, 진짜 앱처럼 주소창
         없이 깔끔하게 보여요. 아이폰은 이렇게 추가해야만 알림도 받을 수 있어요.
+        <div className="mt-3 flex justify-center">
+          <div className="w-full max-w-[220px]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/guide-homescreen-example.jpg"
+              alt="홈 화면에 추가하면 유튜브·인스타처럼 아이콘이 그대로 생겨요"
+              className="w-full rounded-xl border border-white/90 shadow-sm"
+            />
+            <p className="mt-1.5 text-center text-[11px] text-ink-faint">
+              👆 실제로 이렇게, 다른 앱들과 똑같이 생겨요
+            </p>
+          </div>
+        </div>
       </Callout>
     </section>
   );
