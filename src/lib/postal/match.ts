@@ -146,10 +146,30 @@ function fromZipcode(input: string, records: IndexedRecord[]): ConvertResult {
  * 입력 한 줄을 변환한다. 유형 판별 → 키 생성 → store 질의 → 결과 구성.
  * store 없이도(키만 필요할 때) 호출 가능하지만 그 경우 unmatched 로 떨어진다.
  */
+const STATUS_RANK: Record<ConvertResult["status"], number> = {
+  matched: 3,
+  ambiguous: 2,
+  unmatched: 1,
+  empty: 0,
+};
+
 export function convertLine(raw: string, store: AddressStore): ConvertResult {
   const input = raw;
   const trimmed = raw.trim();
   if (!trimmed) return emptyResult(input);
+
+  // 엑셀 여러 열을 붙여넣은 경우(탭 포함): 각 셀을 시도해 주소로 풀리는 셀을 채택.
+  // 예) "홍길동\t010-1234-5678\t서울 강남구 테헤란로 152" → 주소 셀만 변환.
+  if (raw.includes("\t")) {
+    const cells = raw.split("\t").map((c) => c.trim()).filter(Boolean);
+    let best: ConvertResult | null = null;
+    for (const cell of cells) {
+      const r = convertLine(cell, store);
+      if (!best || STATUS_RANK[r.status] > STATUS_RANK[best.status]) best = r;
+      if (r.status === "matched") break;
+    }
+    return { ...(best ?? emptyResult(input)), input };
+  }
 
   const kind = detectKind(trimmed);
 

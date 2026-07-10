@@ -74,28 +74,43 @@ const SIDO_SHORT: Record<string, string> = {
   제주특별자치도: "제주",
 };
 
-/** 전각 숫자·영문 → 반각, 유사문자 정리. */
+/** 전각 숫자·영문 → 반각, 전각 공백 정리. */
 function toHalfWidth(s: string): string {
-  return s.replace(/[！-～]/g, (ch) =>
-    String.fromCharCode(ch.charCodeAt(0) - 0xfee0),
-  );
+  return s
+    .replace(/　/g, " ") // 전각 공백 → 반각
+    .replace(/[！-～]/g, (ch) =>
+      String.fromCharCode(ch.charCodeAt(0) - 0xfee0),
+    );
 }
 
+/** 원 숫자(①②③), 로마자 목록 기호 등 선두 잡음 제거용. */
+const CIRCLED = /[①-⑳❶-❿]/g;
+
 /**
- * 1차 클린업: 전각→반각, 괄호·동호수 등 매칭에 방해되는 꼬리 제거, 공백 압축.
+ * 1차 클린업: 전각→반각, 목록기호·우편 접두·괄호·동호수·층 등 매칭 방해 요소 제거, 공백 압축.
  * 원문 보존은 호출부 책임(여기 반환값은 매칭용).
  */
 export function cleanRaw(raw: string): string {
   let s = toHalfWidth(raw).trim();
+  // 원 숫자 목록기호 제거
+  s = s.replace(CIRCLED, " ");
+  // 선두 목록 마커: "1. ", "1) ", "1 - ", "- ", "• ", "* ", "· "
+  s = s.replace(/^\s*\d+\s*[.)\-]\s+/, " ");
+  s = s.replace(/^\s*[-•·*▪◦]\s+/, " ");
+  // 우편번호 접두: "우)06236", "(우) 06236", "[우편번호] "
+  s = s.replace(/\(?우\)\s*/g, " ");
+  s = s.replace(/\[[^\]]*우편[^\]]*\]/g, " ");
   // 괄호 블록 제거: (역삼동), (우성아파트) 등 — 도로명주소 참고항목/법정동
   s = s.replace(/[([{（【][^)\]}）】]*[)\]}）】]/g, " ");
   // 층·동·호·번지 뒤 상세 (아파트 동/호) 제거 — 단, 지번 "123-4"는 보존
-  //   "101동 202호", "3층", "b1", "지하1층" 류
+  //   "101동 202호", "101동202호", "3층", "지하1층" 류
   s = s.replace(/(지하\s*)?\d+\s*층/g, " ");
-  s = s.replace(/\d+\s*동\s*\d+\s*호/g, " ");
-  s = s.replace(/\d+\s*호(?![-\d])/g, " ");
-  // 마침표·쉼표·중점 → 공백
-  s = s.replace(/[.,·ㆍ]/g, " ");
+  s = s.replace(/[A-Za-z]?\d+\s*동\s*[A-Za-z]?\d+\s*호/g, " ");
+  s = s.replace(/[A-Za-z]?\d+\s*호(?![-\d])/g, " ");
+  // 지하/지상 층 영문 표기: "B1", "B01", "3F" 를 독립 토큰일 때 제거
+  s = s.replace(/(^|\s)(?:[Bb]\d{1,3}|\d{1,3}[Ff])(?=\s|$)/g, " ");
+  // 마침표·쉼표·중점·슬래시 → 공백
+  s = s.replace(/[.,·ㆍ/]/g, " ");
   // 공백 압축
   s = s.replace(/\s+/g, " ").trim();
   return s;
@@ -117,6 +132,8 @@ export function normalizeNumberTokens(s: string): string {
   out = out.replace(/(\d+)\s*번지/g, "$1");
   // 하이픈 주변 공백 제거: "123 - 4" → "123-4"
   out = out.replace(/(\d+)\s*-\s*(\d+)/g, "$1-$2");
+  // 부번 0 정규화: "152-0" → "152" (본번만 있는 것과 동일 취급)
+  out = out.replace(/(^|\s|산)(\d+)-0(?=\s|$)/g, "$1$2");
   out = out.replace(/\s+/g, " ").trim();
   return out;
 }
@@ -126,11 +143,31 @@ export function standardizeSido(token: string): string {
   return SIDO_MAP[token] ?? token;
 }
 
+// 시도가 시군구에 붙은 경우("서울시강남구") 분리에 쓰는 접두 키.
+// 오탐 방지: 시/도 로 끝나는 별칭만 사용(도로명 "세종대로"·"서울로"의 오분리 방지 —
+// "서울"·"세종" 같은 짧은 형태는 제외). 긴 키 우선 매칭.
+const SIDO_ATTACH_KEYS = Object.keys(SIDO_MAP)
+  .filter((k) => /(시|도)$/.test(k))
+  .sort((a, b) => b.length - a.length);
+
 /** 문자열 선두에서 시도 토큰을 떼어내 표준화. { sido, rest } 반환. */
 export function extractSido(s: string): { sido: string; rest: string } {
   const parts = s.split(" ");
   if (parts.length && SIDO_MAP[parts[0]]) {
     return { sido: SIDO_MAP[parts[0]], rest: parts.slice(1).join(" ") };
+  }
+  // 붙여 쓴 경우: "서울시강남구 …" → 시도 분리
+  if (parts.length) {
+    const first = parts[0];
+    for (const key of SIDO_ATTACH_KEYS) {
+      if (first.length > key.length && first.startsWith(key)) {
+        const remainder = first.slice(key.length);
+        return {
+          sido: SIDO_MAP[key],
+          rest: [remainder, ...parts.slice(1)].join(" "),
+        };
+      }
+    }
   }
   return { sido: "", rest: s };
 }
