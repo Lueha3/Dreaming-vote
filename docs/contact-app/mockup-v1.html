@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>누구지 — 앱 시안 v1 (토스 모티브)</title>
+<style>
+  /* ── 페이지(문서) 토큰 ── */
+  :root {
+    --pg-bg: #F6F7F9;
+    --pg-surface: #FFFFFF;
+    --pg-ink: #171D26;
+    --pg-ink2: #4A5566;
+    --pg-ink3: #8A93A3;
+    --pg-line: #E3E7EE;
+    --pg-chip: #EDF0F4;
+    --pg-shadow: 0 1px 2px rgba(23,29,38,.05), 0 10px 32px rgba(23,29,38,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --pg-bg: #12161D;
+      --pg-surface: #1A202B;
+      --pg-ink: #E7EAF1;
+      --pg-ink2: #A7B0C0;
+      --pg-ink3: #6F7A8E;
+      --pg-line: #2A3341;
+      --pg-chip: #222A37;
+      --pg-shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 32px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --pg-bg: #12161D; --pg-surface: #1A202B; --pg-ink: #E7EAF1; --pg-ink2: #A7B0C0;
+    --pg-ink3: #6F7A8E; --pg-line: #2A3341; --pg-chip: #222A37;
+    --pg-shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 32px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"] {
+    --pg-bg: #F6F7F9; --pg-surface: #FFFFFF; --pg-ink: #171D26; --pg-ink2: #4A5566;
+    --pg-ink3: #8A93A3; --pg-line: #E3E7EE; --pg-chip: #EDF0F4;
+    --pg-shadow: 0 1px 2px rgba(23,29,38,.05), 0 10px 32px rgba(23,29,38,.08);
+  }
+
+  /* ── 폰(제품) 토큰 — 시안 자체이므로 라이트 고정 ── */
+  :root {
+    --t-blue: #3182F6;
+    --t-blue-press: #1B64DA;
+    --t-ink: #191F28;
+    --t-ink2: #6B7684;
+    --t-ink3: #8B95A1;
+    --t-gray: #F2F4F6;
+    --t-line: #E5E8EB;
+    --t-green: #14A05E;
+    --g-fg: #1E7E39; --g-bg: #E6F4EA;
+    --y-fg: #8A6116; --y-bg: #FCF3DC; --y-dot: #E9A825;
+    --b-fg: #1A5FB4; --b-bg: #E3EDFB;
+    --p-fg: #6F46B4; --p-bg: #F0E9FB;
+    --n-fg: #5B6472; --n-bg: #EDEFF3;
+    --r-fg: #C0392B; --r-bg: #FDEBE8;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--pg-bg); color: var(--pg-ink);
+    font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Segoe UI", sans-serif;
+    font-size: 16px; line-height: 1.7; -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace; font-variant-numeric: tabular-nums; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  header.mast { max-width: 720px; }
+  .eyebrow { font-size: .78rem; letter-spacing: .1em; color: var(--pg-ink3); display: flex; gap: 16px; flex-wrap: wrap; }
+  h1 { font-size: clamp(1.7rem, 4vw, 2.3rem); font-weight: 800; letter-spacing: -.02em; line-height: 1.3; margin: 14px 0 10px; text-wrap: balance; }
+  .lede { color: var(--pg-ink2); margin: 0; max-width: 40em; text-wrap: pretty; }
+
+  .stage { display: grid; grid-template-columns: auto 1fr; gap: 56px; margin-top: 44px; align-items: start; }
+  @media (max-width: 900px) { .stage { grid-template-columns: 1fr; gap: 40px; } .device { margin: 0 auto; } }
+  .device { position: sticky; top: 24px; }
+  @media (max-width: 900px) { .device { position: static; } }
+
+  /* ── 폰 프레임 ── */
+  .frame {
+    width: 384px; max-width: calc(100vw - 48px);
+    background: #FFFFFF; border-radius: 46px;
+    border: 10px solid #14181E;
+    box-shadow: var(--pg-shadow);
+    position: relative; overflow: hidden;
+  }
+  .viewport { position: relative; height: 730px; }
+  .cam { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 12px; height: 12px; border-radius: 50%; background: #14181E; z-index: 40; }
+  .sbar { position: absolute; top: 0; left: 0; right: 0; height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; font-size: 12.5px; font-weight: 600; color: var(--t-ink); z-index: 30; pointer-events: none; }
+  .sbar .r { display: flex; gap: 5px; align-items: center; }
+  .frame.on-dark .sbar { color: #EDF0F6; }
+  .gbar { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 118px; height: 4px; border-radius: 4px; background: rgba(20,24,30,.35); z-index: 30; pointer-events: none; }
+  .frame.on-dark .gbar { background: rgba(237,240,246,.4); }
+
+  .tapPill {
+    position: absolute; top: 46px; right: 14px; z-index: 35;
+    background: rgba(25,31,40,.85); color: #fff;
+    font-size: 12px; font-weight: 700; letter-spacing: .02em;
+    border-radius: 999px; padding: 4px 12px;
+    opacity: 0; transform: translateY(-4px); transition: opacity .25s, transform .25s;
+    pointer-events: none;
+  }
+  .tapPill.show { opacity: 1; transform: none; }
+
+  /* ── 화면 공통 ── */
+  .screen {
+    position: absolute; inset: 0; background: #fff;
+    padding: 58px 22px 30px; overflow-y: auto;
+    opacity: 0; transform: translateX(26px); pointer-events: none;
+    transition: opacity .28s ease, transform .28s ease;
+    display: flex; flex-direction: column;
+    color: var(--t-ink);
+  }
+  .screen.active { opacity: 1; transform: none; pointer-events: auto; z-index: 10; }
+  .screen h2 { font-size: 24px; font-weight: 800; letter-spacing: -.02em; line-height: 1.32; margin: 6px 0 8px; }
+  .screen .sub { font-size: 15px; color: var(--t-ink2); margin: 0 0 20px; line-height: 1.6; }
+  .grow { flex: 1; }
+
+  .backBtn {
+    align-self: flex-start; border: 0; background: none; cursor: pointer;
+    font: inherit; font-size: 15px; font-weight: 600; color: var(--t-ink3);
+    padding: 6px 2px; margin: -6px 0 8px; border-radius: 8px;
+  }
+  .backBtn:hover { color: var(--t-ink); }
+
+  button { font-family: inherit; }
+  button:focus-visible { outline: 3px solid var(--t-blue); outline-offset: 2px; }
+  .btnP {
+    width: 100%; border: 0; cursor: pointer;
+    background: var(--t-blue); color: #fff;
+    border-radius: 15px; min-height: 58px; padding: 14px 18px;
+    font-size: 17px; font-weight: 700; letter-spacing: -.01em;
+    transition: transform .12s, background .12s;
+  }
+  .btnP:active { transform: scale(.98); background: var(--t-blue-press); }
+  .btnS {
+    width: 100%; border: 0; cursor: pointer;
+    background: var(--t-gray); color: var(--t-ink);
+    border-radius: 15px; min-height: 58px; padding: 14px 18px;
+    font-size: 17px; font-weight: 700;
+    transition: transform .12s;
+  }
+  .btnS:active { transform: scale(.98); }
+  .btnGhost {
+    border: 0; background: none; cursor: pointer;
+    color: var(--t-ink3); font-size: 15px; font-weight: 600;
+    padding: 12px; margin-top: 2px; width: 100%;
+  }
+  .stack { display: flex; flex-direction: column; gap: 10px; }
+
+  /* 홈 리스트 버튼 */
+  .listBtn {
+    display: flex; align-items: center; gap: 14px; width: 100%;
+    background: var(--t-gray); border: 0; border-radius: 18px;
+    padding: 16px 16px; cursor: pointer; text-align: left;
+    transition: transform .12s;
+  }
+  .listBtn:active { transform: scale(.985); }
+  .listBtn .ico { width: 46px; height: 46px; border-radius: 14px; background: #fff; display: grid; place-items: center; font-size: 22px; flex: none; }
+  .listBtn .tt { font-size: 16.5px; font-weight: 700; line-height: 1.35; }
+  .listBtn .dd { font-size: 13.5px; color: var(--t-ink2); line-height: 1.4; margin-top: 1px; }
+  .listBtn .chev { margin-left: auto; color: var(--t-ink3); font-size: 18px; flex: none; }
+  .cnt { margin-left: auto; background: #FF5A47; color: #fff; font-size: 13px; font-weight: 800; border-radius: 999px; min-width: 26px; height: 26px; display: grid; place-items: center; padding: 0 8px; flex: none; }
+
+  .statusCard {
+    background: var(--g-bg); border-radius: 18px; padding: 18px 20px;
+    display: flex; gap: 12px; align-items: center; margin-bottom: 18px;
+  }
+  .statusCard .ck { width: 34px; height: 34px; border-radius: 50%; background: var(--t-green); color: #fff; display: grid; place-items: center; font-size: 17px; font-weight: 800; flex: none; }
+  .statusCard .t1 { font-size: 15.5px; font-weight: 700; color: #14532B; line-height: 1.4; }
+  .statusCard .t2 { font-size: 13px; color: #3E7A53; }
+
+  /* 배지 */
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: 999px; padding: 2px 11px 2px 9px;
+    font-size: 13px; font-weight: 700; white-space: nowrap;
+  }
+  .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .badge.g { color: var(--g-fg); background: var(--g-bg); }
+  .badge.y { color: var(--y-fg); background: var(--y-bg); } .badge.y::before { background: var(--y-dot); }
+  .badge.b { color: var(--b-fg); background: var(--b-bg); }
+  .badge.p { color: var(--p-fg); background: var(--p-bg); }
+  .badge.n { color: var(--n-fg); background: var(--n-bg); }
+
+  /* 셋업 */
+  .devRow { display: flex; align-items: center; gap: 12px; background: var(--t-gray); border-radius: 16px; padding: 15px 16px; }
+  .devRow .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .devRow .nm { font-size: 16px; font-weight: 700; }
+  .devRow .ac { font-size: 13px; color: var(--t-ink2); }
+  .devRow .ok { margin-left: auto; color: var(--t-green); font-weight: 800; font-size: 14.5px; white-space: nowrap; }
+
+  .bigNum { font-size: 52px; font-weight: 800; letter-spacing: -.03em; color: var(--t-blue); line-height: 1.1; }
+  .bigNum small { font-size: 26px; font-weight: 800; color: var(--t-ink); }
+
+  .pairCard { background: var(--t-gray); border-radius: 18px; padding: 8px 16px; }
+  .pairRow { display: flex; align-items: center; gap: 12px; padding: 13px 2px; }
+  .pairRow + .pairRow { border-top: 1px solid var(--t-line); }
+  .avatar { width: 42px; height: 42px; border-radius: 50%; background: #fff; display: grid; place-items: center; font-size: 17px; font-weight: 800; color: var(--t-ink2); flex: none; }
+  .pairRow .nm { font-size: 16px; font-weight: 700; line-height: 1.3; }
+  .pairRow .mt { font-size: 13px; color: var(--t-ink2); }
+  .srcTag { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--t-ink3); background: #fff; border-radius: 8px; padding: 3px 8px; flex: none; }
+  .hint { font-size: 13.5px; color: var(--t-ink2); background: var(--b-bg); color: var(--b-fg); border-radius: 12px; padding: 10px 14px; margin: 12px 0 0; font-weight: 600; }
+  .prog { font-size: 13px; font-weight: 700; color: var(--t-ink3); letter-spacing: .04em; margin-bottom: 4px; }
+  .pbar { height: 6px; border-radius: 6px; background: var(--t-gray); overflow: hidden; margin: 6px 0 18px; }
+  .pbar i { display: block; height: 100%; background: var(--t-blue); border-radius: 6px; transition: width .3s; }
+
+  .sumRow { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 2px; border-bottom: 1px solid var(--t-line); font-size: 15px; }
+  .sumRow:last-child { border-bottom: 0; }
+  .sumRow b { font-size: 16px; }
+  .noteBox { background: var(--t-gray); border-radius: 14px; padding: 13px 16px; font-size: 13.5px; color: var(--t-ink2); line-height: 1.55; margin-top: 14px; }
+  .noteBox b { color: var(--t-ink); }
+
+  .doneWrap { text-align: center; padding-top: 46px; }
+  .doneCk { width: 92px; height: 92px; border-radius: 50%; background: var(--g-bg); color: var(--t-green); font-size: 44px; font-weight: 800; display: grid; place-items: center; margin: 0 auto 22px; }
+  .doneWrap h2 { font-size: 27px; }
+
+  /* 수신 화면 */
+  .screen.callScr { background: #10151D; color: #EDF0F6; padding-top: 74px; }
+  .callScr .incoming { font-size: 12px; letter-spacing: .22em; color: #8E99AC; font-weight: 700; }
+  .callScr .cname { font-size: 29px; font-weight: 800; letter-spacing: -.01em; margin-top: 10px; line-height: 1.3; }
+  .callScr .corg { font-size: 16px; color: #A6B0C2; margin-top: 4px; }
+  .ctxCard { background: #1A212C; border-radius: 16px; padding: 15px 18px; margin-top: 22px; font-size: 14.5px; line-height: 1.6; color: #C6CEDC; }
+  .ctxCard b { color: #EDF0F6; }
+  .callActions { display: flex; justify-content: space-between; padding: 0 26px; margin-top: auto; margin-bottom: 26px; }
+  .callBtn { width: 72px; height: 72px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center; transition: transform .12s; }
+  .callBtn:active { transform: scale(.94); }
+  .callBtn svg { width: 30px; height: 30px; fill: #fff; }
+  .callBtn.acc { background: #2BA84A; }
+  .callBtn.dec { background: #D64545; }
+  .callBtn.dec svg { transform: rotate(135deg); }
+  .callHintTxt { text-align: center; font-size: 12.5px; color: #6F7A8E; margin-bottom: 10px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .callBtn.acc { animation: ring 2.2s ease-in-out infinite; }
+    @keyframes ring { 0%,100% { box-shadow: 0 0 0 0 rgba(43,168,74,.5); } 50% { box-shadow: 0 0 0 12px rgba(43,168,74,0); } }
+  }
+
+  /* 통화 직후 태그 */
+  .tagGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tagBtn {
+    border: 0; cursor: pointer; background: var(--t-gray); border-radius: 18px;
+    min-height: 84px; font-size: 16.5px; font-weight: 700; color: var(--t-ink);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+    transition: transform .12s;
+  }
+  .tagBtn:active { transform: scale(.96); }
+  .tagBtn .e { font-size: 26px; }
+
+  /* 주간 리뷰 */
+  .numCard { background: var(--t-gray); border-radius: 20px; padding: 22px 20px; text-align: center; }
+  .numCard .pn { font-size: 24px; font-weight: 800; letter-spacing: .01em; }
+  .numCard .pm { font-size: 14px; color: var(--t-ink2); margin-top: 6px; line-height: 1.6; }
+  .whoBtn {
+    width: 100%; border: 0; cursor: pointer; border-radius: 15px; min-height: 56px;
+    font-size: 16.5px; font-weight: 800; text-align: left; padding: 14px 20px;
+    display: flex; align-items: center; gap: 10px; transition: transform .12s;
+  }
+  .whoBtn:active { transform: scale(.98); }
+  .whoBtn.wy { background: var(--y-bg); color: var(--y-fg); }
+  .whoBtn.wb { background: var(--b-bg); color: var(--b-fg); }
+  .whoBtn.wp { background: var(--p-bg); color: var(--p-fg); }
+  .whoBtn.wr { background: var(--r-bg); color: var(--r-fg); }
+
+  /* 주소록 */
+  .searchBox { background: var(--t-gray); border-radius: 14px; padding: 14px 16px; font-size: 15.5px; color: var(--t-ink3); font-weight: 600; margin-bottom: 8px; }
+  .bookRow { display: flex; align-items: center; gap: 12px; padding: 14px 2px; border-bottom: 1px solid var(--t-line); }
+  .bookRow .nm { font-size: 16px; font-weight: 700; }
+  .bookRow .mt { font-size: 13px; color: var(--t-ink2); }
+  .bookRow .badge { margin-left: auto; flex: none; }
+
+  .toast {
+    position: absolute; left: 50%; bottom: 92px; transform: translateX(-50%) translateY(8px);
+    background: rgba(25,31,40,.92); color: #fff; font-size: 14.5px; font-weight: 700;
+    border-radius: 999px; padding: 11px 22px; z-index: 50;
+    opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── 우측 패널 ── */
+  .panel { display: flex; flex-direction: column; gap: 36px; min-width: 0; }
+  .panel h3 { font-size: 1.05rem; font-weight: 800; letter-spacing: -.01em; margin: 0 0 12px; }
+  .panel p { margin: 0 0 10px; color: var(--pg-ink2); max-width: 46em; text-wrap: pretty; }
+  .jumpRow { display: flex; flex-wrap: wrap; gap: 8px; }
+  .jump {
+    border: 1px solid var(--pg-line); background: var(--pg-surface); color: var(--pg-ink);
+    font: inherit; font-size: .88rem; font-weight: 700; border-radius: 999px;
+    padding: 8px 16px; cursor: pointer; transition: transform .12s;
+  }
+  .jump:hover { border-color: var(--pg-ink3); }
+  .jump:active { transform: scale(.97); }
+  .jump:focus-visible { outline: 2px solid var(--t-blue); outline-offset: 2px; }
+
+  .tablewrap { overflow-x: auto; border: 1px solid var(--pg-line); border-radius: 14px; background: var(--pg-surface); }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  th, td { text-align: left; padding: 11px 16px; border-top: 1px solid var(--pg-line); vertical-align: top; }
+  thead th { border-top: 0; background: var(--pg-chip); font-size: .74rem; letter-spacing: .08em; color: var(--pg-ink3); font-weight: 700; white-space: nowrap; }
+  td:first-child, th:first-child { padding-left: 18px; }
+  td.tapN { font-weight: 800; white-space: nowrap; }
+
+  .prinGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .prin { background: var(--pg-surface); border: 1px solid var(--pg-line); border-radius: 14px; padding: 16px 18px; }
+  .prin .n { font-size: .74rem; letter-spacing: .1em; color: var(--pg-ink3); font-weight: 700; }
+  .prin .t { font-weight: 800; margin: 4px 0 4px; font-size: .98rem; }
+  .prin .d { font-size: .86rem; color: var(--pg-ink2); line-height: 1.6; }
+
+  footer { margin-top: 72px; border-top: 1px solid var(--pg-line); padding-top: 18px; font-size: .8rem; color: var(--pg-ink3); }
+  footer code { font-family: ui-monospace, monospace; font-size: .76rem; background: var(--pg-chip); border-radius: 5px; padding: .1em .4em; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .screen, .btnP, .btnS, .listBtn, .tagBtn, .whoBtn, .callBtn, .toast, .tapPill, .pbar i { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="mast">
+    <div class="eyebrow"><span>누구지 · 앱 시안 v1</span><span>모티브: 토스(Toss)</span><span class="mono">2026-07-12</span></div>
+    <h1>버튼 몇 개로 끝나는 연락처 앱</h1>
+    <p class="lede">아래 폰은 실제로 눌러볼 수 있는 프로토타입입니다. 토스의 <strong>"한 화면에는 한 가지 일만"</strong> 원칙을 그대로 가져와서, 모든 화면이 질문 하나 + 큰 버튼 몇 개로만 움직입니다. 화면 오른쪽 위 <strong>탭 카운터</strong>가 각 흐름에 손가락이 몇 번 필요한지 세어줍니다.</p>
+  </header>
+
+  <div class="stage">
+
+    <!-- ══════════ 폰 ══════════ -->
+    <div class="device">
+      <div class="frame" id="frame">
+        <div class="cam"></div>
+        <div class="sbar"><span class="mono">9:41</span><span class="r"><span>📶</span><span>🔋</span></span></div>
+        <div class="tapPill" id="tapPill">탭 0번</div>
+        <div class="toast" id="toast">저장했어요 ✓</div>
+        <div class="viewport">
+
+          <!-- 홈 -->
+          <section class="screen active" id="scr-home" data-flow-root>
+            <h2>연락처</h2>
+            <p class="sub">사장님 폰 3대, 오늘도 깨끗해요.</p>
+            <div class="statusCard">
+              <div class="ck">✓</div>
+              <div>
+                <div class="t1">폰 3대 모두 정리됨</div>
+                <div class="t2">오늘 오전 9:00 · 연락처 2,235명</div>
+              </div>
+            </div>
+            <div class="stack">
+              <button class="listBtn" data-go="scr-call">
+                <span class="ico">📞</span>
+                <span><span class="tt">전화 올 때 이렇게 보여요</span><br><span class="dd">받기 전에 누군지 아는 화면</span></span>
+                <span class="chev">›</span>
+              </button>
+              <button class="listBtn" data-go="scr-review" data-flow="review">
+                <span class="ico">🔔</span>
+                <span><span class="tt">새 번호가 왔어요</span><br><span class="dd">누군지 알려주시면 정리할게요</span></span>
+                <span class="cnt">3</span>
+              </button>
+              <button class="listBtn" data-go="scr-book">
+                <span class="ico">🔍</span>
+                <span><span class="tt">연락처 찾기</span><br><span class="dd">이름 · 회사 · 초성으로 검색</span></span>
+                <span class="chev">›</span>
+              </button>
+              <button class="listBtn" data-go="scr-setup1" data-flow="setup">
+                <span class="ico">🧹</span>
+                <span><span class="tt">처음 정리 해보기</span><br><span class="dd">폰 3대 연락처를 하나로</span></span>
+                <span class="chev">›</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- 셋업 1: 폰 연결 -->
+          <section class="screen" id="scr-setup1">
+            <button class="backBtn" data-go="scr-home">‹ 홈</button>
+            <h2>폰 3대를<br>연결할게요</h2>
+            <p class="sub">각 폰에 로그인된 구글 계정만 있으면 돼요.<br>연락처는 자동으로 모아져요.</p>
+            <div class="stack">
+              <div class="devRow"><span class="dot" style="background:#3182F6"></span><span><span class="nm">업무용 폰</span><br><span class="ac">kim.work@gmail.com</span></span><span class="ok">✓ 연결됨</span></div>
+              <div class="devRow"><span class="dot" style="background:#14A05E"></span><span><span class="nm">회사용 폰</span><br><span class="ac">kim.corp@gmail.com</span></span><span class="ok">✓ 연결됨</span></div>
+              <div class="devRow"><span class="dot" style="background:#E9A825"></span><span><span class="nm">사업용 폰</span><br><span class="ac">kim.biz@gmail.com</span></span><span class="ok">✓ 연결됨</span></div>
+            </div>
+            <div class="grow"></div>
+            <button class="btnP" data-go="scr-setup2" data-tap>다음</button>
+          </section>
+
+          <!-- 셋업 2: 병합 제안 -->
+          <section class="screen" id="scr-setup2">
+            <button class="backBtn" data-go="scr-setup1">‹ 뒤로</button>
+            <p class="prog">1분 만에 다 살펴봤어요</p>
+            <div class="bigNum">612명<small>이</small></div>
+            <h2>여러 번 저장돼<br>있어요</h2>
+            <p class="sub">전화번호가 완전히 같은 사람들이에요.<br>하나로 합쳐도 번호는 전부 남아요.</p>
+            <div class="grow"></div>
+            <div class="stack">
+              <button class="btnP" data-go="scr-setup3" data-tap>네, 하나로 합쳐주세요</button>
+              <button class="btnGhost" data-go="scr-setup3" data-tap>하나씩 직접 볼게요</button>
+            </div>
+          </section>
+
+          <!-- 셋업 3: 애매한 것 카드 -->
+          <section class="screen" id="scr-setup3">
+            <button class="backBtn" data-go="scr-home">‹ 그만하기</button>
+            <p class="prog" id="mergeProg">헷갈리는 3명 중 1번째</p>
+            <div class="pbar"><i id="mergeBar" style="width:33%"></i></div>
+            <h2>이 둘, 같은<br>사람인가요?</h2>
+            <div class="pairCard" id="pairCard">
+              <div class="pairRow"><span class="avatar" id="pAv1">김</span><span><span class="nm" id="pNm1">김철수</span><br><span class="mt mono" id="pMt1">010-5555-1234 · 업무용 폰</span></span></div>
+              <div class="pairRow"><span class="avatar" id="pAv2">김</span><span><span class="nm" id="pNm2">김부장님(삼성)</span><br><span class="mt mono" id="pMt2">010-8899-2211 · 사업용 폰</span></span></div>
+            </div>
+            <div class="hint" id="pairHint">💡 이름이 같고, 회사도 같아 보여요</div>
+            <div class="grow"></div>
+            <div class="stack">
+              <button class="btnP" data-merge="same" data-tap>같은 사람이에요</button>
+              <button class="btnS" data-merge="diff" data-tap>다른 사람이에요</button>
+            </div>
+          </section>
+
+          <!-- 셋업 4: 역주입 -->
+          <section class="screen" id="scr-setup4">
+            <h2>깨끗해진 연락처를<br>폰 3대에 넣을까요?</h2>
+            <p class="sub">이름 앞에 색 표시가 붙어서, 전화가 오면<br>바로 누군지 보여요.</p>
+            <div>
+              <div class="sumRow"><span>정리 전</span><b class="mono">2,847명</b></div>
+              <div class="sumRow"><span>정리 후</span><b class="mono" style="color:var(--t-blue)">2,235명</b></div>
+              <div class="sumRow"><span>관계 표시</span><span style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end"><span class="badge g">직원</span><span class="badge y">고객</span><span class="badge b">거래처</span><span class="badge p">개인</span></span></div>
+            </div>
+            <div class="noteBox">🔒 지금 상태는 <b>자동으로 백업</b>해뒀어요.<br>마음에 안 들면 <b>버튼 한 번</b>으로 전부 되돌려요.</div>
+            <div class="grow"></div>
+            <button class="btnP" data-go="scr-setupdone" data-tap>네, 넣어주세요</button>
+          </section>
+
+          <!-- 셋업 완료 -->
+          <section class="screen" id="scr-setupdone">
+            <div class="doneWrap">
+              <div class="doneCk">✓</div>
+              <h2>끝났어요!</h2>
+              <p class="sub">이제 전화가 오면, 받기 전에<br>누군지 먼저 보여요.</p>
+            </div>
+            <div class="grow"></div>
+            <div class="stack">
+              <button class="btnP" data-go="scr-call">전화 오면 어떻게 보이나요?</button>
+              <button class="btnGhost" data-go="scr-home">홈으로</button>
+            </div>
+          </section>
+
+          <!-- 수신 화면 -->
+          <section class="screen callScr" id="scr-call">
+            <div class="incoming">수신 전화</div>
+            <div style="margin-top:16px"><span class="badge y" style="font-size:14px">고객</span></div>
+            <div class="cname">김철수 · 삼성전자</div>
+            <div class="corg">구매팀 과장 · 사업용 폰으로 수신</div>
+            <div class="ctxCard">🗓 <b>지난 통화 6/30</b> · 견적 문의<br>→ 회신 기다리는 중</div>
+            <div class="grow"></div>
+            <div class="callHintTxt">시안: 초록 버튼을 눌러보세요</div>
+            <div class="callActions">
+              <button class="callBtn dec" data-go="scr-home" aria-label="거절"><svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.5 3 3.9 5.4 6.9 6.9l2.3-2.3c.3-.3.7-.4 1.1-.2 1.2.4 2.5.6 3.8.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.2c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.2 1.1l-2.3 2.3z"/></svg></button>
+              <button class="callBtn acc" data-go="scr-aftercall" data-flow="after" aria-label="받기"><svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.5 3 3.9 5.4 6.9 6.9l2.3-2.3c.3-.3.7-.4 1.1-.2 1.2.4 2.5.6 3.8.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.2c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.2 1.1l-2.3 2.3z"/></svg></button>
+            </div>
+          </section>
+
+          <!-- 통화 직후 -->
+          <section class="screen" id="scr-aftercall">
+            <p class="prog">통화 종료 · 4분 12초</p>
+            <h2>방금 통화,<br>무슨 일이었어요?</h2>
+            <p class="sub">김철수 · 삼성전자 <span class="badge y">고객</span></p>
+            <div class="tagGrid">
+              <button class="tagBtn" data-tag data-tap><span class="e">💰</span>견적</button>
+              <button class="tagBtn" data-tag data-tap><span class="e">📦</span>발주</button>
+              <button class="tagBtn" data-tag data-tap><span class="e">🛠️</span>상담·문의</button>
+              <button class="tagBtn" data-tag data-tap><span class="e">☕</span>개인 용무</button>
+            </div>
+            <div class="grow"></div>
+            <button class="btnGhost" data-go="scr-home">건너뛰기</button>
+          </section>
+
+          <!-- 주간 리뷰 -->
+          <section class="screen" id="scr-review">
+            <button class="backBtn" data-go="scr-home">‹ 나중에 할게요</button>
+            <p class="prog" id="revProg">새 번호 3개 중 1번째</p>
+            <div class="pbar"><i id="revBar" style="width:33%"></i></div>
+            <h2>이 번호,<br>누구예요?</h2>
+            <div class="numCard">
+              <div class="pn mono" id="revNum">010-4433-7788</div>
+              <div class="pm" id="revMeta">어제 오후 3:12 통화 · 2분 14초<br>💡 며칠 새 3번 통화했어요</div>
+            </div>
+            <div class="grow"></div>
+            <div class="stack">
+              <button class="whoBtn wy" data-who data-tap>🟡 고객이에요</button>
+              <button class="whoBtn wb" data-who data-tap>🔵 거래처예요</button>
+              <button class="whoBtn wp" data-who data-tap>🟣 개인이에요</button>
+              <button class="whoBtn wr" data-who data-tap>🚫 스팸 · 차단</button>
+              <button class="btnGhost" data-who>몰라요, 나중에</button>
+            </div>
+          </section>
+
+          <!-- 리뷰 완료 -->
+          <section class="screen" id="scr-reviewdone">
+            <div class="doneWrap">
+              <div class="doneCk">✓</div>
+              <h2>3개 다 정리했어요</h2>
+              <p class="sub">방금 알려주신 이름이<br>폰 3대에 모두 반영됐어요.</p>
+            </div>
+            <div class="grow"></div>
+            <button class="btnP" data-go="scr-home">홈으로</button>
+          </section>
+
+          <!-- 주소록 -->
+          <section class="screen" id="scr-book">
+            <button class="backBtn" data-go="scr-home">‹ 홈</button>
+            <h2>연락처 찾기</h2>
+            <div class="searchBox">🔍 이름, 회사, 초성(ㄱㅊㅅ)으로 검색</div>
+            <div>
+              <div class="bookRow"><span class="avatar">이</span><span><span class="nm">이수진</span><br><span class="mt">우리회사 · 경리팀</span></span><span class="badge g">직원</span></div>
+              <div class="bookRow"><span class="avatar">김</span><span><span class="nm">김철수</span><br><span class="mt">삼성전자 · 구매팀</span></span><span class="badge y">고객</span></div>
+              <div class="bookRow"><span class="avatar">박</span><span><span class="nm">박민호 사장</span><br><span class="mt">을지로조명 · 납품처</span></span><span class="badge b">거래처</span></div>
+              <div class="bookRow"><span class="avatar">최</span><span><span class="nm">최영란 세무사</span><br><span class="mt">한빛세무회계</span></span><span class="badge b">거래처</span></div>
+              <div class="bookRow"><span class="avatar">👩</span><span><span class="nm">어머니</span><br><span class="mt">가족</span></span><span class="badge p">개인</span></div>
+              <div class="bookRow"><span class="avatar">?</span><span><span class="nm mono">010-7712-0094</span><br><span class="mt">지난주 부재중 1통</span></span><span class="badge n">미확인</span></div>
+            </div>
+          </section>
+
+        </div>
+        <div class="gbar"></div>
+      </div>
+    </div>
+
+    <!-- ══════════ 설명 패널 ══════════ -->
+    <div class="panel">
+
+      <div>
+        <h3>왜 토스를 모티브로 골랐나</h3>
+        <p>토스는 "송금"이라는 무서운 일을 <strong>화면당 질문 하나</strong>로 쪼개서, 어르신도 쓰는 금융앱이 됐습니다. 우리도 같은 문제예요 — "연락처 2,847개 정리"는 무섭지만, "이 둘이 같은 사람인가요?"는 누구나 답할 수 있습니다. 큰 글씨, 연회색 카드, 아래쪽 파란 버튼 하나라는 토스 문법을 그대로 빌렸습니다. (당근·카카오뱅크도 후보였지만, '한 화면 한 가지 일' 원칙은 토스가 가장 강합니다.)</p>
+      </div>
+
+      <div>
+        <h3>화면 바로가기</h3>
+        <div class="jumpRow">
+          <button class="jump" data-go="scr-home">홈</button>
+          <button class="jump" data-go="scr-setup1" data-flow="setup">처음 정리</button>
+          <button class="jump" data-go="scr-call">전화 수신</button>
+          <button class="jump" data-go="scr-aftercall" data-flow="after">통화 직후</button>
+          <button class="jump" data-go="scr-review" data-flow="review">새 번호 정리</button>
+          <button class="jump" data-go="scr-book">주소록</button>
+        </div>
+      </div>
+
+      <div>
+        <h3>탭 영수증 — 손가락이 몇 번 필요한가</h3>
+        <div class="tablewrap"><table>
+          <thead><tr><th>하는 일</th><th>얼마나 자주</th><th>필요한 탭</th></tr></thead>
+          <tbody>
+            <tr><td>전화 받고 누군지 알기</td><td>매일 수십 번</td><td class="tapN">0번 — 이름에 이미 색이 붙어 있음</td></tr>
+            <tr><td>통화 내용 기록</td><td>필요할 때만</td><td class="tapN">1번 (건너뛰기도 1번)</td></tr>
+            <tr><td>새 번호 1개 정리</td><td>주 1회, 몰아서</td><td class="tapN">1번</td></tr>
+            <tr><td>처음 정리 (전체)</td><td>딱 1회</td><td class="tapN">7번 안팎 + 헷갈리는 카드 수</td></tr>
+          </tbody>
+        </table></div>
+        <p style="margin-top:10px; font-size:.88rem;">핵심: <strong>매일 반복되는 동작은 탭 0~1번</strong>으로 눌러 놓고, 유일하게 긴 "처음 정리"는 일생에 한 번만 시킵니다.</p>
+      </div>
+
+      <div>
+        <h3>디자인 원칙 4가지</h3>
+        <div class="prinGrid">
+          <div class="prin"><div class="n">원칙 1</div><div class="t">한 화면, 한 가지 질문</div><div class="d">화면마다 결정할 일이 딱 하나. 고민할 게 없으면 어려울 것도 없다.</div></div>
+          <div class="prin"><div class="n">원칙 2</div><div class="t">버튼은 크게, 아래쪽에</div><div class="d">터치 타깃 최소 56px, 주요 버튼은 엄지가 닿는 화면 하단 고정.</div></div>
+          <div class="prin"><div class="n">원칙 3</div><div class="t">모든 행동은 되돌릴 수 있다</div><div class="d">합치기·폰에 넣기 전 자동 백업. "망가뜨릴까 봐" 무서우면 안 쓴다.</div></div>
+          <div class="prin"><div class="n">원칙 4</div><div class="t">색이 곧 관계</div><div class="d">🟢직원 🟡고객 🔵거래처 🟣개인 — 글을 읽기 전에 색이 먼저 말해준다.</div></div>
+        </div>
+      </div>
+
+      <div>
+        <h3>이 시안에서 확인해볼 것</h3>
+        <p style="font-size:.9rem">① 홈의 버튼 4개가 너무 많은지 (3개로 줄일 수도 있어요) · ② "처음 정리" 흐름이 친구분 기준에서도 쉬운지 · ③ 배지 문구 — "협력"보다 "거래처"가 사장님 언어에 맞다고 판단해 시안에선 "거래처"로 썼습니다. 기획서에도 반영할지 확인 필요.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    누구지 앱 시안 v1 · 모티브: 토스의 "한 화면 한 가지 일" · 원본: <code>docs/contact-app/mockup-v1.html</code> · 기획서: <code>docs/contact-app/기획서.md</code>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  var frame = document.getElementById('frame');
+  var pill = document.getElementById('tapPill');
+  var toast = document.getElementById('toast');
+  var tapCount = 0;
+  var flowActive = false;
+
+  function setPill() {
+    pill.textContent = '탭 ' + tapCount + '번';
+    pill.classList.toggle('show', flowActive);
+  }
+  function startFlow() { tapCount = 0; flowActive = true; setPill(); }
+  function endFlow() { flowActive = false; setPill(); }
+  function tap() { if (flowActive) { tapCount++; setPill(); } }
+
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(function (s) {
+      s.classList.toggle('active', s.id === id);
+    });
+    frame.classList.toggle('on-dark', id === 'scr-call');
+    if (id === 'scr-home' || id === 'scr-call' || id === 'scr-book') endFlow();
+    var scr = document.getElementById(id);
+    if (scr) scr.scrollTop = 0;
+  }
+
+  function showToast(msg, then) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(function () {
+      toast.classList.remove('show');
+      if (then) then();
+    }, 900);
+  }
+
+  // 공통 내비게이션
+  document.querySelectorAll('[data-go]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (btn.hasAttribute('data-flow')) startFlow();
+      if (btn.hasAttribute('data-tap')) tap();
+      show(btn.getAttribute('data-go'));
+    });
+  });
+
+  // ── 처음 정리: 헷갈리는 카드 3장 ──
+  var pairs = [
+    { av1: '김', nm1: '김철수', mt1: '010-5555-1234 · 업무용 폰',
+      av2: '김', nm2: '김부장님(삼성)', mt2: '010-8899-2211 · 사업용 폰',
+      hint: '💡 이름이 같고, 회사도 같아 보여요' },
+    { av1: '박', nm1: '박사장', mt1: '02-777-8888 · 회사용 폰',
+      av2: '박', nm2: '★박사장(을지로)', mt2: '010-3210-9876 · 사업용 폰',
+      hint: '💡 사무실 번호와 휴대폰일 수 있어요' },
+    { av1: '이', nm1: '이영희', mt1: '010-2222-3333 · 업무용 폰',
+      av2: '이', nm2: '이영희 원장', mt2: '010-6666-7777 · 회사용 폰',
+      hint: '⚠️ 동명이인일 수도 있어요 — 천천히 보세요' }
+  ];
+  var mergeIdx = 0;
+  function renderPair() {
+    var p = pairs[mergeIdx];
+    document.getElementById('pAv1').textContent = p.av1;
+    document.getElementById('pNm1').textContent = p.nm1;
+    document.getElementById('pMt1').textContent = p.mt1;
+    document.getElementById('pAv2').textContent = p.av2;
+    document.getElementById('pNm2').textContent = p.nm2;
+    document.getElementById('pMt2').textContent = p.mt2;
+    document.getElementById('pairHint').textContent = p.hint;
+    document.getElementById('mergeProg').textContent = '헷갈리는 3명 중 ' + (mergeIdx + 1) + '번째';
+    document.getElementById('mergeBar').style.width = ((mergeIdx + 1) / pairs.length * 100) + '%';
+  }
+  document.querySelectorAll('[data-merge]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      tap();
+      var same = btn.getAttribute('data-merge') === 'same';
+      if (mergeIdx < pairs.length - 1) {
+        showToast(same ? '하나로 합쳤어요 ✓' : '따로 뒀어요 ✓');
+        mergeIdx++;
+        renderPair();
+      } else {
+        mergeIdx = 0;
+        showToast('다 봤어요 ✓', function () { renderPair(); show('scr-setup4'); });
+      }
+    });
+  });
+
+  // ── 통화 직후 태그 ──
+  document.querySelectorAll('[data-tag]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      tap();
+      showToast('저장했어요 ✓', function () { show('scr-home'); });
+    });
+  });
+
+  // ── 주간 리뷰: 새 번호 3개 ──
+  var reviews = [
+    { num: '010-4433-7788', meta: '어제 오후 3:12 통화 · 2분 14초<br>💡 며칠 새 3번 통화했어요' },
+    { num: '031-812-4400', meta: '월요일 부재중 2통<br>💡 경기 지역 사무실 번호예요' },
+    { num: '010-9077-2251', meta: '오늘 아침 통화 · 48초<br>💡 문자로 "견적 부탁드려요"를 보냈어요' }
+  ];
+  var revIdx = 0;
+  function renderReview() {
+    var r = reviews[revIdx];
+    document.getElementById('revNum').textContent = r.num;
+    document.getElementById('revMeta').innerHTML = r.meta;
+    document.getElementById('revProg').textContent = '새 번호 3개 중 ' + (revIdx + 1) + '번째';
+    document.getElementById('revBar').style.width = ((revIdx + 1) / reviews.length * 100) + '%';
+  }
+  document.querySelectorAll('[data-who]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (btn.hasAttribute('data-tap')) tap();
+      if (revIdx < reviews.length - 1) {
+        showToast('정리했어요 ✓');
+        revIdx++;
+        renderReview();
+      } else {
+        revIdx = 0;
+        showToast('정리했어요 ✓', function () { renderReview(); show('scr-reviewdone'); });
+      }
+    });
+  });
+
+  renderPair();
+  renderReview();
+})();
+</script>
+
+</html>
