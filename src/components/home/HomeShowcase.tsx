@@ -66,8 +66,8 @@ export function HomeShowcase({ status }: { status: ShowcaseStatus }) {
 
       {/* ── S1. 히어로 ─────────────────────────────────────────── */}
       <section
-        className="relative grid place-items-center overflow-clip px-6 pb-24 pt-14 text-center"
-        style={{ minHeight: "max(560px, 88svh)" }}
+        className="relative grid place-items-center overflow-clip px-6 pb-12 pt-10 text-center"
+        style={{ minHeight: "max(480px, 62svh)" }}
       >
         {/* 앰비언트: 글로우·구름·별 */}
         <span className="sky-glow" style={{ width: 420, height: 420, left: -120, top: -80, background: "rgba(127,189,228,.5)" }} aria-hidden />
@@ -113,13 +113,15 @@ export function HomeShowcase({ status }: { status: ShowcaseStatus }) {
               어떻게 쓰는지 보기
             </a>
           </div>
-        </div>
 
-        <div className="absolute bottom-9 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1.5 text-[12.5px] font-semibold text-ink-faint" aria-hidden>
-          아래로 내려보세요
-          <svg className="cue-bob" width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M3 6l5 5 5-5" stroke="#8A95A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          {/* 스크롤 힌트 — 하단 탭바 위에 고정하지 않고 버튼 바로 아래 자연스러운 흐름에 둬,
+              화면 높이·탭바 유무와 무관하게 항상 첫 화면에 같이 보이게 한다. */}
+          <div className="mt-11 flex flex-col items-center gap-1.5 text-[12.5px] font-semibold text-ink-faint" aria-hidden>
+            아래로 내려보세요
+            <svg className="cue-bob" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M3 6l5 5 5-5" stroke="#8A95A1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
         </div>
       </section>
 
