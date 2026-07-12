@@ -172,7 +172,7 @@ function ScreenContent({ index }: { index: number }) {
           <SCard>
             <div className="flex items-center gap-1.5">
               <Ava tone="teal">소</Ava>
-              <b className="text-[11px]">유디코-24-소윤</b>
+              <b className="text-[11px]">러비아-24-소윤</b>
             </div>
             <div className="mt-1.5">
               <Sub>퇴근길에 본 노을이요. 사진 찍어서 광장에 올렸어요 ㅎㅎ</Sub>
@@ -209,7 +209,7 @@ function ScreenContent({ index }: { index: number }) {
           <STitle>🌱 새가족</STitle>
           <SCard gold>
             <b className="block text-[11.5px]">🎉 새가족이 왔어요</b>
-            <Sub>엘리온-27-예은 님이 오셨어요. 함께 환영해주세요!</Sub>
+            <Sub>유디코-27-예은 님이 오셨어요. 함께 환영해주세요!</Sub>
             <SRow>
               <TapBtn>👋 환영해요</TapBtn>
               <Sub>31명이 환영했어요</Sub>
@@ -217,7 +217,7 @@ function ScreenContent({ index }: { index: number }) {
           </SCard>
           <SCard>
             <b className="block text-[11.5px]">🤝 나의 환영 짝꿍</b>
-            <Sub>유디코-24-소윤 님이 예은 님의 정착을 도와줘요</Sub>
+            <Sub>러비아-24-소윤 님이 예은 님의 정착을 도와줘요</Sub>
             <SRow>
               <span className="flex">
                 <Ava tone="teal">소</Ava>
