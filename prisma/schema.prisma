@@ -53,9 +53,8 @@ model User {
   contentReports      ContentReport[]      @relation("ReportReporter")
   resolvedReports     ContentReport[]      @relation("ReportResolver")
   pushSubscriptions   PushSubscription[]
-  buddyAsNewcomer     BuddyMatch[]         @relation("BuddyNewcomer")
-  buddyAsBuddy        BuddyMatch[]         @relation("BuddyBuddy")
-  buddyMatchesMade    BuddyMatch[]         @relation("BuddyMatchedBy")
+  buddyRequestsSent     BuddyMatch[]       @relation("BuddyRequester")
+  buddyRequestsReceived BuddyMatch[]       @relation("BuddyRecipient")
   icebreakerPrompts   IcebreakerPrompt[]
 
   @@index([membershipStatus, membershipAppliedAt])
@@ -454,22 +453,24 @@ model MetricSnapshot {
   createdAt                DateTime @default(now())
 }
 
-// 새가족 환영 짝꿍 매칭 — 운영진이 승인 직후 지정. 새가족당 활성 짝꿍은 1명(newcomerId unique).
-// 채팅 등 인앱 상호작용은 만들지 않는다 — 매칭 기록·상호 알림·프로필 표시까지만(오프라인 소통을 유도).
+// 짝꿍 매칭 — 멤버끼리 프로필에서 직접 신청/수락하는 1:1 관계.
+// 연애 앱화 방지를 위해 같은 성별끼리만 신청 가능하고, 꿈터 경계는 넘어도 된다(공동체 전체 교류가 앱의 취지).
+// 한 사람당 활성(active) 짝꿍은 최대 1명 — API 트랜잭션에서 강제한다(대칭 유니크는 DB로 표현 불가).
+// status: pending(수락 대기) | active(성사) | declined(거절) | ended(해제/취소). 채팅 등 인앱 대화는 만들지 않는다.
 model BuddyMatch {
   id          String    @id @default(cuid())
-  newcomerId  String    @unique
-  buddyId     String
-  matchedById String? // 지정한 운영진 — 감사 로그와 동일하게 삭제돼도 매칭 기록은 보존(SetNull)
-  status      String    @default("active") // active | ended
+  requesterId String // 짝꿍을 신청한 사람
+  recipientId String // 신청을 받은 사람
+  status      String    @default("pending")
   createdAt   DateTime  @default(now())
-  endedAt     DateTime?
+  respondedAt DateTime? // 수락/거절 시각
+  endedAt     DateTime? // 해제/취소 시각
 
-  newcomer  User  @relation("BuddyNewcomer", fields: [newcomerId], references: [id], onDelete: Cascade)
-  buddy     User  @relation("BuddyBuddy", fields: [buddyId], references: [id], onDelete: Cascade)
-  matchedBy User? @relation("BuddyMatchedBy", fields: [matchedById], references: [id], onDelete: SetNull)
+  requester User @relation("BuddyRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  recipient User @relation("BuddyRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
 
-  @@index([buddyId])
+  @@index([requesterId, status])
+  @@index([recipientId, status])
 }
 
 // 주간 아이스브레이커 질문 — 운영진이 /manage에서 등록하거나, 없으면 cron이 프리셋 풀에서

@@ -4,6 +4,7 @@ import { getAuthUser, membershipGate } from "@/lib/auth";
 import { getGroup } from "@/lib/membership";
 import { isNewcomer } from "@/lib/newcomer";
 import { getWeekMonday } from "@/lib/week";
+import { computeBuddyRelation } from "@/lib/buddy";
 import type { Role } from "@/lib/roles";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
@@ -36,6 +37,7 @@ export async function GET(_req: Request, { params }: Params) {
       role: true,
       approvedAge: true,
       dreamGroup: true,
+      gender: true,
       membershipDecidedAt: true,
       reports: {
         where: { isPublic: true },
@@ -48,6 +50,17 @@ export async function GET(_req: Request, { params }: Params) {
   if (!target) {
     return NextResponse.json({ ok: false, error: "멤버를 찾을 수 없어요." }, { status: 404 });
   }
+
+  // 짝꿍 관계 상태 — 뷰어↔대상. 성별 원값은 노출하지 않고 파생 상태만 내려준다(PII 최소화).
+  // AuthUser엔 gender가 없어 뷰어 성별만 가볍게 조회한다.
+  const viewer = await prisma.user.findUnique({
+    where: { id: user.dbUserId },
+    select: { gender: true },
+  });
+  const buddy = await computeBuddyRelation(
+    { id: user.dbUserId, gender: viewer?.gender ?? null },
+    { id: target.id, gender: target.gender },
+  );
 
   const weekOf = getWeekMonday(new Date());
   const [postCount, currentPrompt, acceptedClub] = await Promise.all([
@@ -87,6 +100,7 @@ export async function GET(_req: Request, { params }: Params) {
       catchphrase: target.reports[0]?.catchphrase ?? null,
       traits: parseTraits(target.reports[0]?.coreTraits).slice(0, 2),
       activityLine: parts.length > 0 ? parts.join(" · ") : "아직 활동 기록이 없어요",
+      buddy: { state: buddy.state, matchId: buddy.matchId },
     },
   });
 }
