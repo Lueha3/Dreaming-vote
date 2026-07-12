@@ -34,7 +34,7 @@ ALTER TABLE "PrayerImage"        ENABLE ROW LEVEL SECURITY;  -- 광장 글 첨�
 ALTER TABLE "PrayerComment"      ENABLE ROW LEVEL SECURITY;  -- 광장 댓글/대댓글. 〃
 ALTER TABLE "PushSubscription"   ENABLE ROW LEVEL SECURITY;  -- 휴대폰 푸시 구독(기기별 키). create_push_subscription_table 마이그레이션에서 이미 적용됨.
 ALTER TABLE "MetricSnapshot"     ENABLE ROW LEVEL SECURITY;  -- 주간 운영 지표 스냅샷(운영 전용). add_metric_snapshot_and_prayer_system_type 마이그레이션에서 이미 적용됨.
-ALTER TABLE "BuddyMatch"         ENABLE ROW LEVEL SECURITY;  -- 새가족 환영 짝꿍 매칭. add_buddy_match_table 마이그레이션에서 이미 적용됨.
+ALTER TABLE "BuddyMatch"         ENABLE ROW LEVEL SECURITY;  -- 짝꿍 매칭(요청/수락 1:1). redesign_buddy_match_request_accept 마이그레이션에서 재생성·적용됨.
 ALTER TABLE "IcebreakerPrompt"   ENABLE ROW LEVEL SECURITY;  -- 주간 아이스브레이커 질문. add_birthday_club_system_flag_icebreaker_prompt 마이그레이션에서 이미 적용됨.
 ALTER TABLE "MonthlyRecap"       ENABLE ROW LEVEL SECURITY;  -- 월간 리캡 스냅샷(운영 조회 전용). add_monthly_recap_table 마이그레이션에서 이미 적용됨.
 

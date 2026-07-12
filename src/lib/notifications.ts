@@ -25,8 +25,11 @@ export type NotificationType =
   | "admin_member_withdrawn" // 회원 탈퇴(자진/강제) (→ 운영진+)
   | "admin_club_created" // 새 동아리 개설(승인 대기) (→ 운영진+)
   | "admin_content_reported" // 새 콘텐츠 신고 접수 (→ 운영진+)
-  | "buddy_assigned" // 새가족의 환영 짝꿍으로 지정됨 (→ 짝꿍)
-  | "buddy_matched"; // 나의 환영 짝꿍이 정해짐 (→ 새가족)
+  | "buddy_request" // 짝꿍 신청을 받음 (→ 신청 받은 사람)
+  | "buddy_accepted" // 내가 보낸 짝꿍 신청이 수락됨 (→ 신청한 사람)
+  | "buddy_ended" // 짝꿍 관계가 해제됨 (→ 상대방)
+  | "buddy_assigned" // (구) 새가족의 환영 짝꿍으로 지정됨 — 과거 알림 렌더 호환용
+  | "buddy_matched"; // (구) 나의 환영 짝꿍이 정해짐 — 과거 알림 렌더 호환용
 
 type NotificationInput = {
   userId: string;
