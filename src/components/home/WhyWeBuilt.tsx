@@ -111,7 +111,8 @@ function splitWords(raw: string): Run[][] {
 type CharSeg = { hl: boolean; chars: { ch: string; delay: number }[] };
 
 // 타자기용 — 「」 상태가 바뀔 때만 새 세그먼트를 만들어, 강조 구간은 하나의 그라데이션 span으로 묶는다.
-function buildTypedSegments(raw: string, startDelay: number, step = 0.07) {
+// step: 한 글자당 노출 간격(초). 긴장감을 위해 일부러 느리게 친다.
+function buildTypedSegments(raw: string, startDelay: number, step = 0.12) {
   const segments: CharSeg[] = [];
   let hl = false;
   let delay = startDelay;
@@ -157,7 +158,7 @@ function renderBeatLines({
         const cls = `why-line${line.size ? ` why-line-${line.size}` : ""}`;
         let node: React.ReactNode;
         if (typed) {
-          if (li > 0) delay += 0.35;
+          if (li > 0) delay += 0.5; // 앞 줄과의 사이에서 한 박자 더 쉬어 긴장감을 준다
           const caretDelay = delay;
           const { segments, endDelay } = buildTypedSegments(line.text, delay);
           delay = endDelay;
@@ -186,7 +187,7 @@ function renderBeatLines({
             <p className={cls}>
               {words.map((word, wi) => {
                 const d = delay;
-                delay += 0.07;
+                delay += 0.11; // 단어가 하나씩 천천히 올라오도록 스태거를 넉넉히
                 return (
                   // 단어 사이 공백은 .why-word(overflow:clip) 밖의 형제 텍스트 노드여야 한다 —
                   // 안에 넣으면 인라인블록 자체 흐름의 '줄 시작' 공백으로 취급돼 접혀 사라진다.
@@ -223,7 +224,7 @@ function renderBeatLines({
 }
 
 function PillsRow({ pills }: { pills: Pills }) {
-  const delays = pills.variant === "spread" ? [0.05, 0.16, 0.27] : [0.05, 0.13, 0.21];
+  const delays = pills.variant === "spread" ? [0.1, 0.28, 0.46] : [0.08, 0.2, 0.32];
   return (
     <div className={`why-pills why-pills-${pills.variant}`}>
       {pills.items.map((p, i) => (
@@ -367,7 +368,8 @@ export function WhyWeBuilt() {
   const resolved = active >= RESOLVE_IDX;
 
   return (
-    <section id="why" ref={sectionRef} className="why-story" style={{ height: `calc(${N} * 66vh + 100svh)` }}>
+    // 비트당 스크롤 구간(110vh)을 넉넉히 줘, 세게 스크롤해도 문구를 건너뛰지 않고 하나씩 밟게 한다.
+    <section id="why" ref={sectionRef} className="why-story" style={{ height: `calc(${N} * 110vh + 100svh)` }}>
       <div className={`why-stage ${resolved ? "why-resolved" : ""}`.trim()}>
         <span
           className="sky-glow"
