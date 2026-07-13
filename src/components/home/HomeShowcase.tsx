@@ -4,6 +4,7 @@ import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { ChurchLineArt } from "@/components/ChurchLineArt";
 import { Reveal } from "@/components/home/Reveal";
 import { ScrollDemo } from "@/components/home/ScrollDemo";
+import { WhyWeBuilt } from "@/components/home/WhyWeBuilt";
 
 /**
  * 방문자용 홈 쇼케이스 — 비로그인/미가입/반려/승인대기 상태에서 홈(/)에 노출.
@@ -125,55 +126,8 @@ export function HomeShowcase({ status }: { status: ShowcaseStatus }) {
         </div>
       </section>
 
-      {/* ── S2. 스토리 ─────────────────────────────────────────── */}
-      <section className="px-6 py-[clamp(80px,13vh,140px)] text-center">
-        <Reveal>
-          <p className="eyebrow-label justify-center">왜 만들었냐면요</p>
-        </Reveal>
-        <Reveal delay={0.08}>
-          <h2 className="mx-auto mt-4 max-w-[21em] text-[clamp(28px,5.2vw,50px)] font-extrabold leading-[1.3] tracking-[-0.03em] text-ink">
-            예배 끝나고 다 같이 모이는 그 시간,
-            <br />
-            솔직히 좀 <span className="gradient-text">뻘쭘하지</span> 않았어요?
-          </h2>
-        </Reveal>
-        <Reveal delay={0.16}>
-          <p className="mx-auto mt-6 max-w-[32em] text-[clamp(15.5px,2.2vw,18px)] leading-[1.85] text-ink-soft">
-            아는 사람들은 자기들끼리 얘기하고, 나는 어디에 낄지 몰라서 괜히 폰만 보게 되는 그 시간이요.
-            새로 왔든 오래 다녔든 다들 한 번쯤 겪어봤을 거예요.
-            그래서 만들었어요. 내 꿈터 밖의 사람들과도 자연스럽게 가까워질 수 있게요.
-          </p>
-        </Reveal>
-        <div className="mt-11 flex flex-wrap justify-center gap-3">
-          <Reveal delay={0.1}>
-            <div className="glass-card min-w-[210px] max-w-[260px] rounded-2xl px-5 py-4 text-left">
-              <span className="mb-2 block text-xl" aria-hidden>⛪</span>
-              <b className="block text-[16.5px] font-extrabold text-ink">러비아 · 유디코 · 엘리온</b>
-              <span className="mt-1 block text-[13px] leading-relaxed text-ink-soft">
-                따로 놀던 세 공동체가 한 광장에서 만나요
-              </span>
-            </div>
-          </Reveal>
-          <Reveal delay={0.18}>
-            <div className="glass-card min-w-[210px] max-w-[260px] rounded-2xl px-5 py-4 text-left">
-              <span className="mb-2 block text-xl" aria-hidden>💬</span>
-              <b className="block text-[16.5px] font-extrabold text-ink">월요일마다 새 질문</b>
-              <span className="mt-1 block text-[13px] leading-relaxed text-ink-soft">
-                가볍게 답하다 보면 어느새 서로를 알게 돼요
-              </span>
-            </div>
-          </Reveal>
-          <Reveal delay={0.26}>
-            <div className="glass-card min-w-[210px] max-w-[260px] rounded-2xl px-5 py-4 text-left">
-              <span className="mb-2 block text-xl" aria-hidden>🌱</span>
-              <b className="block text-[16.5px] font-extrabold text-ink">새가족은 45일 동안 케어</b>
-              <span className="mt-1 block text-[13px] leading-relaxed text-ink-soft">
-                환영 글부터 짝꿍까지 앱이 알아서 챙겨요
-              </span>
-            </div>
-          </Reveal>
-        </div>
-      </section>
+      {/* ── S2. 스토리 (스크롤 재생 모션) ───────────────────────── */}
+      <WhyWeBuilt />
 
       {/* ── S3. 스크롤 시연 슬라이드 ───────────────────────────── */}
       <ScrollDemo />
