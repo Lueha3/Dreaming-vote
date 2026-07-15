@@ -14,14 +14,14 @@ type Slot = {
 };
 
 /**
- * 광장 글 첨부 이미지 업로더 — 최대 3장.
- * 클라에서 webp·최대 700KB·1080px로 압축 후 plaza-images 버킷 업로드.
+ * 광장 글 첨부 이미지 업로더 — 최대 5장.
+ * 클라에서 webp·최대 800KB·1080px로 압축 후 plaza-images 버킷 업로드.
  * 업로드 완료된 공개 URL 배열만 onChange로 부모에 전달.
  */
 export function PlazaImageUploader({
   onChange,
   onUploadingChange,
-  maxImages = 3,
+  maxImages = 5,
   disabled = false,
 }: {
   onChange: (urls: string[]) => void;
@@ -89,7 +89,7 @@ export function PlazaImageUploader({
       let blob: Blob;
       try {
         blob = await imageCompression(file, {
-          maxSizeMB: 0.7,
+          maxSizeMB: 0.8,
           maxWidthOrHeight: 1080,
           initialQuality: 0.85,
           useWebWorker: true,

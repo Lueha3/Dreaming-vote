@@ -383,7 +383,7 @@ export default function PlazaPage() {
                 key={uploaderKey}
                 onChange={setImages}
                 onUploadingChange={setUploadingImages}
-                maxImages={3}
+                maxImages={5}
               />
             </div>
 
@@ -399,7 +399,7 @@ export default function PlazaPage() {
                   익명으로 올리기
                 </label>
               ) : (
-                <span className="text-xs text-ink-faint">사진은 최대 3장 · 자동 압축돼요</span>
+                <span className="text-xs text-ink-faint">사진은 최대 5장 · 자동 압축돼요</span>
               )}
               <button
                 type="submit"

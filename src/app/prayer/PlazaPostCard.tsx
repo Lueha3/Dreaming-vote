@@ -37,7 +37,7 @@ function HeartBurst({ burstKey }: { burstKey: number }) {
   );
 }
 
-/** 글당 1~3장 이미지 — 가로 스와이프 캐러셀. 사진을 더블탭하면 인스타처럼 공감 처리. */
+/** 글당 1~5장 이미지 — 가로 스와이프 캐러셀. 사진을 더블탭하면 인스타처럼 공감 처리. */
 function ImageCarousel({
   images,
   onOpen,

@@ -16,7 +16,7 @@ const createSchema = z.object({
   category: z.enum(CATEGORIES).default("일상"),
   content: z.string().trim().max(2000, "내용이 너무 깁니다.").default(""),
   isAnonymous: z.boolean().default(false),
-  images: z.array(z.string()).max(3, "사진은 최대 3장까지 올릴 수 있어요.").default([]),
+  images: z.array(z.string()).max(5, "사진은 최대 5장까지 올릴 수 있어요.").default([]),
   clubId: z.string().trim().min(1).optional(),
   promptId: z.string().trim().min(1).optional(),
 });
