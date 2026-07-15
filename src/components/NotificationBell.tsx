@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { NOTIFICATIONS_CHANGED_EVENT } from "@/lib/notificationTabs";
 
 type Notice = {
   id: string;
@@ -120,6 +121,9 @@ export function NotificationBell() {
       });
     } catch {
       /* 실패해도 다음 방문 시 다시 미읽음으로 보일 뿐 */
+    } finally {
+      // 하단 탭바 배지도 폴링을 기다리지 않고 바로 갱신되도록 알림.
+      window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED_EVENT));
     }
   }
 
@@ -136,6 +140,8 @@ export function NotificationBell() {
         });
       } catch {
         /* best-effort */
+      } finally {
+        window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED_EVENT));
       }
     }
     if (n.link) router.push(n.link);
