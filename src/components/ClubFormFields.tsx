@@ -1,6 +1,7 @@
 "use client";
 
-import { CLUB_CATEGORIES, CLUB_CATEGORY_META } from "@/lib/clubCategories";
+import { CLUB_CATEGORIES } from "@/lib/clubCategories";
+import { ClubCategoryIcon } from "@/components/icons";
 import { ClubImageUploader, type ClubImageItem } from "@/components/ClubImageUploader";
 
 type Props = {
@@ -69,7 +70,7 @@ export function ClubFormFields({
                       : "border-white/90 bg-white/60 text-ink-soft hover:bg-white/90 hover:text-ink"
                   }`}
                 >
-                  <span>{CLUB_CATEGORY_META[cat]?.emoji}</span>
+                  <ClubCategoryIcon category={cat} tone="inherit" className="h-4 w-4 shrink-0" />
                   <span>{cat}</span>
                 </button>
               );

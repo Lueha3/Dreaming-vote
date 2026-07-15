@@ -7,6 +7,7 @@ import { NewcomerBadge } from "@/components/NewcomerBadge";
 import { ReportButton } from "@/components/ReportButton";
 import { useProfilePeek } from "@/components/ProfilePeek";
 import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
+import { ClubCategoryIcon } from "@/components/icons";
 import { displayRoles } from "@/lib/roles";
 import { timeAgo, isEdited } from "@/lib/time";
 import { PlazaComments } from "./PlazaComments";
@@ -152,7 +153,7 @@ function ClubAdCard({ club }: { club: PlazaClubRef }) {
         meta?.gradient ?? "from-skyx/30 to-teal/15"
       }`}
     >
-      <span className="text-2xl">{meta?.emoji ?? "✨"}</span>
+      <ClubCategoryIcon category={club.category} className="h-6 w-6" />
     </div>
   );
 

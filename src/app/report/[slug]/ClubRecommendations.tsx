@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
+import { ClubCategoryIcon } from "@/components/icons";
 
 type RecItem = {
   score: number;
@@ -147,7 +147,7 @@ export function ClubRecommendations({ reportId, shareSlug }: { reportId: string;
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
                   <span className="text-xs font-bold text-gold-ink">#{i + 1}</span>
-                  <span className="text-lg">{CLUB_CATEGORY_META[item.club.category]?.emoji ?? "✨"}</span>
+                  <ClubCategoryIcon category={item.club.category} className="h-[18px] w-[18px] shrink-0" />
                   <h3 className="min-w-0 truncate font-semibold text-ink group-hover:text-teal-ink">
                     {item.club.name}
                   </h3>

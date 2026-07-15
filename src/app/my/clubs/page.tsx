@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
+import { ClubCategoryIcon } from "@/components/icons";
 import { OwnedClubCard, type OwnedClub } from "./OwnedClubCard";
 import { LeaveClubButton } from "./LeaveClubButton";
 
@@ -301,7 +301,12 @@ function MyScheduleRow({ item }: { item: ScheduleItem }) {
             )}
           </div>
           <p className="mt-0.5 truncate text-xs text-ink-soft">
-            {CLUB_CATEGORY_META[item.category]?.emoji ?? "✨"} {item.clubName}
+            <ClubCategoryIcon
+              category={item.category}
+              tone="inherit"
+              className="mr-1 inline-block h-3.5 w-3.5 align-[-0.15em]"
+            />
+            {item.clubName}
             {item.place ? ` · ${item.place}` : ""}
           </p>
         </div>
@@ -333,7 +338,7 @@ function AppliedRow({ item }: { item: AppliedClub }) {
   const inner = (
     <div className="glass-card flex items-center justify-between gap-3 px-4 py-3.5">
       <div className="flex min-w-0 items-center gap-2">
-        <span className="text-base">{CLUB_CATEGORY_META[item.category]?.emoji ?? "✨"}</span>
+        <ClubCategoryIcon category={item.category} className="h-4 w-4 shrink-0" />
         <span className="truncate text-sm font-medium text-ink">{item.clubName}</span>
       </div>
       {badge}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
+import { TabIcon, type TabIconKey } from "@/components/icons";
 
 function hasAuthCookie() {
   return /sb-[a-z0-9-]+-auth-token/i.test(document.cookie);
@@ -11,13 +12,13 @@ function subscribeNoop() {
   return () => {};
 }
 
-const TABS = [
-  { href: "/", label: "홈", emoji: "🏠", exact: true },
-  { href: "/prayer", label: "광장", emoji: "🗣", exact: false },
-  { href: "/clubs", label: "동아리", emoji: "🎯", exact: false },
-  { href: "/people", label: "멤버", emoji: "🧑‍🤝‍🧑", exact: false },
-  { href: "/my", label: "내정보", emoji: "🪪", exact: false },
-] as const;
+const TABS: { href: string; label: string; icon: TabIconKey; exact: boolean }[] = [
+  { href: "/", label: "홈", icon: "home", exact: true },
+  { href: "/prayer", label: "광장", icon: "plaza", exact: false },
+  { href: "/clubs", label: "동아리", icon: "clubs", exact: false },
+  { href: "/people", label: "멤버", icon: "members", exact: false },
+  { href: "/my", label: "내정보", icon: "my", exact: false },
+];
 
 /**
  * 모바일 전용 하단 탭바 — 자주 쓰는 5곳을 엄지 닿는 자리로 꺼낸다.
@@ -55,12 +56,11 @@ export function BottomTabBar() {
               active ? "bg-skyx/15 text-skyx-ink" : "text-ink-faint"
             }`}
           >
-            <span
-              className={`text-[19px] leading-none transition-transform ${active ? "-translate-y-0.5 scale-[1.12]" : ""}`}
-              aria-hidden
-            >
-              {t.emoji}
-            </span>
+            <TabIcon
+              name={t.icon}
+              active={active}
+              className={`h-[22px] w-[22px] transition-transform ${active ? "-translate-y-0.5 scale-[1.08]" : ""}`}
+            />
             {t.label}
           </Link>
         );

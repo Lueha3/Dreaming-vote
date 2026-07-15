@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { timeAgo } from "@/lib/time";
 import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
+import { ClubCategoryIcon } from "@/components/icons";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import type { FeedData } from "@/lib/feed";
 
@@ -221,12 +222,11 @@ export function HomeFeed({ initial }: { initial?: HomeView }) {
                   className="w-[8.8rem] shrink-0 snap-start overflow-hidden rounded-2xl border border-white/90 bg-white/60 transition-all hover:-translate-y-0.5 hover:bg-white/85"
                 >
                   <span
-                    className={`grid h-16 place-items-center bg-gradient-to-br text-[28px] ${
+                    className={`grid h-16 place-items-center bg-gradient-to-br ${
                       meta?.gradient ?? "from-skyx/30 to-teal/15"
                     }`}
-                    aria-hidden
                   >
-                    {meta?.emoji ?? "✨"}
+                    <ClubCategoryIcon category={c.category} className="h-7 w-7" />
                   </span>
                   <span className="block px-3 py-2.5">
                     <span className="block truncate text-[13px] font-bold text-ink">{c.name}</span>

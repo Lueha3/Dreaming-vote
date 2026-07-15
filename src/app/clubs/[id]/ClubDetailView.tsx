@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
+import { ClubCategoryIcon } from "@/components/icons";
 import { ClubImageCarousel } from "@/components/ClubImageCarousel";
 import { ClubLineupBoard } from "@/components/ClubLineupBoard";
 import { ClubMeetingCalendar } from "@/components/ClubMeetingCalendar";
@@ -76,7 +77,6 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
 
   const tags = splitTags(club.tags);
   const pending = !club.isApproved || !club.isActive;
-  const emoji = CLUB_CATEGORY_META[club.category]?.emoji ?? "✨";
   const categoryGradient = CLUB_CATEGORY_META[club.category]?.gradient ?? "from-skyx/30 to-teal/15";
   const hasImages = club.images?.length > 0;
 
@@ -276,7 +276,8 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
               <div className="pointer-events-none absolute inset-x-0 top-0 flex aspect-[4/3] items-end sm:aspect-[16/9]">
                 <div className="w-full bg-gradient-to-t from-ink/65 via-ink/15 to-transparent px-4 pb-6 pt-16">
                   <span className="glass-soft inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold text-ink shadow-sm">
-                    {emoji} {club.category}
+                    <ClubCategoryIcon category={club.category} tone="inherit" className="h-3.5 w-3.5" />
+                    {club.category}
                   </span>
                   <h1 className="mt-2 text-2xl font-bold leading-snug text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)] sm:text-3xl">
                     {club.name}
@@ -286,7 +287,7 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
             </>
           ) : (
             <div className={`flex aspect-[16/9] w-full flex-col items-center justify-center gap-2 bg-gradient-to-br ${categoryGradient}`}>
-              <span className="text-5xl">{emoji}</span>
+              <ClubCategoryIcon category={club.category} className="h-12 w-12" />
               <h1 className="px-6 text-center text-2xl font-bold text-ink sm:text-3xl">{club.name}</h1>
             </div>
           )}
