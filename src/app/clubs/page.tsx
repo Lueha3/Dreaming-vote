@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { fetchJson } from "@/lib/http";
 import { CLUB_CATEGORIES, CLUB_CATEGORY_META } from "@/lib/clubCategories";
+import { ClubCategoryIcon } from "@/components/icons";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 
 type ClubItem = {
@@ -122,7 +123,7 @@ export default function ClubsPage() {
                     : "glass-soft text-ink-soft hover:bg-white/90 hover:text-ink"
                 }`}
               >
-                <span>{CLUB_CATEGORY_META[cat]?.emoji}</span>
+                <ClubCategoryIcon category={cat} tone="inherit" className="h-4 w-4" />
                 <span>{cat}</span>
               </button>
             );
@@ -182,17 +183,13 @@ export default function ClubsPage() {
                           CLUB_CATEGORY_META[club.category]?.gradient ?? "from-skyx/30 to-teal/15"
                         }`}
                       >
-                        <span className="text-4xl opacity-80">
-                          {CLUB_CATEGORY_META[club.category]?.emoji ?? "✨"}
-                        </span>
+                        <ClubCategoryIcon category={club.category} className="h-9 w-9" />
                       </div>
                     )}
 
                     <div className="p-5">
                       <div className="mb-2 flex items-center gap-2">
-                        <span className="text-lg">
-                          {CLUB_CATEGORY_META[club.category]?.emoji ?? "✨"}
-                        </span>
+                        <ClubCategoryIcon category={club.category} className="h-[18px] w-[18px] shrink-0" />
                         <h3 className="min-w-0 flex-1 truncate font-semibold text-ink group-hover:text-teal-ink">
                           {club.name}
                         </h3>

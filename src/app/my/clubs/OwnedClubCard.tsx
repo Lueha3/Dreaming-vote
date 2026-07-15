@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchJson } from "@/lib/http";
-import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
+import { ClubCategoryIcon } from "@/components/icons";
 
 export type OwnedClub = {
   id: string;
@@ -118,7 +118,7 @@ export function OwnedClubCard({ club }: { club: OwnedClub }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
-            <span className="text-lg">{CLUB_CATEGORY_META[club.category]?.emoji ?? "✨"}</span>
+            <ClubCategoryIcon category={club.category} className="h-[18px] w-[18px] shrink-0" />
             <Link
               href={`/clubs/${club.id}`}
               className="truncate font-semibold text-ink hover:text-teal-ink"

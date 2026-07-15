@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchJson } from "@/lib/http";
-import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
+import { ClubCategoryIcon } from "@/components/icons";
 
 type ManageClub = {
   id: string;
@@ -200,8 +200,9 @@ export default function ManageClubsPage() {
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <span className="font-semibold text-ink">
-                      {CLUB_CATEGORY_META[club.category]?.emoji} {club.name}
+                    <span className="inline-flex items-center gap-1.5 font-semibold text-ink">
+                      <ClubCategoryIcon category={club.category} className="h-4 w-4 shrink-0" />
+                      {club.name}
                     </span>
                     <span className="rounded-full border border-sky-line bg-white/60 px-2 py-0.5 text-xs text-ink-soft">
                       {club.category}
