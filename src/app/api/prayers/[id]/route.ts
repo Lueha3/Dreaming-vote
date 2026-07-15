@@ -14,7 +14,7 @@ const patchSchema = z.object({
   isAnswered: z.boolean().optional(),
   answeredNote: z.string().trim().max(300).optional(),
   content: z.string().trim().max(2000, "내용이 너무 깁니다.").optional(),
-  images: z.array(z.string()).max(3, "사진은 최대 3장까지 올릴 수 있어요.").optional(),
+  images: z.array(z.string()).max(5, "사진은 최대 5장까지 올릴 수 있어요.").optional(),
 });
 
 /** PATCH /api/prayers/[id] — 내용 수정 또는 응답됨 표시 (작성자만, 모더레이션 권한 없음) */

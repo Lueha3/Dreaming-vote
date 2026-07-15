@@ -96,7 +96,7 @@ export function ClubImageUploader({ onChange, maxImages = 5, initialImages }: Pr
 
       try {
         const options = {
-          maxSizeMB: 0.7,           // 최대 700KB
+          maxSizeMB: 0.8,           // 최대 800KB
           maxWidthOrHeight: 1080,   // 인스타그램 기준 가로 1080px (모바일/웹 최적화)
           initialQuality: 0.85,     // 육안으로 구분 불가능한 수준의 초기 압축률 (용량 최적화)
           useWebWorker: true,
