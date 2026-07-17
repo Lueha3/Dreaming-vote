@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { RoleBadge } from "@/components/RoleBadge";
 import { NotificationBell } from "@/components/NotificationBell";
 import { canManage, displayRoles, type Role } from "@/lib/roles";
+import { triggerHaptic } from "@/lib/haptics";
 
 
 
@@ -127,7 +128,10 @@ export function Header() {
           <NotificationBell />
           <div className="relative" ref={menuRef}>
           <button
-            onClick={() => setMenuOpen((o) => !o)}
+            onClick={() => {
+              triggerHaptic();
+              setMenuOpen((o) => !o);
+            }}
             className="glass-soft flex h-9 w-9 items-center justify-center rounded-xl text-ink-soft transition-colors hover:text-skyx-ink"
             aria-label="메뉴"
           >
@@ -203,7 +207,10 @@ function MobileNavLink({ href, onClick, children }: { href: string; onClick: () 
   return (
     <Link
       href={href}
-      onClick={onClick}
+      onClick={() => {
+        triggerHaptic();
+        onClick();
+      }}
       className="flex w-full items-center px-4 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-white/80 hover:text-ink"
     >
       {children}

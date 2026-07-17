@@ -9,6 +9,7 @@ import {
   NOTIFICATIONS_CHANGED_EVENT,
   type NotificationTabKey,
 } from "@/lib/notificationTabs";
+import { triggerHaptic } from "@/lib/haptics";
 
 function hasAuthCookie() {
   return /sb-[a-z0-9-]+-auth-token/i.test(document.cookie);
@@ -71,6 +72,7 @@ export function BottomTabBar() {
   }, [loggedIn, loadCounts]);
 
   function handleTabClick(badgeKey: NotificationTabKey | undefined) {
+    triggerHaptic();
     if (!badgeKey || !counts[badgeKey]) return;
     // 낙관적으로 즉시 지우고, 서버에는 best-effort로 반영(실패해도 다음 폴링에서 복원될 뿐).
     setCounts((prev) => ({ ...prev, [badgeKey]: 0 }));
