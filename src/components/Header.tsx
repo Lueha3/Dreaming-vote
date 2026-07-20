@@ -95,15 +95,14 @@ export function Header() {
     >
       <div className="mx-auto flex w-full max-w-3xl items-center gap-1 px-2 py-2.5 sm:gap-2 sm:px-4">
 
-        {/* 로고 — 꿈꾸는교회 로고 단독. flex-shrink-0로 줄어들거나 잘리지 않게 고정. */}
+        {/* 로고 — 꿈꾸는교회 로고 단독. 원본 PNG가 투명 배경이라 박스 없이 텍스트·그림만 띄운다.
+            flex-shrink-0로 줄어들거나 잘리지 않게 고정. */}
         <Link href="/" className="flex flex-shrink-0 items-center">
-          <div className="rounded-md border border-sky-line bg-white px-1.5 py-1 shadow-sm sm:px-3 sm:py-2">
-            <img
-              src="/dreaming-church.png"
-              alt="꿈꾸는교회"
-              className="block h-7 w-auto max-w-[84px] sm:h-9 sm:max-w-[120px]"
-            />
-          </div>
+          <img
+            src="/dreaming-church.png"
+            alt="꿈꾸는교회"
+            className="block h-8 w-auto max-w-[100px] sm:h-10 sm:max-w-[136px]"
+          />
         </Link>
 
         {/* 가입 신청하기는 홈 본문(HomeFeed)으로 옮겼지만, 로그인은 모든 활동의 선행조건이므로
