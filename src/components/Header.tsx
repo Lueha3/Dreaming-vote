@@ -95,18 +95,13 @@ export function Header() {
     >
       <div className="mx-auto flex w-full max-w-3xl items-center gap-1 px-2 py-2.5 sm:gap-2 sm:px-4">
 
-        {/* 로고 — 브랜드명은 절대 줄이거나 잘리지 않게 flex-shrink-0로 고정, 장식 요소만 모바일에서 축소 */}
-        <Link href="/" className="flex flex-shrink-0 items-center gap-0.5 sm:gap-2.5">
-          <span className="text-base font-extrabold tracking-tight sm:text-xl">
-            <span className="text-ink">Blue</span>
-            <span className="bg-gradient-to-r from-[#4A90D9] to-[#3FC8B7] bg-clip-text text-transparent">Humanity</span>
-          </span>
-          <span className="hidden text-ink-soft/40 text-sm font-light mt-0.5 sm:inline">×</span>
-          <div className="rounded-md border border-sky-line bg-white px-0.5 py-0.5 shadow-sm sm:px-2.5 sm:py-1.5">
+        {/* 로고 — 꿈꾸는교회 로고 단독. flex-shrink-0로 줄어들거나 잘리지 않게 고정. */}
+        <Link href="/" className="flex flex-shrink-0 items-center">
+          <div className="rounded-md border border-sky-line bg-white px-1.5 py-1 shadow-sm sm:px-3 sm:py-2">
             <img
               src="/dreaming-church.png"
               alt="꿈꾸는교회"
-              className="block h-5 w-auto max-w-[60px] sm:h-7 sm:max-w-[96px]"
+              className="block h-7 w-auto max-w-[84px] sm:h-9 sm:max-w-[120px]"
             />
           </div>
         </Link>
