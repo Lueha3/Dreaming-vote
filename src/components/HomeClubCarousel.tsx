@@ -14,7 +14,7 @@ type Item =
   | { kind: "more"; total: number; accent: string };
 
 // 자동 넘김 간격.
-const AUTOPLAY_MS = 2000;
+const AUTOPLAY_MS = 3200;
 // 사용자가 만지면 자동 재생을 멈췄다 이 시간 뒤 재개.
 const RESUME_AFTER_MS = 4000;
 
