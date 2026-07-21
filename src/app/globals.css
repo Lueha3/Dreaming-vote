@@ -140,12 +140,10 @@ body {
    hover가 없는 터치 환경 우선 — active에서 살짝 눌린다. */
 .press { transition: transform 0.15s ease; }
 .press:active { transform: scale(0.985); }
-.home-slide { transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
-.home-slide:active { transform: scale(0.985); }
 
 @media (prefers-reduced-motion: reduce) {
-  .press, .home-slide { transition: none; }
-  .press:active, .home-slide:active { transform: none; }
+  .press { transition: none; }
+  .press:active { transform: none; }
 }
 
 /* ---------- 배경 아트 (SkyBackdrop) ---------- */
