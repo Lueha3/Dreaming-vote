@@ -87,6 +87,10 @@ export default function EditClubPage() {
       setError("카테고리를 선택해주세요.");
       return;
     }
+    if (images.length === 0) {
+      setError("동아리 대표 사진을 1장 이상 올려주세요.");
+      return;
+    }
     setSaving(true);
     try {
       // 이미지를 실제로 바꿨을 때만 전송 → 서버가 불필요한 전체 교체(delete+recreate)를 건너뛴다.
