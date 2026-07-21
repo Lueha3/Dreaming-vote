@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/db";
 import { hasAdminAreaAccess } from "@/lib/manageAuth";
 import { getAuthUser } from "@/lib/auth";
 import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
 import { recordAudit } from "@/lib/audit";
+import { HOME_FEED_TAG } from "@/lib/feed";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -28,6 +30,9 @@ export async function POST(req: NextRequest, { params }: Params) {
     where: { id },
     data: { isApproved: true, isActive: true },
   });
+
+  // 홈 '새로 생긴 동아리' 캐러셀은 60초 캐시라, 승인 즉시 반영되도록 태그를 무효화한다.
+  revalidateTag(HOME_FEED_TAG, "max");
 
   try {
     await recordAudit({
