@@ -52,6 +52,10 @@ export default function NewClubPage() {
       setError("카테고리를 선택해주세요.");
       return;
     }
+    if (images.length === 0) {
+      setError("동아리 대표 사진을 1장 이상 올려주세요.");
+      return;
+    }
 
     setSaving(true);
     try {

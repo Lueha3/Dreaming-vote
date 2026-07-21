@@ -125,14 +125,16 @@ export function ClubFormFields({
         </div>
       </div>
 
-      {/* 카드뉴스 이미지 */}
+      {/* 카드뉴스 이미지 — 첫 장이 동아리 목록·홈 대문 캐러셀의 대표 사진(커버)이 되므로 필수. */}
       <div className="glass-card p-6">
         <label className="mb-1 block text-xs font-medium text-ink-soft">
-          카드뉴스 이미지{" "}
-          <span className="font-normal text-ink-faint">(선택 · 최대 10장 · 승인 화면에서 검토됩니다)</span>
+          대표 사진{" "}
+          <span className="font-normal text-red-500">*필수</span>{" "}
+          <span className="font-normal text-ink-faint">(최대 10장 · 첫 장이 대표 사진 · 승인 화면에서 검토됩니다)</span>
         </label>
         <p className="mb-4 text-xs text-ink-faint">
-          동아리를 소개하는 카드뉴스 이미지를 올려주세요. Canva 등으로 만든 이미지를 추천합니다.
+          동아리를 소개하는 대표 사진을 1장 이상 올려주세요. 첫 장이 동아리 목록·홈 화면 대문에 노출되는
+          커버 사진이 됩니다. Canva 등으로 만든 카드뉴스 이미지를 추천합니다.
         </p>
         <ClubImageUploader onChange={onImagesChange} maxImages={10} initialImages={initialImages} />
       </div>
