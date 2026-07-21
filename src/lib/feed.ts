@@ -20,7 +20,16 @@ export type FeedData = {
     meetsAt: string;
     place: string;
   }[];
-  recentClubs: { id: string; name: string; category: string; memberCount: number }[];
+  recentClubs: {
+    id: string;
+    name: string;
+    category: string;
+    memberCount: number;
+    imageUrl: string | null; // 카드뉴스 첫 장(order 0) — 홈 대문 캐러셀 커버. 없으면 카테고리 폴백.
+    keyword: string | null; // tags 첫 항목 — 캐러셀 오버레이 '카테고리 · 키워드 · 인원'용.
+  }[];
+  // 캐러셀 카운터 분모 겸 '+N개 더' 판정용 — 승인·활성·비시스템 동아리 전체 수.
+  recentClubsTotal: number;
   recentPosts: {
     id: string;
     category: string;
@@ -43,7 +52,19 @@ export type FeedData = {
   prompt: { id: string; question: string; answerCount: number } | null;
 };
 
-type GlobalFeed = Pick<FeedData, "recentClubs" | "recentPosts" | "answeredPrayers" | "prompt">;
+type GlobalFeed = Pick<
+  FeedData,
+  "recentClubs" | "recentClubsTotal" | "recentPosts" | "answeredPrayers" | "prompt"
+>;
+
+// 홈 대문 캐러셀에 한 번에 실을 최대 슬라이드 수 — 초과분은 '전체 N개 보기' 슬라이드로 유도.
+// 공유 캐시(home-global-feed) payload가 무한정 커지지 않게 상한을 둔다.
+const CAROUSEL_MAX = 16;
+
+/** tags(쉼표/전각쉼표/일본어 읽음표 구분)에서 첫 키워드만 — 없으면 null. */
+function firstKeyword(tags: string): string | null {
+  return tags.split(/[,，、]/).map((s) => s.trim()).filter(Boolean)[0] ?? null;
+}
 
 /** 홈 피드의 전역 캐시 태그 — 새 동아리/광장글/응답기도 반영 시 revalidateTag로 즉시 무효화 가능. */
 export const HOME_FEED_TAG = "home-feed";
@@ -55,19 +76,26 @@ export const HOME_FEED_TAG = "home-feed";
  */
 const getGlobalFeed = unstable_cache(
   async (): Promise<GlobalFeed> => {
-    const [recentClubsRaw, recentPostsRaw, answeredPrayersRaw, promptRaw] = await Promise.all([
+    const CLUB_WHERE = { isApproved: true, isActive: true, isSystem: false } as const;
+    const [recentClubsRaw, recentClubsTotal, recentPostsRaw, answeredPrayersRaw, promptRaw] =
+      await Promise.all([
       prisma.club.findMany({
         // isSystem 제외 — 전체 행사 보드는 '새로 생긴 동아리'가 아니다.
-        where: { isApproved: true, isActive: true, isSystem: false },
+        where: CLUB_WHERE,
         orderBy: { createdAt: "desc" },
-        take: 4,
+        take: CAROUSEL_MAX,
         select: {
           id: true,
           name: true,
           category: true,
+          tags: true,
           _count: { select: { applications: { where: { status: "accepted" } } } },
+          // 커버 = 카드뉴스 첫 장(목록 카드/상세 히어로와 동일한 order asc 첫 이미지).
+          images: { select: { url: true }, orderBy: { order: "asc" }, take: 1 },
         },
       }),
+      // 캐러셀에 실은 수(≤16)보다 실제 동아리가 많으면 '전체 보기' 유도용.
+      prisma.club.count({ where: CLUB_WHERE }),
       prisma.prayer.findMany({
         // clubId: null — 정식 광장 목록(/api/prayers)과 동일하게 레거시 동아리 기도(clubId!=null) 제외.
         where: { clubId: null },
@@ -102,7 +130,10 @@ const getGlobalFeed = unstable_cache(
         name: c.name,
         category: c.category,
         memberCount: c._count.applications,
+        imageUrl: c.images[0]?.url ?? null,
+        keyword: firstKeyword(c.tags),
       })),
+      recentClubsTotal,
       recentPosts: recentPostsRaw.map((p) => ({
         id: p.id,
         category: p.category,

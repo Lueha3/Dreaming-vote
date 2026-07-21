@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { timeAgo } from "@/lib/time";
-import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
-import { ClubCategoryIcon } from "@/components/icons";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
+import { HomeClubCarousel } from "@/components/HomeClubCarousel";
+import { HomeSectionHeader } from "@/components/HomeSectionHeader";
+import { triggerHaptic } from "@/lib/haptics";
 import type { FeedData } from "@/lib/feed";
 
 type Feed = FeedData;
@@ -48,6 +49,58 @@ function dDayLabel(iso: string): string {
   if (diff <= 0) return "오늘";
   if (diff === 1) return "내일";
   return `D-${diff}`;
+}
+
+/** 임박도별 D-day 칩 색 — 오늘=골드 채움(가장 강조), 내일=골드 아웃라인, 이후=틸 아웃라인. */
+function dDayChipClass(label: string): string {
+  if (label === "오늘") return "border-transparent bg-gold text-[#3A2A02]";
+  if (label === "내일") return "border-gold/45 bg-gold/10 text-gold-ink";
+  return "border-teal/40 bg-teal/[0.06] text-teal-ink";
+}
+
+/** 모임 리스트 날짜 스택 — '7.24' + 'FRI'(KST). */
+function fmtDateStack(iso: string): { md: string; dow: string } {
+  const d = new Date(iso);
+  const md = d
+    .toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric" })
+    .replace(/\s/g, "")
+    .replace(/\.$/, "");
+  const dow = d
+    .toLocaleDateString("en-US", { timeZone: "Asia/Seoul", weekday: "short" })
+    .toUpperCase();
+  return { md, dow };
+}
+
+/** 시각만 — '오후 09:49'(KST). */
+function fmtTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("ko-KR", {
+    timeZone: "Asia/Seoul",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** 광장 아바타 — 사진 있으면 원형 이미지, 없으면 이니셜 원. */
+function PlazaAvatar({ url, name, size }: { url: string | null; name: string; size: number }) {
+  if (url) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={url}
+        alt=""
+        className="shrink-0 rounded-full object-cover"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+  return (
+    <span
+      className="grid shrink-0 place-items-center rounded-full bg-skyx/25 font-bold text-skyx-ink"
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.42) }}
+    >
+      {name[0]}
+    </span>
+  );
 }
 
 /**
@@ -107,8 +160,15 @@ export function HomeFeed({ initial }: { initial?: HomeView }) {
   if (view.kind === "pending") return <BlindFeed variant="pending" />;
 
   // 승인 멤버
-  const { upcomingMeetings, recentClubs, recentPosts, answeredPrayers, hasPersonalityReport, prompt } =
-    view.feed;
+  const {
+    upcomingMeetings,
+    recentClubs,
+    recentClubsTotal,
+    recentPosts,
+    answeredPrayers,
+    hasPersonalityReport,
+    prompt,
+  } = view.feed;
   const feedEmpty =
     !upcomingMeetings.length &&
     !recentClubs.length &&
@@ -117,14 +177,19 @@ export function HomeFeed({ initial }: { initial?: HomeView }) {
   const nextMeeting = upcomingMeetings[0] ?? null;
 
   return (
-    <div className="mt-6 space-y-3">
-      {/* 3) 승인 멤버 — 최신 활동 피드를 상단에 우선 노출(인스타·스레드형). */}
+    <div className="mt-5 space-y-4">
+      {/* 대문 — '새로 생긴 동아리' 캐러셀(올리브영식). 최신 개설이 첫 슬라이드. */}
+      {recentClubs.length > 0 && (
+        <HomeClubCarousel clubs={recentClubs} total={recentClubsTotal} />
+      )}
 
-      {/* 오늘의 브리핑 — 홈의 시선을 끄는 대표 카드. 이번 주 질문 > 다음 모임 순으로 하나만. */}
+      {/* 오늘의 브리핑 — 캐러셀 아래 대표 카드(이번 주 질문 > 다음 모임).
+          캐러셀이 없으면(빈 상태) 이 카드가 홈의 히어로 역할을 그대로 이어받는다. */}
       {prompt ? (
         <Link
           href="/prayer"
-          className="glass-card glass-ribbon card-glow relative block overflow-hidden p-5 transition-transform hover:-translate-y-0.5"
+          onClick={() => triggerHaptic()}
+          className="glass-card glass-ribbon card-glow press relative block overflow-hidden p-5"
         >
           {/* 앰비언트 글로우 — 카드에 컬러 텍스처를 입힌다(콘텐츠 뒤, 클릭 방해 없음) */}
           <span
@@ -135,7 +200,9 @@ export function HomeFeed({ initial }: { initial?: HomeView }) {
             aria-hidden
             className="pointer-events-none absolute -bottom-14 -left-8 h-32 w-32 rounded-full bg-teal/20 blur-2xl"
           />
-          <p className="relative text-[11px] font-bold tracking-wide text-gold-ink">💬 이번 주 질문</p>
+          <p className="relative text-[10px] font-extrabold uppercase tracking-[0.13em] text-gold-ink">
+            Weekly Question · 이번 주 질문
+          </p>
           <p className="relative mt-2 text-[19px] font-extrabold leading-snug tracking-tight text-ink">
             {prompt.question}
           </p>
@@ -151,13 +218,16 @@ export function HomeFeed({ initial }: { initial?: HomeView }) {
       ) : nextMeeting ? (
         <Link
           href={`/clubs/${nextMeeting.clubId}/meetings/${nextMeeting.id}`}
-          className="glass-card glass-ribbon card-glow relative block overflow-hidden p-5 transition-transform hover:-translate-y-0.5"
+          onClick={() => triggerHaptic()}
+          className="glass-card glass-ribbon card-glow press relative block overflow-hidden p-5"
         >
           <span
             aria-hidden
             className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-skyx/25 blur-2xl"
           />
-          <p className="relative text-[11px] font-bold tracking-wide text-teal-ink">📅 다음 모임</p>
+          <p className="relative text-[10px] font-extrabold uppercase tracking-[0.13em] text-teal-ink">
+            Next Meeting · 다음 모임
+          </p>
           <p className="relative mt-2 text-[19px] font-extrabold leading-snug tracking-tight text-ink">
             {nextMeeting.title}
           </p>
@@ -175,155 +245,162 @@ export function HomeFeed({ initial }: { initial?: HomeView }) {
       {/* 새가족 체크리스트 — 새가족 기간에만 서버 판정으로 노출 */}
       <OnboardingChecklist />
 
-      {/* 다가오는 내 동아리 모임 — D-day 칩과 함께 */}
+      {/* 다가오는 내 동아리 모임 — 날짜 스택 + 헤어라인 리스트(임박도별 D-day 칩) */}
       {upcomingMeetings.length > 0 && (
-        <div className="glass-card p-4">
-          <p className="mb-2.5 text-xs font-semibold text-teal-ink">📅 다가오는 모임</p>
-          <ul className="space-y-2">
-            {upcomingMeetings.map((m) => (
-              <li key={m.id}>
-                <Link
-                  href={`/clubs/${m.clubId}/meetings/${m.id}`}
-                  className="flex items-center gap-3 rounded-xl border border-white/90 bg-white/55 px-3 py-2.5 transition-all hover:bg-white/80"
-                >
-                  <span className="shrink-0 rounded-lg border border-teal/35 bg-teal/10 px-2 py-1 text-[11px] font-bold text-teal-ink">
-                    {dDayLabel(m.meetsAt)}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-ink">{m.title}</span>
-                    <span className="mt-0.5 block truncate text-xs text-ink-soft">
-                      {m.clubName} · {fmtMeeting(m.meetsAt)}
-                      {m.place ? ` · ${m.place}` : ""}
-                    </span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <section>
+          <HomeSectionHeader kicker="Upcoming" title="다가오는 모임" className="mb-2.5 px-1" />
+          <div className="glass-card px-4">
+            <ul>
+              {upcomingMeetings.map((m, idx) => {
+                const label = dDayLabel(m.meetsAt);
+                const { md, dow } = fmtDateStack(m.meetsAt);
+                return (
+                  <li key={m.id} className={idx > 0 ? "border-t border-sky-line/70" : ""}>
+                    <Link
+                      href={`/clubs/${m.clubId}/meetings/${m.id}`}
+                      onClick={() => triggerHaptic()}
+                      className="press flex items-center gap-3 py-3"
+                    >
+                      <span className="w-11 shrink-0 text-center">
+                        <span className="block text-[16px] font-extrabold leading-none text-skyx-deep tabular-nums">
+                          {md}
+                        </span>
+                        <span className="mt-1 block text-[8.5px] font-extrabold uppercase tracking-[0.12em] text-ink-faint">
+                          {dow}
+                        </span>
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[14px] font-bold text-ink">{m.title}</span>
+                        <span className="mt-0.5 block truncate text-[11px] text-ink-faint">
+                          {m.clubName} · {fmtTime(m.meetsAt)}
+                          {m.place ? ` · ${m.place}` : ""}
+                        </span>
+                      </span>
+                      <span
+                        className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-extrabold tabular-nums ${dDayChipClass(label)}`}
+                      >
+                        {label}
+                      </span>
+                      <span aria-hidden className="text-base text-ink-faint/60">
+                        ›
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </section>
       )}
 
-      {/* 새로 생긴 동아리 — 카테고리 그라데이션 커버의 가로 스크롤 카드 */}
-      {recentClubs.length > 0 && (
-        <div className="glass-card p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs font-semibold text-skyx-ink">✨ 새로 생긴 동아리</p>
-            <Link href="/clubs" className="text-xs text-ink-faint hover:text-skyx-ink">
-              전체 보기 →
-            </Link>
-          </div>
-          <div className="-mx-1 flex snap-x gap-2.5 overflow-x-auto px-1 pb-1" style={{ scrollbarWidth: "none" }}>
-            {recentClubs.map((c) => {
-              const meta = CLUB_CATEGORY_META[c.category];
-              return (
-                <Link
-                  key={c.id}
-                  href={`/clubs/${c.id}`}
-                  className="w-[8.8rem] shrink-0 snap-start overflow-hidden rounded-2xl border border-white/90 bg-white/60 transition-all hover:-translate-y-0.5 hover:bg-white/85"
-                >
-                  <span
-                    className={`grid h-16 place-items-center bg-gradient-to-br ${
-                      meta?.gradient ?? "from-skyx/30 to-teal/15"
-                    }`}
-                  >
-                    <ClubCategoryIcon category={c.category} className="h-7 w-7" />
-                  </span>
-                  <span className="block px-3 py-2.5">
-                    <span className="block truncate text-[13px] font-bold text-ink">{c.name}</span>
-                    <span className="mt-0.5 block truncate text-[11px] text-ink-faint">
-                      {c.category} · 멤버 {c.memberCount}
-                    </span>
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* 광장 소식 — 아바타·공감 배지로 사람 냄새 나게 */}
+      {/* 광장 소식 — 리드 카드 1건 + 콤팩트 행. 시스템 글(환영·생일)은 좌측 골드 바로 절제 표기. */}
       {recentPosts.length > 0 && (
-        <div className="glass-card p-4">
-          <div className="mb-2.5 flex items-center justify-between">
-            <p className="text-xs font-semibold text-gold-ink">🗣 광장 소식</p>
-            <Link href="/prayer" className="text-xs text-ink-faint hover:text-skyx-ink">
-              광장 가기 →
-            </Link>
-          </div>
-          <ul className="space-y-1.5">
-            {recentPosts.map((p) => {
+        <section>
+          <HomeSectionHeader
+            kicker="Plaza"
+            title="광장 소식"
+            actionHref="/prayer"
+            actionLabel="광장 가기"
+            className="mb-2.5 px-1"
+          />
+          <div className="space-y-2">
+            {recentPosts.map((p, idx) => {
               const isSystem = !!p.systemType;
-              return (
-                <li key={p.id}>
+              if (idx === 0) {
+                return (
                   <Link
+                    key={p.id}
                     href={plazaLink(p.category, p.id)}
-                    className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 transition-all hover:bg-white/85 ${
-                      isSystem ? "border-gold/40 bg-gold/[0.07]" : "border-white/90 bg-white/55"
-                    }`}
+                    onClick={() => triggerHaptic()}
+                    className="press glass-card relative block overflow-hidden p-4"
                   >
-                    {p.avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.avatarUrl} alt="" className="mt-0.5 h-7 w-7 shrink-0 rounded-full object-cover" />
-                    ) : (
-                      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-skyx/25 text-xs font-bold text-skyx-ink">
-                        {p.authorName[0]}
-                      </span>
+                    {isSystem && (
+                      <span
+                        aria-hidden
+                        className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-gold to-gold-deep"
+                      />
                     )}
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[11px] font-semibold text-ink-soft">
-                        {p.authorName} <span className="font-normal text-ink-faint">· {timeAgo(p.createdAt)}</span>
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute -top-3 left-2 text-[56px] leading-none text-skyx/20"
+                      style={{ fontFamily: "Georgia, serif" }}
+                    >
+                      &ldquo;
+                    </span>
+                    <span className="relative flex items-center gap-2">
+                      <PlazaAvatar url={p.avatarUrl} name={p.authorName} size={30} />
+                      <span className="min-w-0">
+                        <span className="block text-[11.5px] font-bold text-ink-soft">{p.authorName}</span>
+                        <span className="block text-[10px] text-ink-faint">{timeAgo(p.createdAt)}</span>
                       </span>
-                      <span className="mt-0.5 block truncate text-sm text-ink">
-                        {!isSystem && (
-                          <span className="mr-1" aria-hidden>
-                            {PLAZA_EMOJI[p.category] ?? "💬"}
-                          </span>
-                        )}
-                        {p.snippet}
-                      </span>
-                      {(p.reactionCount > 0 || p.commentCount > 0) && (
-                        <span className="mt-1.5 flex gap-1.5">
-                          {p.reactionCount > 0 && (
-                            <span className="rounded-full border border-skyx/40 bg-skyx/10 px-2 py-0.5 text-[10px] font-bold text-skyx-ink">
-                              💙 {p.reactionCount}
-                            </span>
-                          )}
-                          {p.commentCount > 0 && (
-                            <span className="rounded-full border border-skyx/40 bg-skyx/10 px-2 py-0.5 text-[10px] font-bold text-skyx-ink">
-                              💬 {p.commentCount}
-                            </span>
-                          )}
+                    </span>
+                    <p className="relative mt-2.5 line-clamp-2 text-[14px] leading-relaxed text-ink">
+                      {!isSystem && (
+                        <span className="mr-1" aria-hidden>
+                          {PLAZA_EMOJI[p.category] ?? "💬"}
                         </span>
                       )}
-                    </span>
+                      {p.snippet}
+                    </p>
+                    {(p.reactionCount > 0 || p.commentCount > 0) && (
+                      <p className="relative mt-2 text-[11px] font-bold tabular-nums text-skyx-ink">
+                        {p.reactionCount > 0 && <span>💙 {p.reactionCount}</span>}
+                        {p.reactionCount > 0 && p.commentCount > 0 && (
+                          <span className="mx-1.5 text-ink-faint">·</span>
+                        )}
+                        {p.commentCount > 0 && <span>💬 {p.commentCount}</span>}
+                      </p>
+                    )}
                   </Link>
-                </li>
+                );
+              }
+              return (
+                <Link
+                  key={p.id}
+                  href={plazaLink(p.category, p.id)}
+                  onClick={() => triggerHaptic()}
+                  className={`press flex items-center gap-2.5 rounded-xl px-2 py-1.5 ${
+                    isSystem ? "border-l-2 border-gold" : ""
+                  }`}
+                >
+                  <PlazaAvatar url={p.avatarUrl} name={p.authorName} size={22} />
+                  <span className="min-w-0 flex-1 truncate text-[12.5px] text-ink-soft">
+                    <b className="font-bold text-ink">{p.authorName}</b>
+                    <span className="mx-1 text-ink-faint">·</span>
+                    {!isSystem && `${PLAZA_EMOJI[p.category] ?? "💬"} `}
+                    {p.snippet}
+                  </span>
+                  <span className="shrink-0 text-[10.5px] text-ink-faint">{timeAgo(p.createdAt)}</span>
+                </Link>
               );
             })}
-          </ul>
-        </div>
+          </div>
+        </section>
       )}
 
-      {/* 응답된 기도 */}
+      {/* 응답된 기도 — 인용 지면(좌측 틸 바) */}
       {answeredPrayers.length > 0 && (
-        <div className="glass-card p-4">
-          <p className="mb-2.5 text-xs font-semibold text-teal-ink">🌿 응답된 기도</p>
-          <ul className="space-y-1.5">
-            {answeredPrayers.map((p) => (
-              <li key={p.id}>
-                <Link
-                  href={plazaLink(p.category, p.id)}
-                  className="block rounded-xl border border-teal/25 bg-teal/[0.06] px-3 py-2 transition-all hover:bg-teal/[0.12]"
-                >
-                  <p className="truncate text-sm text-ink">{p.snippet}</p>
-                  {p.answeredNote && (
-                    <p className="mt-0.5 truncate text-xs text-teal-ink">🌿 {p.answeredNote}</p>
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <section>
+          <HomeSectionHeader kicker="Answered" title="응답된 기도" className="mb-2.5 px-1" />
+          <div className="glass-card p-4">
+            <ul className="space-y-2.5">
+              {answeredPrayers.map((p) => (
+                <li key={p.id} className="border-l-2 border-teal/60 pl-3">
+                  <Link
+                    href={plazaLink(p.category, p.id)}
+                    onClick={() => triggerHaptic()}
+                    className="press block"
+                  >
+                    <p className="line-clamp-2 text-[13.5px] leading-relaxed text-ink">{p.snippet}</p>
+                    {p.answeredNote && (
+                      <p className="mt-0.5 truncate text-[11.5px] text-teal-ink">🌿 {p.answeredNote}</p>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
       )}
 
       {/* 성향 카드 미작성 멤버 — 다음 스텝 유도(피드 아래). 피드가 비어도 이 카드가 채워준다. */}
