@@ -67,15 +67,22 @@ export default async function Home() {
         {/* 전체 공지 배너 (최신 게시 1건, 닫기 가능) */}
         <AnnouncementBanner />
 
-        {/* 개인화 인사 — 매일 똑같던 대형 히어로 대신, '오늘'과 '나'가 담긴 컴팩트 헤더.
-            시선 끌기는 아래 브리핑 카드(이번 주 질문)가 맡는다. */}
-        <div className="mb-1 mt-2">
-          <p className="text-xs font-semibold text-ink-faint">
+        {/* 개인화 인사 — 매스트헤드로 축소. 시선의 주인공은 바로 아래 '새로 생긴 동아리' 대문 캐러셀.
+            골드 헤어라인이 '여기서부터 콘텐츠'를 알리고 브랜드 골드를 상시 노출한다. */}
+        <div className="mb-3 mt-1">
+          <p className="text-[11px] font-semibold text-ink-faint">
             {greet.date} · 오늘의 <span className="gradient-text font-bold">청년부</span>
           </p>
-          <h1 className="mt-1.5 text-[26px] font-extrabold leading-tight tracking-tight text-ink sm:text-[30px]">
-            {greet.line} <span aria-hidden>{greet.emoji}</span>
+          <h1 className="mt-1.5 text-[21px] font-extrabold leading-tight tracking-tight text-ink sm:text-[24px]">
+            {greet.line}{" "}
+            <span aria-hidden className="align-middle text-[18px]">
+              {greet.emoji}
+            </span>
           </h1>
+          <span
+            aria-hidden
+            className="mt-2.5 block h-[2px] w-16 rounded-full bg-gradient-to-r from-gold/80 via-teal/45 to-transparent"
+          />
         </div>
 
         {/* 홈 본문: 피드를 서버에서 채워 스트리밍(Suspense).
