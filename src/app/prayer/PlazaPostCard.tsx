@@ -291,11 +291,6 @@ export function PlazaPostCard({
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          {isPrayer && post.isAnswered && (
-            <span className="rounded-full border border-teal/35 bg-teal/10 px-2.5 py-0.5 text-xs font-medium text-teal-ink">
-              응답됨 🌿
-            </span>
-          )}
           {hasMoreActions && (
             <div className="relative" ref={moreRef}>
               <button
@@ -419,11 +414,18 @@ export function PlazaPostCard({
       {/* 동아리 광고 — 첨부된 동아리 미리보기 카드 */}
       {!editing && post.club && <ClubAdCard club={post.club} />}
 
-      {/* 응답 간증 */}
-      {isPrayer && post.isAnswered && post.answeredNote && (
-        <p className="mt-2 rounded-xl border border-teal/25 bg-teal/[0.07] px-3 py-2 text-xs leading-relaxed text-teal-ink">
-          🌿 {post.answeredNote}
-        </p>
+      {/* 응답됨 표시 — 헤더 줄(작성자·시간·수정됨)과 겹쳐 깨지는 걸 피하려 카드 하단으로 이동 */}
+      {isPrayer && post.isAnswered && (
+        <div className="mt-2.5">
+          <span className="inline-block rounded-full border border-teal/35 bg-teal/10 px-2.5 py-0.5 text-xs font-medium text-teal-ink">
+            응답됨 🌿
+          </span>
+          {post.answeredNote && (
+            <p className="mt-1.5 rounded-xl border border-teal/25 bg-teal/[0.07] px-3 py-2 text-xs leading-relaxed text-teal-ink">
+              🌿 {post.answeredNote}
+            </p>
+          )}
+        </div>
       )}
 
       {/* 액션 바 — 상시 노출은 공감·댓글만. 수정/신고/삭제/응답표시는 위 ⋯ 메뉴로 이동. */}
