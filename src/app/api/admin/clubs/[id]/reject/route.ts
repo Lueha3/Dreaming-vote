@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/db";
 import { hasAdminAreaAccess } from "@/lib/manageAuth";
 import { getAuthUser } from "@/lib/auth";
 import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
 import { recordAudit } from "@/lib/audit";
+import { HOME_FEED_TAG } from "@/lib/feed";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -29,6 +31,9 @@ export async function POST(req: NextRequest, { params }: Params) {
     where: { id },
     data: { isApproved: false, isActive: false },
   });
+
+  // 노출 중이던 동아리를 반려했을 수도 있으니 홈 캐러셀 캐시도 즉시 무효화.
+  revalidateTag(HOME_FEED_TAG, "max");
 
   try {
     await recordAudit({

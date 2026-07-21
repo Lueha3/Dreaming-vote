@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 
 import { prisma } from "@/lib/db";
 import { getAuthUser, membershipGate } from "@/lib/auth";
@@ -9,6 +10,7 @@ import { recordAudit } from "@/lib/audit";
 import { getClientIp } from "@/lib/rateLimit";
 import { createClient } from "@/lib/supabase/server";
 import { removeStorageObjects } from "@/lib/storage";
+import { HOME_FEED_TAG } from "@/lib/feed";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -153,6 +155,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const supabase = await createClient();
     await removeStorageObjects(supabase, "club-images", orphanedImageUrls);
   }
+
+  // 이름·카테고리·대표 사진 등은 홈 캐러셀에 그대로 노출되므로, 승인된 동아리 수정 시
+  // 60초 캐시가 만료될 때까지 기다리지 않고 즉시 반영되게 무효화한다.
+  revalidateTag(HOME_FEED_TAG, "max");
 
   // best-effort 감사 (운영진의 타 동아리 수정은 별도 표기)
   try {
