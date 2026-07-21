@@ -96,9 +96,9 @@ export function ClubImageUploader({ onChange, maxImages = 5, initialImages }: Pr
 
       try {
         const options = {
-          maxSizeMB: 0.8,           // 최대 800KB
-          maxWidthOrHeight: 1080,   // 인스타그램 기준 가로 1080px (모바일/웹 최적화)
-          initialQuality: 0.85,     // 육안으로 구분 불가능한 수준의 초기 압축률 (용량 최적화)
+          maxSizeMB: 1,             // 최대 1MB — 홈 대문 캐러셀 풀블리드 히어로로 쓰여 화질이 중요
+          maxWidthOrHeight: 1440,   // 캐러셀 카드 실 표시폭보다 여유 있게(레티나 대응)
+          initialQuality: 0.92,     // 목표 용량 안에서 화질 우선(필요시 라이브러리가 자동으로 더 낮춤)
           useWebWorker: true,
           fileType: "image/webp" as const,
         };
