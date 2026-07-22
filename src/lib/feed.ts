@@ -2,6 +2,8 @@ import { unstable_cache } from "next/cache";
 
 import { prisma } from "@/lib/db";
 import { getWeekMonday } from "@/lib/week";
+import { isNewcomer } from "@/lib/newcomer";
+import type { Role } from "@/lib/roles";
 
 /**
  * 홈 '오늘의 청년부' 피드 데이터 — API 라우트(/api/feed)와 홈 서버 렌더(page.tsx)가 공유한다.
@@ -40,6 +42,12 @@ export type FeedData = {
     createdAt: string;
     reactionCount: number;
     commentCount: number;
+    imageUrl: string | null; // 첫 첨부 사진 — 리드 카드 풀블리드/행 썸네일용
+    imageCount: number; // 첨부 사진 수 — 다중 사진 '+N' 칩
+    isAnswered: boolean; // 응답된 기도 — '응답됨' 배지
+    isAnonymous: boolean; // 익명 글 — 역할/새가족 배지 억제 판단
+    authorRole: Role | null; // 역할 배지(익명이면 null로 마스킹)
+    isNewcomer: boolean; // 새가족 배지(익명이면 false로 마스킹)
   }[];
   answeredPrayers: {
     id: string;
@@ -106,10 +114,12 @@ const getGlobalFeed = unstable_cache(
           category: true,
           content: true,
           isAnonymous: true,
+          isAnswered: true,
           systemType: true,
           createdAt: true,
-          user: { select: { nickname: true, avatarUrl: true } },
-          _count: { select: { intercessions: true, comments: true } },
+          user: { select: { nickname: true, avatarUrl: true, role: true, membershipDecidedAt: true } },
+          images: { select: { url: true }, orderBy: { order: "asc" }, take: 1 },
+          _count: { select: { intercessions: true, comments: true, images: true } },
         },
       }),
       prisma.prayer.findMany({
@@ -137,13 +147,20 @@ const getGlobalFeed = unstable_cache(
       recentPosts: recentPostsRaw.map((p) => ({
         id: p.id,
         category: p.category,
-        snippet: p.content.slice(0, 60),
+        snippet: p.content.slice(0, 90),
         authorName: p.isAnonymous ? "익명" : p.user?.nickname ?? "탈퇴한 멤버",
         avatarUrl: p.isAnonymous ? null : p.user?.avatarUrl ?? null,
         systemType: p.systemType,
         createdAt: p.createdAt.toISOString(),
         reactionCount: p._count.intercessions,
         commentCount: p._count.comments,
+        // 이미지는 익명 글도 그대로 노출(광장 본편과 동일) — 신원 마스킹은 이름·아바타·배지에만 적용.
+        imageUrl: p.images[0]?.url ?? null,
+        imageCount: p._count.images,
+        isAnswered: p.isAnswered,
+        isAnonymous: p.isAnonymous,
+        authorRole: p.isAnonymous ? null : ((p.user?.role ?? null) as Role | null),
+        isNewcomer: p.isAnonymous ? false : isNewcomer(p.user?.membershipDecidedAt ?? null),
       })),
       answeredPrayers: answeredPrayersRaw.map((p) => ({
         id: p.id,

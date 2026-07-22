@@ -142,7 +142,7 @@ function ScreenContent({ index }: { index: number }) {
               <Sub>오늘 첫 출근했어요!! 기도해주신 분들 감사합니다 🙇</Sub>
             </div>
             <SRow>
-              <Pill tone="sky">💙 12</Pill>
+              <Pill tone="sky">❤️ 12</Pill>
               <Pill tone="sky">💬 5</Pill>
             </SRow>
           </SCard>
@@ -238,7 +238,7 @@ function ScreenContent({ index }: { index: number }) {
             <b className="block text-[11.5px]">🎂 오늘은 소윤님의 생일이에요!</b>
             <Sub>축하해주세요 🎉</Sub>
             <SRow>
-              <Pill tone="gold">💙 27</Pill>
+              <Pill tone="gold">❤️ 27</Pill>
               <Pill tone="gold">💬 14</Pill>
             </SRow>
           </SCard>
