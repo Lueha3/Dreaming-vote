@@ -6,6 +6,9 @@ import { timeAgo } from "@/lib/time";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import { HomeClubCarousel } from "@/components/HomeClubCarousel";
 import { HomeSectionHeader } from "@/components/HomeSectionHeader";
+import { RoleBadge } from "@/components/RoleBadge";
+import { NewcomerBadge } from "@/components/NewcomerBadge";
+import { displayRoles } from "@/lib/roles";
 import { triggerHaptic } from "@/lib/haptics";
 import type { FeedData } from "@/lib/feed";
 
@@ -20,11 +23,27 @@ export type HomeView =
   | { kind: "pending" }
   | { kind: "approved"; feed: Feed };
 
+type PlazaPost = FeedData["recentPosts"][number];
+
 const PLAZA_EMOJI: Record<string, string> = {
   일상: "☀️",
   기도해주세요: "🙏",
   동아리광고: "📣",
 };
+
+/** 반응 이모지 — 공감은 빨간 하트(❤️), 기도는 🙏, 환영 글은 👋. */
+function reactionFace(category: string, systemType: string | null): string {
+  if (systemType === "welcome") return "👋";
+  if (category === "기도해주세요") return "🙏";
+  return "❤️";
+}
+
+/** 소셜 프루프 문구 — 'N명이 공감해요 / 기도했어요 / 환영해요'. */
+function reactionVerb(category: string, systemType: string | null): string {
+  if (systemType === "welcome") return "명이 환영해요";
+  if (category === "기도해주세요") return "명이 기도했어요";
+  return "명이 공감해요";
+}
 
 function plazaLink(category: string, id: string): string {
   return `/prayer?category=${encodeURIComponent(category)}#${id}`;
@@ -100,6 +119,215 @@ function PlazaAvatar({ url, name, size }: { url: string | null; name: string; si
     >
       {name[0]}
     </span>
+  );
+}
+
+/** 텍스트형 리드 카드 배경 워시 — 카테고리별 은은한 브랜드 톤. */
+function plazaWash(category: string, systemType: string | null): string {
+  if (systemType) return "linear-gradient(135deg,rgba(240,180,41,.14),transparent 55%)";
+  if (category === "기도해주세요") return "linear-gradient(135deg,rgba(53,195,180,.12),transparent 55%)";
+  return "linear-gradient(135deg,rgba(127,189,228,.12),transparent 55%)";
+}
+function plazaQuoteColor(category: string, systemType: string | null): string {
+  if (systemType) return "rgba(240,180,41,.25)";
+  if (category === "기도해주세요") return "rgba(53,195,180,.2)";
+  return "rgba(127,189,228,.2)";
+}
+function hasPlazaBadges(post: PlazaPost): boolean {
+  return (
+    !!post.systemType ||
+    post.isAnswered ||
+    (!post.isAnonymous && (post.isNewcomer || displayRoles(post.authorRole).length > 0))
+  );
+}
+
+/** 작성자명 옆 배지 묶음 — 시스템(새가족/생일)·응답됨·새가족·역할. 익명 글은 신원 배지 억제. */
+function PlazaBadges({ post }: { post: PlazaPost }) {
+  const roles = post.isAnonymous ? [] : displayRoles(post.authorRole);
+  return (
+    <>
+      {post.systemType === "welcome" && (
+        <span className="shrink-0 rounded-full bg-gradient-to-r from-gold/25 to-gold/10 px-1.5 py-0.5 text-[9px] font-extrabold text-gold-ink">
+          🎉 새가족
+        </span>
+      )}
+      {post.systemType === "birthday" && (
+        <span className="shrink-0 rounded-full bg-gradient-to-r from-gold/25 to-gold/10 px-1.5 py-0.5 text-[9px] font-extrabold text-gold-ink">
+          🎂 생일
+        </span>
+      )}
+      {!post.systemType && post.isNewcomer && <NewcomerBadge size="sm" />}
+      {!post.systemType && roles.map((r) => <RoleBadge key={r} role={r} size="sm" />)}
+      {post.isAnswered && (
+        <span className="shrink-0 rounded-full bg-teal/15 px-1.5 py-0.5 text-[9px] font-extrabold text-teal-ink">
+          🌿 응답됨
+        </span>
+      )}
+    </>
+  );
+}
+
+/** 소셜 프루프 — 'N명이 공감해요/기도했어요' + 댓글 수. 공감은 빨간 하트(❤️). */
+function PlazaProof({ post, className }: { post: PlazaPost; className?: string }) {
+  if (post.reactionCount === 0 && post.commentCount === 0) return null;
+  return (
+    <p className={`flex items-center gap-2 text-[11px] font-bold ${className ?? ""}`}>
+      {post.reactionCount > 0 && (
+        <span className="text-ink-soft">
+          <span aria-hidden>{reactionFace(post.category, post.systemType)}</span>{" "}
+          <span className="tabular-nums">{post.reactionCount}</span>
+          {reactionVerb(post.category, post.systemType)}
+        </span>
+      )}
+      {post.commentCount > 0 && (
+        <span className="rounded-full bg-skyx/12 px-2 py-0.5 tabular-nums text-skyx-ink">
+          💬 {post.commentCount}
+        </span>
+      )}
+    </p>
+  );
+}
+
+/** 광장 리드 카드 — 사진 있으면 풀블리드 미디어형, 없으면 풀쿼트 텍스트형. */
+function PlazaLead({ post }: { post: PlazaPost }) {
+  const isSystem = !!post.systemType;
+
+  if (post.imageUrl) {
+    return (
+      <Link
+        href={plazaLink(post.category, post.id)}
+        onClick={() => triggerHaptic()}
+        className="press group glass-card relative block overflow-hidden p-0"
+      >
+        <span className="relative block aspect-[16/10] w-full overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={post.imageUrl}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-active:scale-[1.04]"
+          />
+          <span
+            aria-hidden
+            className="absolute inset-x-0 bottom-0 h-20"
+            style={{ background: "linear-gradient(0deg,rgba(8,18,28,.62),transparent)" }}
+          />
+          <span className="absolute left-2.5 top-2.5 rounded-full bg-white/85 px-2 py-0.5 text-[10px] font-extrabold text-skyx-ink backdrop-blur-sm">
+            {PLAZA_EMOJI[post.category] ?? "💬"} {post.category}
+          </span>
+          {post.imageCount > 1 && (
+            <span className="absolute right-2.5 top-2.5 rounded-full bg-[#0A1622]/45 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
+              ⧉ {post.imageCount}
+            </span>
+          )}
+          <span className="absolute inset-x-3 bottom-2.5 flex items-center gap-2">
+            <span className="shrink-0 rounded-full ring-2 ring-white/70">
+              <PlazaAvatar url={post.avatarUrl} name={post.authorName} size={26} />
+            </span>
+            <b className="min-w-0 truncate text-[11.5px] font-bold text-white [text-shadow:0_1px_6px_rgba(0,0,0,.45)]">
+              {post.authorName}
+            </b>
+            <span className="shrink-0 text-[10px] text-white/85 [text-shadow:0_1px_6px_rgba(0,0,0,.45)]">
+              · {timeAgo(post.createdAt)}
+            </span>
+          </span>
+        </span>
+        <span className="block px-4 pb-3.5 pt-3">
+          {hasPlazaBadges(post) && (
+            <span className="mb-1.5 flex flex-wrap items-center gap-1">
+              <PlazaBadges post={post} />
+            </span>
+          )}
+          <p className="line-clamp-2 text-[13.5px] leading-relaxed text-ink">{post.snippet}</p>
+          <PlazaProof post={post} className="mt-2.5" />
+        </span>
+      </Link>
+    );
+  }
+
+  // 텍스트형 — 풀쿼트 지면
+  return (
+    <Link
+      href={plazaLink(post.category, post.id)}
+      onClick={() => triggerHaptic()}
+      className="press glass-card relative block overflow-hidden p-4"
+    >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{ background: plazaWash(post.category, post.systemType) }}
+      />
+      {isSystem && (
+        <span
+          aria-hidden
+          className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-gold to-gold-deep"
+        />
+      )}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -top-3 left-2 text-[56px] leading-none"
+        style={{ fontFamily: "Georgia, serif", color: plazaQuoteColor(post.category, post.systemType) }}
+      >
+        &ldquo;
+      </span>
+      <span className="relative flex items-center gap-2">
+        <PlazaAvatar url={post.avatarUrl} name={post.authorName} size={30} />
+        <span className="min-w-0">
+          <span className="flex items-center gap-1.5">
+            <b className="min-w-0 truncate text-[11.5px] font-bold text-ink-soft">{post.authorName}</b>
+            <PlazaBadges post={post} />
+          </span>
+          <span className="block text-[10px] text-ink-faint">{timeAgo(post.createdAt)}</span>
+        </span>
+      </span>
+      <p className="relative mt-2.5 line-clamp-3 text-[14px] leading-relaxed text-ink">
+        {!isSystem && (
+          <span className="mr-1" aria-hidden>
+            {PLAZA_EMOJI[post.category] ?? "💬"}
+          </span>
+        )}
+        {post.snippet}
+      </p>
+      <PlazaProof post={post} className="relative mt-2.5" />
+    </Link>
+  );
+}
+
+/** 광장 콤팩트 행 — 2줄(이름·배지·시간 / 본문) + 우측 사진 썸네일 또는 반응 수. */
+function PlazaRow({ post }: { post: PlazaPost }) {
+  return (
+    <Link
+      href={plazaLink(post.category, post.id)}
+      onClick={() => triggerHaptic()}
+      className="press flex items-center gap-2.5 rounded-xl px-2 py-2"
+    >
+      <PlazaAvatar url={post.avatarUrl} name={post.authorName} size={24} />
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5">
+          <b className="min-w-0 truncate text-[12px] font-bold text-ink">{post.authorName}</b>
+          <PlazaBadges post={post} />
+          <span className="ml-auto shrink-0 text-[9.5px] text-ink-faint">{timeAgo(post.createdAt)}</span>
+        </span>
+        <span className="mt-0.5 block truncate text-[12px] text-ink-soft">
+          {!post.systemType && `${PLAZA_EMOJI[post.category] ?? "💬"} `}
+          {post.snippet}
+        </span>
+      </span>
+      {post.imageUrl ? (
+        <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={post.imageUrl} alt="" className="h-full w-full object-cover" />
+          {post.imageCount > 1 && (
+            <span className="absolute right-0.5 top-0.5 rounded bg-black/45 px-1 text-[8px] font-bold text-white">
+              +{post.imageCount - 1}
+            </span>
+          )}
+        </span>
+      ) : post.reactionCount > 0 ? (
+        <span className="shrink-0 text-[10.5px] font-bold tabular-nums text-ink-soft">
+          <span aria-hidden>{reactionFace(post.category, post.systemType)}</span> {post.reactionCount}
+        </span>
+      ) : null}
+    </Link>
   );
 }
 
@@ -293,7 +521,7 @@ export function HomeFeed({ initial }: { initial?: HomeView }) {
         </section>
       )}
 
-      {/* 광장 소식 — 리드 카드 1건 + 콤팩트 행. 시스템 글(환영·생일)은 좌측 골드 바로 절제 표기. */}
+      {/* 광장 소식 — 리드 카드(사진형/텍스트형) + 콤팩트 행. */}
       {recentPosts.length > 0 && (
         <section>
           <HomeSectionHeader
@@ -304,76 +532,9 @@ export function HomeFeed({ initial }: { initial?: HomeView }) {
             className="mb-2.5 px-1"
           />
           <div className="space-y-2">
-            {recentPosts.map((p, idx) => {
-              const isSystem = !!p.systemType;
-              if (idx === 0) {
-                return (
-                  <Link
-                    key={p.id}
-                    href={plazaLink(p.category, p.id)}
-                    onClick={() => triggerHaptic()}
-                    className="press glass-card relative block overflow-hidden p-4"
-                  >
-                    {isSystem && (
-                      <span
-                        aria-hidden
-                        className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-gold to-gold-deep"
-                      />
-                    )}
-                    <span
-                      aria-hidden
-                      className="pointer-events-none absolute -top-3 left-2 text-[56px] leading-none text-skyx/20"
-                      style={{ fontFamily: "Georgia, serif" }}
-                    >
-                      &ldquo;
-                    </span>
-                    <span className="relative flex items-center gap-2">
-                      <PlazaAvatar url={p.avatarUrl} name={p.authorName} size={30} />
-                      <span className="min-w-0">
-                        <span className="block text-[11.5px] font-bold text-ink-soft">{p.authorName}</span>
-                        <span className="block text-[10px] text-ink-faint">{timeAgo(p.createdAt)}</span>
-                      </span>
-                    </span>
-                    <p className="relative mt-2.5 line-clamp-2 text-[14px] leading-relaxed text-ink">
-                      {!isSystem && (
-                        <span className="mr-1" aria-hidden>
-                          {PLAZA_EMOJI[p.category] ?? "💬"}
-                        </span>
-                      )}
-                      {p.snippet}
-                    </p>
-                    {(p.reactionCount > 0 || p.commentCount > 0) && (
-                      <p className="relative mt-2 text-[11px] font-bold tabular-nums text-skyx-ink">
-                        {p.reactionCount > 0 && <span>💙 {p.reactionCount}</span>}
-                        {p.reactionCount > 0 && p.commentCount > 0 && (
-                          <span className="mx-1.5 text-ink-faint">·</span>
-                        )}
-                        {p.commentCount > 0 && <span>💬 {p.commentCount}</span>}
-                      </p>
-                    )}
-                  </Link>
-                );
-              }
-              return (
-                <Link
-                  key={p.id}
-                  href={plazaLink(p.category, p.id)}
-                  onClick={() => triggerHaptic()}
-                  className={`press flex items-center gap-2.5 rounded-xl px-2 py-1.5 ${
-                    isSystem ? "border-l-2 border-gold" : ""
-                  }`}
-                >
-                  <PlazaAvatar url={p.avatarUrl} name={p.authorName} size={22} />
-                  <span className="min-w-0 flex-1 truncate text-[12.5px] text-ink-soft">
-                    <b className="font-bold text-ink">{p.authorName}</b>
-                    <span className="mx-1 text-ink-faint">·</span>
-                    {!isSystem && `${PLAZA_EMOJI[p.category] ?? "💬"} `}
-                    {p.snippet}
-                  </span>
-                  <span className="shrink-0 text-[10.5px] text-ink-faint">{timeAgo(p.createdAt)}</span>
-                </Link>
-              );
-            })}
+            {recentPosts.map((p, idx) =>
+              idx === 0 ? <PlazaLead key={p.id} post={p} /> : <PlazaRow key={p.id} post={p} />,
+            )}
           </div>
         </section>
       )}

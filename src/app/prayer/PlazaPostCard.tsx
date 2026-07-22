@@ -24,7 +24,7 @@ function isDoubleTap(lastTapAtRef: { current: number }): boolean {
   return isDouble;
 }
 
-/** 하트 버스트 — 더블탭 위치에 잠깐 떴다 사라지는 큰 하트(공감과 동일한 💙). */
+/** 하트 버스트 — 더블탭 위치에 잠깐 떴다 사라지는 큰 하트(공감과 동일한 ❤️). */
 function HeartBurst({ burstKey }: { burstKey: number }) {
   return (
     <span
@@ -32,7 +32,7 @@ function HeartBurst({ burstKey }: { burstKey: number }) {
       className="heart-burst-play pointer-events-none absolute inset-0 grid place-items-center text-6xl"
       aria-hidden
     >
-      💙
+      ❤️
     </span>
   );
 }
@@ -448,7 +448,7 @@ export function PlazaPostCard({
           ) : isWelcome ? (
             <>👋 환영해요</>
           ) : (
-            <>{post.iReacted ? "💙" : "🤍"} 공감</>
+            <>{post.iReacted ? "❤️" : "🤍"} 공감</>
           )}
           {post.reactionCount > 0 && <span className="text-ink-faint">· {post.reactionCount}</span>}
         </button>

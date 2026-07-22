@@ -110,7 +110,7 @@ function RecapViewer({ recap, month, onClose }: { recap: Recap; month: string; o
           {hasTopPost && (
             <p className="mt-3 rounded-xl border border-gold/30 bg-gold/5 px-3 py-2.5 text-xs leading-relaxed text-ink-soft">
               가장 많은 공감을 받은 글은 <b className="text-ink">{recap.topPostAuthorName}</b>님의
-              &ldquo;{recap.topPostSnippet}&rdquo; 💙 {recap.topPostReactionCount}
+              &ldquo;{recap.topPostSnippet}&rdquo; ❤️ {recap.topPostReactionCount}
             </p>
           )}
         </Slide>
@@ -137,7 +137,7 @@ function RecapViewer({ recap, month, onClose }: { recap: Recap; month: string; o
         </Slide>
 
         <Slide>
-          <span className="text-3xl" aria-hidden>💙</span>
+          <span className="text-3xl" aria-hidden>❤️</span>
           <h3 className="mt-3 text-xl font-extrabold leading-snug text-ink">
             이번 달 우리는
             <br />
