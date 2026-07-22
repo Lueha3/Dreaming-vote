@@ -146,6 +146,46 @@ body {
   .press:active { transform: none; }
 }
 
+/* ---------- 광장 소식 카드 스택 (PlazaStack) ---------- */
+/* 위치·높이·그림자는 JS 스프링 루프가 인라인으로 제어. 여기선 정적 스타일과 진입 모션만. */
+.plaza-stage { touch-action: none; }
+.plaza-card {
+  will-change: transform, height;
+  box-shadow: 0 -16px 32px -16px rgba(30, 60, 95, 0.35), 0 2px 10px -6px rgba(30, 60, 95, 0.12);
+  cursor: pointer;
+}
+.plaza-stage.plaza-dragging { cursor: grabbing; }
+.plaza-stage.plaza-dragging .plaza-card { cursor: grabbing; }
+/* 포커스 리본 — 골드→틸. opacity는 JS가 포커스 정도에 맞춰 제어. */
+.plaza-ribbon {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #F0B429, #D99B0B 30%, #35C3B4 75%, #7FBDE4);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+/* 진입 — 위에서부터 차례로 툭툭 떨어져 겹겹이 쌓인다(카드별 animation-delay는 인라인). */
+.plaza-deal .plaza-inner { animation: plazaDealIn 0.55s cubic-bezier(0.3, 1.45, 0.45, 1) both; }
+@keyframes plazaDealIn {
+  from { transform: translateY(-42px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.plaza-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(74, 144, 194, 0.28);
+  transition: width 0.25s ease, background 0.25s ease;
+}
+.plaza-dot.on { width: 16px; background: #4A90C2; }
+
+@media (prefers-reduced-motion: reduce) {
+  .plaza-deal .plaza-inner { animation: none; }
+}
+
 /* ---------- 배경 아트 (SkyBackdrop) ---------- */
 
 .sky-glow {

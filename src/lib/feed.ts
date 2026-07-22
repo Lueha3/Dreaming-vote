@@ -49,21 +49,17 @@ export type FeedData = {
     authorRole: Role | null; // 역할 배지(익명이면 null로 마스킹)
     isNewcomer: boolean; // 새가족 배지(익명이면 false로 마스킹)
   }[];
-  answeredPrayers: {
-    id: string;
-    category: string;
-    snippet: string;
-    answeredNote: string | null;
-    createdAt: string | null;
-  }[];
   // 이번 주 아이스브레이커 질문 — 홈 최상단 브리핑 카드의 주인공(없으면 null).
   prompt: { id: string; question: string; answerCount: number } | null;
 };
 
 type GlobalFeed = Pick<
   FeedData,
-  "recentClubs" | "recentClubsTotal" | "recentPosts" | "answeredPrayers" | "prompt"
+  "recentClubs" | "recentClubsTotal" | "recentPosts" | "prompt"
 >;
+
+// 홈 '광장 소식' 카드 스택에 실을 최신 글 수.
+const PLAZA_MAX = 5;
 
 // 홈 대문 캐러셀에 한 번에 실을 최대 슬라이드 수 — 초과분은 '전체 N개 보기' 슬라이드로 유도.
 // 공유 캐시(home-global-feed) payload가 무한정 커지지 않게 상한을 둔다.
@@ -85,8 +81,7 @@ export const HOME_FEED_TAG = "home-feed";
 const getGlobalFeed = unstable_cache(
   async (): Promise<GlobalFeed> => {
     const CLUB_WHERE = { isApproved: true, isActive: true, isSystem: false } as const;
-    const [recentClubsRaw, recentClubsTotal, recentPostsRaw, answeredPrayersRaw, promptRaw] =
-      await Promise.all([
+    const [recentClubsRaw, recentClubsTotal, recentPostsRaw, promptRaw] = await Promise.all([
       prisma.club.findMany({
         // isSystem 제외 — 전체 행사 보드는 '새로 생긴 동아리'가 아니다.
         where: CLUB_WHERE,
@@ -108,7 +103,7 @@ const getGlobalFeed = unstable_cache(
         // clubId: null — 정식 광장 목록(/api/prayers)과 동일하게 레거시 동아리 기도(clubId!=null) 제외.
         where: { clubId: null },
         orderBy: { createdAt: "desc" },
-        take: 3,
+        take: PLAZA_MAX,
         select: {
           id: true,
           category: true,
@@ -121,12 +116,6 @@ const getGlobalFeed = unstable_cache(
           images: { select: { url: true }, orderBy: { order: "asc" }, take: 1 },
           _count: { select: { intercessions: true, comments: true, images: true } },
         },
-      }),
-      prisma.prayer.findMany({
-        where: { isAnswered: true, clubId: null },
-        orderBy: { answeredAt: "desc" },
-        take: 2,
-        select: { id: true, category: true, content: true, answeredNote: true, answeredAt: true },
       }),
       prisma.icebreakerPrompt.findUnique({
         where: { weekOf: getWeekMonday(new Date()) },
@@ -161,13 +150,6 @@ const getGlobalFeed = unstable_cache(
         isAnonymous: p.isAnonymous,
         authorRole: p.isAnonymous ? null : ((p.user?.role ?? null) as Role | null),
         isNewcomer: p.isAnonymous ? false : isNewcomer(p.user?.membershipDecidedAt ?? null),
-      })),
-      answeredPrayers: answeredPrayersRaw.map((p) => ({
-        id: p.id,
-        category: p.category,
-        snippet: p.content.slice(0, 50),
-        answeredNote: p.answeredNote,
-        createdAt: p.answeredAt ? p.answeredAt.toISOString() : null,
       })),
       prompt: promptRaw
         ? { id: promptRaw.id, question: promptRaw.question, answerCount: promptRaw._count.answers }
