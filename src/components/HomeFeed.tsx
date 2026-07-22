@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { timeAgo } from "@/lib/time";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import { HomeClubCarousel } from "@/components/HomeClubCarousel";
@@ -123,24 +124,6 @@ function PlazaAvatar({ url, name, size }: { url: string | null; name: string; si
 }
 
 /** 텍스트형 리드 카드 배경 워시 — 카테고리별 은은한 브랜드 톤. */
-function plazaWash(category: string, systemType: string | null): string {
-  if (systemType) return "linear-gradient(135deg,rgba(240,180,41,.14),transparent 55%)";
-  if (category === "기도해주세요") return "linear-gradient(135deg,rgba(53,195,180,.12),transparent 55%)";
-  return "linear-gradient(135deg,rgba(127,189,228,.12),transparent 55%)";
-}
-function plazaQuoteColor(category: string, systemType: string | null): string {
-  if (systemType) return "rgba(240,180,41,.25)";
-  if (category === "기도해주세요") return "rgba(53,195,180,.2)";
-  return "rgba(127,189,228,.2)";
-}
-function hasPlazaBadges(post: PlazaPost): boolean {
-  return (
-    !!post.systemType ||
-    post.isAnswered ||
-    (!post.isAnonymous && (post.isNewcomer || displayRoles(post.authorRole).length > 0))
-  );
-}
-
 /** 작성자명 옆 배지 묶음 — 시스템(새가족/생일)·응답됨·새가족·역할. 익명 글은 신원 배지 억제. */
 function PlazaBadges({ post }: { post: PlazaPost }) {
   const roles = post.isAnonymous ? [] : displayRoles(post.authorRole);
@@ -188,146 +171,300 @@ function PlazaProof({ post, className }: { post: PlazaPost; className?: string }
   );
 }
 
-/** 광장 리드 카드 — 사진 있으면 풀블리드 미디어형, 없으면 풀쿼트 텍스트형. */
-function PlazaLead({ post }: { post: PlazaPost }) {
-  const isSystem = !!post.systemType;
+/**
+ * 광장 소식 카드 스택 — 위에서부터 겹겹이 쌓인 카드를 세로로 쓸어 넘긴다.
+ * 위치·높이·그림자·리본 opacity는 rAF 스프링 루프가 DOM에 직접 써(리렌더 없이) 60fps로 제어한다.
+ *  - 진입: .plaza-deal 로 카드가 순차로 툭툭 떨어져 쌓인다(CSS keyframes plazaDealIn).
+ *  - 드래그: 세로로 쓸면 스프링(탄성 K/감쇠 C)으로 쫀득하게 따라오고 손 떼면 가장 가까운 카드에 안착.
+ *  - 탭: 포커스 안 된 카드를 탭하면 그 카드로 포커스 이동, 이미 포커스된 카드를 탭하면 게시글로 이동.
+ * prefers-reduced-motion이면 스프링·진입 모션을 끄고 즉시 이동한다.
+ */
+function PlazaStack({ posts }: { posts: PlazaPost[] }) {
+  const router = useRouter();
+  const N = posts.length;
+  const stageRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const dotRefs = useRef<Array<HTMLSpanElement | null>>([]);
+  const key = posts.map((p) => p.id).join(",");
 
-  if (post.imageUrl) {
-    return (
-      <Link
-        href={plazaLink(post.category, post.id)}
-        onClick={() => triggerHaptic()}
-        className="press group glass-card relative block overflow-hidden p-0"
-      >
-        <span className="relative block aspect-[16/10] w-full overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={post.imageUrl}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-active:scale-[1.04]"
-          />
-          <span
-            aria-hidden
-            className="absolute inset-x-0 bottom-0 h-20"
-            style={{ background: "linear-gradient(0deg,rgba(8,18,28,.62),transparent)" }}
-          />
-          <span className="absolute left-2.5 top-2.5 rounded-full bg-white/85 px-2 py-0.5 text-[10px] font-extrabold text-skyx-ink backdrop-blur-sm">
-            {PLAZA_EMOJI[post.category] ?? "💬"} {post.category}
-          </span>
-          {post.imageCount > 1 && (
-            <span className="absolute right-2.5 top-2.5 rounded-full bg-[#0A1622]/45 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
-              ⧉ {post.imageCount}
-            </span>
-          )}
-          <span className="absolute inset-x-3 bottom-2.5 flex items-center gap-2">
-            <span className="shrink-0 rounded-full ring-2 ring-white/70">
-              <PlazaAvatar url={post.avatarUrl} name={post.authorName} size={26} />
-            </span>
-            <b className="min-w-0 truncate text-[11.5px] font-bold text-white [text-shadow:0_1px_6px_rgba(0,0,0,.45)]">
-              {post.authorName}
-            </b>
-            <span className="shrink-0 text-[10px] text-white/85 [text-shadow:0_1px_6px_rgba(0,0,0,.45)]">
-              · {timeAgo(post.createdAt)}
-            </span>
-          </span>
-        </span>
-        <span className="block px-4 pb-3.5 pt-3">
-          {hasPlazaBadges(post) && (
-            <span className="mb-1.5 flex flex-wrap items-center gap-1">
-              <PlazaBadges post={post} />
-            </span>
-          )}
-          <p className="line-clamp-2 text-[13.5px] leading-relaxed text-ink">{post.snippet}</p>
-          <PlazaProof post={post} className="mt-2.5" />
-        </span>
-      </Link>
-    );
-  }
+  // 컴팩트 헤더 높이 / 포커스 카드 높이 / 겹침 여분 / 카드 1장당 드래그 픽셀.
+  const PEEK = 56;
+  const EXP = 216;
+  const STAGE_H = (N - 1) * PEEK + EXP + 4;
 
-  // 텍스트형 — 풀쿼트 지면
+  useEffect(() => {
+    const stage = stageRef.current;
+    const cards = cardRefs.current.slice(0, N).filter(Boolean) as HTMLDivElement[];
+    if (!stage || cards.length !== N || N === 0) return;
+
+    const UNDER = 14;
+    const DRAG_PX = 130;
+    const K = 150; // 탄성
+    const C = 13; // 감쇠(임계감쇠보다 낮춰 살짝 튕기는 '쫀득함')
+    const clamp = (x: number, a: number, b: number) => Math.min(Math.max(x, a), b);
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const bodies = cards.map((c) => c.querySelector<HTMLElement>("[data-body]"));
+    const previews = cards.map((c) => c.querySelector<HTMLElement>("[data-preview]"));
+    const ribbons = cards.map((c) => c.querySelector<HTMLElement>("[data-ribbon]"));
+
+    let f = 0;
+    let v = 0;
+    let target = 0;
+    let dragging = false;
+    let running = false;
+    let last = 0;
+    let raf = 0;
+
+    function render() {
+      const fi = Math.round(clamp(f, 0, N - 1));
+      for (let i = 0; i < N; i++) {
+        const e = 1 - Math.min(Math.abs(i - f), 1); // 펼침 정도 0~1
+        const y = i * PEEK + clamp(i - f, 0, 1) * (EXP - PEEK); // 겹겹이 캐스케이드 위치
+        const h = PEEK + e * (EXP - PEEK) + (i < N - 1 ? UNDER : 0);
+        const card = cards[i];
+        card.style.transform = `translateY(${y.toFixed(2)}px)`;
+        card.style.height = `${h.toFixed(2)}px`;
+        card.style.boxShadow =
+          e > 0.5
+            ? "0 -16px 32px -16px rgba(30,60,95,.35), 0 18px 40px -18px rgba(46,90,130,.4)"
+            : "0 -16px 32px -16px rgba(30,60,95,.35), 0 2px 10px -6px rgba(30,60,95,.12)";
+        if (bodies[i]) bodies[i]!.style.opacity = e.toFixed(3);
+        if (previews[i]) previews[i]!.style.opacity = (1 - e).toFixed(3);
+        if (ribbons[i]) ribbons[i]!.style.opacity = e.toFixed(3);
+        const dot = dotRefs.current[i];
+        if (dot) dot.className = "plaza-dot" + (i === fi ? " on" : "");
+      }
+    }
+
+    function loop(now: number) {
+      const dt = Math.min(32, now - last) / 1000;
+      last = now;
+      if (dragging) {
+        f += (target - f) * Math.min(1, dt * 28); // 드래그 중엔 즉답성 있게 따라붙기
+        v = 0;
+      } else {
+        const a = K * (target - f) - C * v;
+        v += a * dt;
+        f += v * dt;
+        if (Math.abs(v) < 0.015 && Math.abs(target - f) < 0.0015) {
+          f = target;
+          v = 0;
+        }
+      }
+      render();
+      if (!dragging && v === 0 && f === target) {
+        running = false;
+        return; // 안착하면 루프 정지(배터리 절약) — 다음 조작 때 kick으로 재개
+      }
+      raf = requestAnimationFrame(loop);
+    }
+    function kick() {
+      if (running) return;
+      running = true;
+      last = performance.now();
+      raf = requestAnimationFrame(loop);
+    }
+    function settle(next: number) {
+      target = clamp(next, 0, N - 1);
+      if (reduced) {
+        f = target;
+        v = 0;
+        render();
+      } else kick();
+    }
+
+    // ── 드래그 + 탭 ──────────────────────────────────────────
+    let startY = 0;
+    let startX = 0;
+    let startF = 0;
+    let startT = 0;
+    let moved = 0;
+    let lastY = 0;
+    let lastT = 0;
+    let vel = 0;
+    let tapCard: HTMLElement | null = null;
+
+    function onDown(ev: PointerEvent) {
+      dragging = true;
+      stage!.classList.add("plaza-dragging");
+      // setPointerCapture 이후엔 이벤트 target이 stage로 바뀌므로 눌린 카드를 지금 기억.
+      tapCard = (ev.target as HTMLElement | null)?.closest?.(".plaza-card") as HTMLElement | null;
+      stage!.setPointerCapture(ev.pointerId);
+      startY = lastY = ev.clientY;
+      startX = ev.clientX;
+      startF = f;
+      startT = lastT = performance.now();
+      moved = 0;
+      vel = 0;
+      kick();
+    }
+    function onMove(ev: PointerEvent) {
+      if (!dragging) return;
+      const dy = ev.clientY - startY;
+      moved = Math.max(moved, Math.abs(dy), Math.abs(ev.clientX - startX));
+      const now = performance.now();
+      if (now - lastT > 4) {
+        vel = (ev.clientY - lastY) / (now - lastT);
+        lastY = ev.clientY;
+        lastT = now;
+      }
+      let raw = startF - dy / DRAG_PX; // 위로 쓸면 다음 카드
+      if (raw < 0) raw *= 0.35; // 양끝 러버밴드
+      else if (raw > N - 1) raw = N - 1 + (raw - (N - 1)) * 0.35;
+      target = raw;
+    }
+    function onUp(ev: PointerEvent) {
+      if (!dragging) return;
+      dragging = false;
+      stage!.classList.remove("plaza-dragging");
+      const quick = performance.now() - startT < 350;
+      if (moved < 8 && quick && tapCard) {
+        const idx = Number(tapCard.dataset.i);
+        const focused = Math.round(clamp(target, 0, N - 1));
+        if (idx === focused && Math.abs(target - idx) < 0.05) {
+          triggerHaptic();
+          router.push(plazaLink(posts[idx].category, posts[idx].id)); // 이미 포커스 → 이동
+          return;
+        }
+        triggerHaptic();
+        settle(idx);
+        return;
+      }
+      const flicked = target - (vel * 90) / DRAG_PX * 3; // 플릭 관성 보정
+      settle(Math.round(flicked));
+    }
+
+    let wheelT = 0;
+    function onWheel(ev: WheelEvent) {
+      ev.preventDefault();
+      const now = performance.now();
+      if (now - wheelT < 260) return;
+      wheelT = now;
+      settle(Math.round(target) + (ev.deltaY > 0 ? 1 : -1));
+    }
+
+    stage.addEventListener("pointerdown", onDown);
+    stage.addEventListener("pointermove", onMove);
+    stage.addEventListener("pointerup", onUp);
+    stage.addEventListener("pointercancel", onUp);
+    stage.addEventListener("wheel", onWheel, { passive: false });
+
+    render();
+    // 진입 애니메이션이 끝나면 .plaza-deal 제거(스프링 transform과 충돌 방지).
+    const dealT = window.setTimeout(() => {
+      cards.forEach((c) => c.classList.remove("plaza-deal"));
+    }, N * 90 + 700);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(dealT);
+      stage.removeEventListener("pointerdown", onDown);
+      stage.removeEventListener("pointermove", onMove);
+      stage.removeEventListener("pointerup", onUp);
+      stage.removeEventListener("pointercancel", onUp);
+      stage.removeEventListener("wheel", onWheel);
+    };
+    // key(글 목록)가 바뀔 때만 재설정. posts/router는 그 안에서 안정적으로 참조.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, N]);
+
   return (
-    <Link
-      href={plazaLink(post.category, post.id)}
-      onClick={() => triggerHaptic()}
-      className="press glass-card relative block overflow-hidden p-4"
-    >
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{ background: plazaWash(post.category, post.systemType) }}
-      />
-      {isSystem && (
-        <span
-          aria-hidden
-          className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-gold to-gold-deep"
-        />
+    <div className="px-1">
+      <div ref={stageRef} className="plaza-stage relative" style={{ height: STAGE_H }}>
+        {posts.map((p, i) => (
+          <div
+            key={p.id}
+            ref={(el) => {
+              cardRefs.current[i] = el;
+            }}
+            data-i={i}
+            role="button"
+            tabIndex={0}
+            aria-label={`${p.authorName}님의 광장 글 보기`}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                triggerHaptic();
+                router.push(plazaLink(p.category, p.id));
+              }
+            }}
+            className="plaza-card plaza-deal absolute inset-x-0 top-0 overflow-hidden rounded-[18px] border border-white/95 bg-white/[0.92]"
+            style={{ zIndex: i + 1 }}
+          >
+            <span data-ribbon aria-hidden className="plaza-ribbon" />
+            <div className="plaza-inner px-3.5" style={{ animationDelay: `${i * 90}ms` }}>
+              {/* 헤더 — 컴팩트 상태에서도 항상 보이는 부분 */}
+              <div className="flex h-14 items-center gap-2.5">
+                <PlazaAvatar url={p.avatarUrl} name={p.authorName} size={30} />
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-1.5">
+                    <b className="min-w-0 truncate text-[12.5px] font-extrabold text-ink">
+                      {p.authorName}
+                    </b>
+                    <PlazaBadges post={p} />
+                  </span>
+                  <span
+                    data-preview
+                    className="mt-0.5 block truncate text-[11px] text-ink-faint"
+                  >
+                    {!p.systemType && `${PLAZA_EMOJI[p.category] ?? "💬"} `}
+                    {p.snippet}
+                  </span>
+                </span>
+                <span className="shrink-0 text-[10px] text-ink-faint">{timeAgo(p.createdAt)}</span>
+              </div>
+              {/* 본문 — 포커스된 카드에서만 펼쳐진다(opacity는 스프링이 제어) */}
+              <div data-body className="overflow-hidden">
+                <p className="line-clamp-3 text-[14px] leading-relaxed text-ink">
+                  {!p.systemType && (
+                    <span className="mr-1" aria-hidden>
+                      {PLAZA_EMOJI[p.category] ?? "💬"}
+                    </span>
+                  )}
+                  {p.snippet}
+                </p>
+                {p.imageUrl && (
+                  <span className="relative mt-2.5 block h-[78px] overflow-hidden rounded-xl">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={p.imageUrl}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                    {p.imageCount > 1 && (
+                      <span className="absolute right-2 top-1.5 rounded-full bg-[#0A1622]/45 px-2 py-0.5 text-[9.5px] font-bold text-white backdrop-blur-sm">
+                        ⧉ {p.imageCount}
+                      </span>
+                    )}
+                  </span>
+                )}
+                <div className="mt-2.5 flex items-center gap-2">
+                  <PlazaProof post={p} />
+                  <span className="ml-auto shrink-0 text-[10.5px] font-bold text-skyx-ink">
+                    보러 가기 →
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {N > 1 && (
+        <div className="mt-3 flex justify-center gap-1.5">
+          {posts.map((p, i) => (
+            <span
+              key={p.id}
+              ref={(el) => {
+                dotRefs.current[i] = el;
+              }}
+              className="plaza-dot"
+            />
+          ))}
+        </div>
       )}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute -top-3 left-2 text-[56px] leading-none"
-        style={{ fontFamily: "Georgia, serif", color: plazaQuoteColor(post.category, post.systemType) }}
-      >
-        &ldquo;
-      </span>
-      <span className="relative flex items-center gap-2">
-        <PlazaAvatar url={post.avatarUrl} name={post.authorName} size={30} />
-        <span className="min-w-0">
-          <span className="flex items-center gap-1.5">
-            <b className="min-w-0 truncate text-[11.5px] font-bold text-ink-soft">{post.authorName}</b>
-            <PlazaBadges post={post} />
-          </span>
-          <span className="block text-[10px] text-ink-faint">{timeAgo(post.createdAt)}</span>
-        </span>
-      </span>
-      <p className="relative mt-2.5 line-clamp-3 text-[14px] leading-relaxed text-ink">
-        {!isSystem && (
-          <span className="mr-1" aria-hidden>
-            {PLAZA_EMOJI[post.category] ?? "💬"}
-          </span>
-        )}
-        {post.snippet}
-      </p>
-      <PlazaProof post={post} className="relative mt-2.5" />
-    </Link>
-  );
-}
-
-/** 광장 콤팩트 행 — 2줄(이름·배지·시간 / 본문) + 우측 사진 썸네일 또는 반응 수. */
-function PlazaRow({ post }: { post: PlazaPost }) {
-  return (
-    <Link
-      href={plazaLink(post.category, post.id)}
-      onClick={() => triggerHaptic()}
-      className="press flex items-center gap-2.5 rounded-xl px-2 py-2"
-    >
-      <PlazaAvatar url={post.avatarUrl} name={post.authorName} size={24} />
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-1.5">
-          <b className="min-w-0 truncate text-[12px] font-bold text-ink">{post.authorName}</b>
-          <PlazaBadges post={post} />
-          <span className="ml-auto shrink-0 text-[9.5px] text-ink-faint">{timeAgo(post.createdAt)}</span>
-        </span>
-        <span className="mt-0.5 block truncate text-[12px] text-ink-soft">
-          {!post.systemType && `${PLAZA_EMOJI[post.category] ?? "💬"} `}
-          {post.snippet}
-        </span>
-      </span>
-      {post.imageUrl ? (
-        <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={post.imageUrl} alt="" className="h-full w-full object-cover" />
-          {post.imageCount > 1 && (
-            <span className="absolute right-0.5 top-0.5 rounded bg-black/45 px-1 text-[8px] font-bold text-white">
-              +{post.imageCount - 1}
-            </span>
-          )}
-        </span>
-      ) : post.reactionCount > 0 ? (
-        <span className="shrink-0 text-[10.5px] font-bold tabular-nums text-ink-soft">
-          <span aria-hidden>{reactionFace(post.category, post.systemType)}</span> {post.reactionCount}
-        </span>
-      ) : null}
-    </Link>
+    </div>
   );
 }
 
@@ -393,15 +530,10 @@ export function HomeFeed({ initial }: { initial?: HomeView }) {
     recentClubs,
     recentClubsTotal,
     recentPosts,
-    answeredPrayers,
     hasPersonalityReport,
     prompt,
   } = view.feed;
-  const feedEmpty =
-    !upcomingMeetings.length &&
-    !recentClubs.length &&
-    !recentPosts.length &&
-    !answeredPrayers.length;
+  const feedEmpty = !upcomingMeetings.length && !recentClubs.length && !recentPosts.length;
   const nextMeeting = upcomingMeetings[0] ?? null;
 
   return (
@@ -521,7 +653,8 @@ export function HomeFeed({ initial }: { initial?: HomeView }) {
         </section>
       )}
 
-      {/* 광장 소식 — 리드 카드(사진형/텍스트형) + 콤팩트 행. */}
+      {/* 광장 소식 — 위에서부터 겹겹이 쌓이는 카드 스택. 쓸어 넘기면 스프링으로 따라오고,
+          탭하면 그 글이 포커싱된다(다시 탭하면 게시글로 이동). 응답된 글은 스택 안에서 🌿 배지로. */}
       {recentPosts.length > 0 && (
         <section>
           <HomeSectionHeader
@@ -531,36 +664,7 @@ export function HomeFeed({ initial }: { initial?: HomeView }) {
             actionLabel="광장 가기"
             className="mb-2.5 px-1"
           />
-          <div className="space-y-2">
-            {recentPosts.map((p, idx) =>
-              idx === 0 ? <PlazaLead key={p.id} post={p} /> : <PlazaRow key={p.id} post={p} />,
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* 응답된 기도 — 인용 지면(좌측 틸 바) */}
-      {answeredPrayers.length > 0 && (
-        <section>
-          <HomeSectionHeader kicker="Answered" title="응답된 기도" className="mb-2.5 px-1" />
-          <div className="glass-card p-4">
-            <ul className="space-y-2.5">
-              {answeredPrayers.map((p) => (
-                <li key={p.id} className="border-l-2 border-teal/60 pl-3">
-                  <Link
-                    href={plazaLink(p.category, p.id)}
-                    onClick={() => triggerHaptic()}
-                    className="press block"
-                  >
-                    <p className="line-clamp-2 text-[13.5px] leading-relaxed text-ink">{p.snippet}</p>
-                    {p.answeredNote && (
-                      <p className="mt-0.5 truncate text-[11.5px] text-teal-ink">🌿 {p.answeredNote}</p>
-                    )}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <PlazaStack posts={recentPosts} />
         </section>
       )}
 
