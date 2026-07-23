@@ -13,7 +13,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 type Slide = {
   emoji: string;
   label: string;
-  title: [string, string];
+  title: [string] | [string, string];
   body: string;
 };
 
@@ -21,7 +21,7 @@ const SLIDES: Slide[] = [
   {
     emoji: "🗣",
     label: "광장",
-    title: ["오늘 있었던 일,", "그냥 편하게 올려요"],
+    title: ["그냥 편하게 올려요"],
     body: "인스타처럼 잘 꾸며야 할 것 같은 부담, 여기엔 없어요. 사진 없이 글만 올려도 되고, 말 못 할 기도제목은 익명으로 올릴 수 있어요.",
   },
   {
@@ -324,8 +324,12 @@ function SlideText({ slide }: { slide: Slide }) {
       </p>
       <h3 className="mb-3 mt-3 text-[clamp(23px,6.4vw,30px)] font-extrabold leading-[1.28] tracking-tight text-ink md:text-[clamp(27px,4.2vw,42px)]">
         {slide.title[0]}
-        <br />
-        {slide.title[1]}
+        {slide.title[1] && (
+          <>
+            <br />
+            {slide.title[1]}
+          </>
+        )}
       </h3>
       <p className="max-w-[26em] text-[14.5px] leading-relaxed text-ink-soft md:text-[16.5px] md:leading-[1.85]">
         {slide.body}
