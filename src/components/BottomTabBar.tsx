@@ -85,7 +85,8 @@ export function BottomTabBar() {
       .catch(() => {});
   }
 
-  if (!loggedIn) return null;
+  // 블루하모니 모듈(/harmony)은 자체 아이덴티티 풀스크린 — 교회 탭바를 렌더하지 않는다.
+  if (!loggedIn || pathname.startsWith("/harmony")) return null;
 
   return (
     <nav

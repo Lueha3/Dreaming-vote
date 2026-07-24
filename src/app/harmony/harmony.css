@@ -1,0 +1,57 @@
+/* 블루하모니 전용 스킨 — '밤의 무대' (심야 남색 + 새벽 앰버).
+   교회 앱의 하늘 글래스 테마와 분리된 자체 아이덴티티. /harmony 라우트에서만 로드된다. */
+.hy-stage {
+  min-height: 100dvh;
+  background: radial-gradient(120% 90% at 50% -10%, #122436 0%, #0b1622 60%);
+  color: #e9f1f8;
+  position: relative;
+  z-index: 10; /* 전역 SkyBackdrop 위를 완전히 덮는다 */
+}
+.hy-wrap { max-width: 440px; margin: 0 auto; padding: 28px 20px 60px; }
+.hy-eyebrow {
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 11px; letter-spacing: 0.18em; color: #7e95a8;
+}
+.hy-card {
+  background: #16293c; border: 1px solid rgba(157, 180, 200, 0.18);
+  border-radius: 18px; padding: 18px 19px;
+}
+.hy-card-navy {
+  background: linear-gradient(155deg, #14283c, #2f6fa5);
+  border: 0; border-radius: 20px; padding: 20px;
+}
+.hy-cta {
+  display: block; width: 100%; text-align: center; border: 0; cursor: pointer;
+  border-radius: 14px; padding: 15px; font-size: 15px; font-weight: 800;
+  background: linear-gradient(160deg, #f2c77c, #d99b3b); color: #2a1d04;
+}
+.hy-cta:focus-visible, .hy-ghost:focus-visible, .hy-answer:focus-visible {
+  outline: 2px solid #f2c77c; outline-offset: 2px;
+}
+.hy-ghost {
+  display: block; width: 100%; text-align: center; cursor: pointer;
+  border: 1px solid rgba(157, 180, 200, 0.25); background: none; color: #aec3d4;
+  border-radius: 14px; padding: 12px; font-size: 13px; font-weight: 600;
+}
+.hy-answer {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  background: #16293c; border: 1px solid rgba(157, 180, 200, 0.18);
+  border-radius: 14px; padding: 15px 17px; color: #e9f1f8;
+  font-size: 14.5px; font-weight: 600;
+  transition: border-color 0.15s, transform 0.1s;
+}
+.hy-answer:hover { border-color: rgba(111, 176, 222, 0.55); transform: translateY(-1px); }
+.hy-answer[aria-pressed="true"] { border-color: #f2c77c; background: rgba(242, 199, 124, 0.08); }
+.hy-chip {
+  display: inline-block; font-size: 11px; font-weight: 700; padding: 4px 11px;
+  border-radius: 999px; background: rgba(111, 176, 222, 0.12); color: #6fb0de;
+}
+.hy-chip-warm { background: rgba(242, 199, 124, 0.14); color: #f2c77c; }
+.hy-bar { height: 7px; border-radius: 999px; background: rgba(233, 241, 248, 0.08); overflow: hidden; }
+.hy-bar i { display: block; height: 100%; border-radius: 999px; background: #6fb0de; }
+.hy-bar.warm i { background: #f2c77c; }
+@media (prefers-reduced-motion: no-preference) {
+  .hy-bar i { transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .hy-fade { animation: hyFade 0.4s ease both; }
+  @keyframes hyFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+}

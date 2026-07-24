@@ -83,6 +83,9 @@ export function Header() {
     window.location.href = "/";
   }
 
+  // 블루하모니 모듈(/harmony)은 자체 아이덴티티 풀스크린 — 교회 앱 크롬을 렌더하지 않는다.
+  if (pathname.startsWith("/harmony")) return null;
+
   return (
     <header
       className="sticky top-0 z-50 border-b border-white/70"
