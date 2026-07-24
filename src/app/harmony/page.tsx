@@ -62,6 +62,9 @@ export default function HarmonyIntroPage() {
       <a href="/harmony-play.html" className="hy-ghost hy-fade" style={{ marginTop: bothDone ? 10 : 16, textDecoration: "none" }}>
         🎮 연습 모드 — 시뮬레이터 체험판 해보기
       </a>
+      <a href="/harmony-physics.html" className="hy-ghost hy-fade" style={{ marginTop: 10, textDecoration: "none" }}>
+        🧸 피직스 P0 — 감정이 물리가 되는 순간 (기술 데모)
+      </a>
 
       <p style={{ fontSize: 11, color: "#7e95a8", textAlign: "center", lineHeight: 1.8, marginTop: 26, wordBreak: "keep-all" }}>
         결과는 참고용 프로파일이며 심리 검사·진단이 아닙니다.

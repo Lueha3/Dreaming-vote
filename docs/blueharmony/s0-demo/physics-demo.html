@@ -1,0 +1,695 @@
+<title>블루하모니 피직스 P0 — 감정이 물리가 되는 순간</title>
+<style>
+  :root {
+    --stage: #0B1622; --stage2: #122436; --panel: #16293C; --line: rgba(157,180,200,.18);
+    --ink: #E9F1F8; --soft: #AEC3D4; --faint: #7E95A8;
+    --amber: #F2C77C; --amber2: #D99B3B; --blue: #6FB0DE; --teal: #57C4B4; --red: #E08A74;
+    --sans: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Segoe UI", sans-serif;
+    --mono: ui-monospace, "SF Mono", Consolas, monospace;
+  }
+  html, body { margin: 0; height: 100%; background: var(--stage); color: var(--ink); font-family: var(--sans); overflow: hidden; }
+  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+  /* HUD */
+  .hud { position: fixed; top: 12px; left: 12px; right: 12px; display: flex; gap: 10px; align-items: flex-start; pointer-events: none; z-index: 5; }
+  .gauge { background: rgba(22,41,60,.88); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px 10px; min-width: 150px; backdrop-filter: blur(4px); }
+  .gauge .g-h { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; gap: 10px; }
+  .gauge .g-n { font-size: 10.5px; font-weight: 700; color: var(--soft); white-space: nowrap; }
+  .gauge .g-n em { font-style: normal; font-weight: 500; font-size: 9px; color: var(--faint); margin-left: 2px; }
+  .gauge .g-v { font-family: var(--mono); font-size: 11px; color: var(--ink); }
+  .gauge .bar { height: 7px; border-radius: 99px; background: rgba(233,241,248,.08); overflow: hidden; }
+  .gauge .bar i { display: block; height: 100%; border-radius: 99px; transition: width .25s; }
+  .goal { margin-left: auto; background: rgba(22,41,60,.88); border: 1px solid var(--line); border-radius: 12px; padding: 9px 13px; font-size: 12px; color: var(--soft); max-width: 210px; line-height: 1.55; word-break: keep-all; backdrop-filter: blur(4px); }
+  .goal b { color: var(--amber); }
+
+  /* 상태 배너 */
+  #banner { position: fixed; top: 86px; left: 50%; transform: translateX(-50%); z-index: 6;
+    background: rgba(11,22,34,.92); border: 1px solid rgba(242,199,124,.45); color: var(--amber);
+    border-radius: 99px; padding: 8px 16px; font-size: 12.5px; font-weight: 700; white-space: nowrap;
+    opacity: 0; transition: opacity .25s; pointer-events: none; }
+  #banner.show { opacity: 1; }
+
+  /* 대화 패널 */
+  #dialog { position: fixed; left: 50%; bottom: 108px; transform: translateX(-50%); z-index: 6;
+    width: min(430px, calc(100% - 28px)); display: none; flex-direction: column; gap: 7px; }
+  #dialog.show { display: flex; }
+  #dialog .d-hint { text-align: center; font-size: 11px; color: var(--faint); margin-bottom: 2px; }
+  #dialog button { font-family: var(--sans); text-align: left; cursor: pointer; background: rgba(22,41,60,.94);
+    border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; color: var(--ink);
+    font-size: 13px; line-height: 1.5; font-weight: 600; }
+  #dialog button:hover { border-color: rgba(111,176,222,.6); }
+  #dialog button .tag { font-size: 10px; font-weight: 800; margin-right: 7px; padding: 2px 7px; border-radius: 99px; }
+  .t-good { background: rgba(87,196,180,.16); color: var(--teal); }
+  .t-trap { background: rgba(242,199,124,.16); color: var(--amber); }
+  .t-bad { background: rgba(224,138,116,.16); color: var(--red); }
+
+  /* 컨트롤 */
+  .controls { position: fixed; bottom: 14px; left: 14px; right: 14px; display: flex; justify-content: space-between; align-items: flex-end; z-index: 5; }
+  .pad { display: flex; gap: 10px; }
+  .cbtn { width: 58px; height: 58px; border-radius: 16px; border: 1px solid var(--line);
+    background: rgba(22,41,60,.9); color: var(--ink); font-size: 20px; font-weight: 800; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; user-select: none; -webkit-user-select: none;
+    font-family: var(--sans); backdrop-filter: blur(4px); }
+  .cbtn:active, .cbtn.on { background: rgba(242,199,124,.22); border-color: var(--amber); }
+  .cbtn.wide { width: auto; padding: 0 18px; font-size: 13.5px; }
+  #btn-act { border-color: rgba(242,199,124,.5); color: var(--amber); }
+  .keyhint { position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%); font-size: 10.5px; color: var(--faint); z-index: 4; white-space: nowrap; }
+
+  /* 오버레이 (인트로/클리어) */
+  .overlay { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
+    background: rgba(11,22,34,.86); backdrop-filter: blur(6px); padding: 20px; }
+  .overlay.hide { display: none; }
+  .ov-card { max-width: 460px; width: 100%; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 20px; padding: 26px 24px; max-height: 86vh; overflow-y: auto; }
+  .ov-card .eyebrow { font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; color: var(--faint); }
+  .ov-card h1 { font-size: 24px; font-weight: 900; letter-spacing: -.02em; margin: 8px 0 10px; word-break: keep-all; }
+  .ov-card h1 .hl { color: var(--amber); }
+  .ov-card p { font-size: 13.5px; color: var(--soft); line-height: 1.75; margin: 0 0 10px; word-break: keep-all; }
+  .ov-card ul { margin: 0 0 14px; padding-left: 18px; font-size: 12.5px; color: var(--soft); line-height: 1.8; }
+  .ov-card li { word-break: keep-all; }
+  .ov-card li b { color: var(--ink); }
+  .cta { display: block; width: 100%; border: 0; border-radius: 14px; padding: 15px; cursor: pointer;
+    background: linear-gradient(160deg, var(--amber), var(--amber2)); color: #2A1D04;
+    font-family: var(--sans); font-size: 15px; font-weight: 800; }
+  .stat-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--soft);
+    padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .stat-row:last-of-type { border-bottom: 0; }
+  .stat-row b { color: var(--ink); font-family: var(--mono); }
+  .foot { font-size: 10.5px; color: var(--faint); text-align: center; margin-top: 14px; line-height: 1.7; }
+</style>
+
+<canvas id="game"></canvas>
+
+<div class="hud">
+  <div class="gauge">
+    <div class="g-h"><span class="g-n">마음 온도 <em>낮을수록 차분</em></span><span class="g-v" id="v-temp">35</span></div>
+    <div class="bar"><i id="bar-temp" style="width:35%; background:var(--blue)"></i></div>
+  </div>
+  <div class="gauge">
+    <div class="g-h"><span class="g-n">근긴장도 <em>아이 몸의 힘</em></span><span class="g-v" id="v-tone">85</span></div>
+    <div class="bar"><i id="bar-tone" style="width:85%; background:var(--teal)"></i></div>
+  </div>
+  <div class="goal" id="goal">이안(4살) 손을 잡고 <b>젤리 코너를 지나</b> 출구까지 — 몸의 신호를 느껴보세요.</div>
+</div>
+
+<div id="banner"></div>
+
+<div id="dialog">
+  <div class="d-hint">쪼그려 앉아 눈높이를 맞췄어요 — 어떤 말을 건넬까요? (1·2·3)</div>
+</div>
+
+<div class="controls">
+  <div class="pad">
+    <div class="cbtn" id="btn-left">◀</div>
+    <div class="cbtn" id="btn-right">▶</div>
+  </div>
+  <div class="pad">
+    <div class="cbtn wide" id="btn-crouch">앉기</div>
+    <div class="cbtn wide" id="btn-act">행동</div>
+  </div>
+</div>
+<div class="keyhint">← → 이동 · S 앉기 · E 행동 · 1 2 3 대사</div>
+
+<div class="overlay" id="ov-intro">
+  <div class="ov-card">
+    <span class="eyebrow">BLUEHARMONY PHYSICS · P0 TECH DEMO</span>
+    <h1>감정이 <span class="hl">물리</span>가 되는 순간</h1>
+    <p>UE5로 가기 전, 이 게임의 심장을 검증하는 데모입니다 — 아이의 <b style="color:var(--ink)">감정 상태가
+    근긴장도(muscle tone)가 되어 몸의 물리를 바꿉니다.</b> 그래픽이 아니라 무게와 저항으로 느끼는 아이.</p>
+    <ul>
+      <li><b>손잡고 걷기</b> — 아이 속도에 맞추세요. 세게 끌면(장력↑) 마음 온도가 올라갑니다.</li>
+      <li><b>젤리 코너</b> — 아이가 멈춰 서고, 잘못 대응하면 떼가 터집니다.</li>
+      <li><b>드러눕기</b> — 온몸의 힘이 빠진 아이는 진짜 '죽은 무게'가 됩니다. 억지로 안으면 흘러내려요.</li>
+      <li><b>회복</b> — 앉아서(S) 눈높이를 맞추고 말을 고르세요. 마음이 풀리면 몸에 힘이 돌아옵니다.</li>
+    </ul>
+    <button class="cta" id="btn-start">시작하기</button>
+    <p class="foot">자체 버렛 물리 엔진 · 기획: docs/blueharmony/06-physics-sim.md · 데이터는 예시입니다</p>
+  </div>
+</div>
+
+<div class="overlay hide" id="ov-clear">
+  <div class="ov-card">
+    <span class="eyebrow" id="clear-eyebrow">CLEAR</span>
+    <h1 id="clear-title">마트를 나왔어요</h1>
+    <div id="clear-stats"></div>
+    <p id="clear-note" style="margin-top:12px;"></p>
+    <button class="cta" id="btn-retry" style="margin-top:14px;">다시 해보기</button>
+    <p class="foot">같은 장면이 UE5에선 3D 실사 모션이 됩니다 — 이 데모가 증명한 건 '감정→근긴장→물리' 코어 루프.</p>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   블루하모니 피직스 P0 — 감정→근긴장도→물리 코어 루프 검증
+   자체 버렛(Verlet) 물리: 액티브 래그돌 아이 + 키네마틱 부모
+   ============================================================ */
+const cvs = document.getElementById("game");
+const ctx = cvs.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth; H = window.innerHeight;
+  cvs.width = W * DPR; cvs.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener("resize", resize); resize();
+
+/* ---------- 월드 좌표계: 미터, y는 위쪽. 화면 변환 ---------- */
+const SCALE = 118;
+const GROUND_SY = () => H - 96;
+let camX = 0;
+const sx = (x) => (x - camX) * SCALE + W * 0.42;
+const sy = (y) => GROUND_SY() - y * SCALE;
+
+/* ---------- 씬 ---------- */
+const WORLD = { start: 0.8, shelfJelly: 6.0, exit: 13.6, end: 15 };
+const SHELVES = [
+  { x: 1.8, w: 1.5, label: "라면" }, { x: 3.9, w: 1.4, label: "과자" },
+  { x: 6.0, w: 1.6, label: "젤리", jelly: true }, { x: 8.4, w: 1.5, label: "음료" },
+  { x: 10.6, w: 1.4, label: "시리얼" },
+];
+
+/* ---------- 버렛 물리 코어 ---------- */
+const GRAV = -21; // 약간 과장된 중력 — 게임 감각용
+function mkPt(x, y, gr) { return { x, y, px: x, py: y, gr: gr || 0.03 }; }
+function integrate(p, dt) {
+  const vx = (p.x - p.px) * 0.985, vy = (p.y - p.py) * 0.985;
+  p.px = p.x; p.py = p.y;
+  p.x += vx; p.y += vy + GRAV * dt * dt;
+}
+function ground(p) {
+  if (p.y < p.gr) {
+    p.y = p.gr;
+    const vx = p.x - p.px;
+    p.px = p.x - vx * 0.55; // 마찰
+    if (p.py < p.y) p.py = p.y;
+  }
+}
+function stick(a, b, rest, k) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const d = Math.hypot(dx, dy) || 1e-6;
+  const diff = ((d - rest) / d) * 0.5 * (k === undefined ? 1 : k);
+  a.x += dx * diff; a.y += dy * diff;
+  b.x -= dx * diff; b.y -= dy * diff;
+}
+
+/* ---------- 아이(4살) 액티브 래그돌 ---------- */
+// 표준 포즈(로컬, 펠비스 기준 아님 — 지면 기준 y)
+const POSE = {
+  pelvis: [0, 0.46], chest: [0, 0.74], head: [0, 0.97],
+  kneeL: [-0.06, 0.25], footL: [-0.09, 0.03], kneeR: [0.06, 0.25], footR: [0.09, 0.03],
+  elbL: [-0.13, 0.6], handL: [-0.16, 0.44], elbR: [0.13, 0.6], handR: [0.16, 0.44],
+};
+const BONES = [
+  ["pelvis","chest",0.29],["chest","head",0.24],
+  ["pelvis","kneeL",0.22],["kneeL","footL",0.23],["pelvis","kneeR",0.22],["kneeR","footR",0.23],
+  ["chest","elbL",0.19],["elbL","handL",0.17],["chest","elbR",0.19],["elbR","handR",0.17],
+  ["pelvis","head",0.52], // 몸통 안정화
+];
+// 포즈 추종 강도(부위별) — 근긴장도와 곱해진다
+const POSE_K = { pelvis: 0.20, chest: 0.16, head: 0.13, kneeL: 0.10, footL: 0.14, kneeR: 0.10, footR: 0.14, elbL: 0.05, handL: 0.04, elbR: 0.05, handR: 0.04 };
+
+const child = { pts: {}, rootX: 2.1, gait: 0, face: 1 };
+for (const k in POSE) child.pts[k] = mkPt(2.1 + POSE[k][0], POSE[k][1] + 0.02, k.startsWith("foot") ? 0.03 : 0.05);
+
+/* ---------- 부모(키네마틱) ---------- */
+const parent = { x: 1.1, face: 1, crouch: false, speed: 0, hipY: 0.95 };
+function parentHand() {
+  const hy = parent.crouch ? 0.55 : 0.78;
+  return { x: parent.x + parent.face * 0.28, y: hy };
+}
+function carrySocket() {
+  return { x: parent.x + parent.face * 0.24, y: parent.crouch ? 0.72 : 1.02 };
+}
+
+/* ---------- 감정 엔진 (05 아이 브레인의 최소 구현) ---------- */
+const emo = {
+  temp: 35, tone: 0.85, state: "CALM", // CALM | WANT | FLAIL | LIMP | RECOVER
+  desire: 0, coop: 1, timer: 0, dragHeat: 0,
+};
+const stats = { t: 0, maxTemp: 35, drags: 0, coach: 0, bribe: 0, threat: 0, drops: 0, started: false, done: false };
+
+/* ---------- 인터랙션 상태 ---------- */
+const link = { holding: false, carrying: false, slip: 0 };
+
+/* ---------- 입력 ---------- */
+const input = { left: false, right: false };
+const keys = {};
+window.addEventListener("keydown", (e) => {
+  if (["ArrowLeft","ArrowRight","ArrowDown"," "].includes(e.key)) e.preventDefault();
+  keys[e.key.toLowerCase()] = true;
+  if (e.key === "ArrowLeft") input.left = true;
+  if (e.key === "ArrowRight") input.right = true;
+  if (e.key.toLowerCase() === "s" || e.key === "ArrowDown") toggleCrouch();
+  if (e.key.toLowerCase() === "e") doAction();
+  if (["1","2","3"].includes(e.key)) pickLine(+e.key - 1);
+});
+window.addEventListener("keyup", (e) => {
+  if (e.key === "ArrowLeft") input.left = false;
+  if (e.key === "ArrowRight") input.right = false;
+});
+function bindHold(id, key) {
+  const el = document.getElementById(id);
+  const on = (v) => (ev) => { ev.preventDefault(); input[key] = v; el.classList.toggle("on", v); };
+  el.addEventListener("pointerdown", on(true));
+  el.addEventListener("pointerup", on(false));
+  el.addEventListener("pointerleave", on(false));
+}
+bindHold("btn-left", "left"); bindHold("btn-right", "right");
+document.getElementById("btn-crouch").addEventListener("click", toggleCrouch);
+document.getElementById("btn-act").addEventListener("click", doAction);
+
+function toggleCrouch() { parent.crouch = !parent.crouch; document.getElementById("btn-crouch").classList.toggle("on", parent.crouch); }
+
+/* ---------- 배너/게이지 ---------- */
+let bannerTimer = null;
+function banner(msg) {
+  const b = document.getElementById("banner");
+  b.textContent = msg; b.classList.add("show");
+  if (bannerTimer) clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(() => b.classList.remove("show"), 2400);
+}
+function updateHud() {
+  const t = Math.round(emo.temp), n = Math.round(emo.tone * 100);
+  document.getElementById("v-temp").textContent = t;
+  document.getElementById("v-tone").textContent = n;
+  const bt = document.getElementById("bar-temp");
+  bt.style.width = t + "%";
+  bt.style.background = t >= 70 ? "var(--red)" : t >= 50 ? "var(--amber)" : "var(--blue)";
+  document.getElementById("bar-tone").style.width = n + "%";
+}
+
+/* ---------- 행동(컨텍스트) ---------- */
+function childDist() { return Math.abs(parent.x - child.pts.pelvis.x); }
+function doAction() {
+  if (stats.done) return;
+  if (link.carrying) { // 내려놓기
+    link.carrying = false; banner("아이를 내려놓았어요");
+    return;
+  }
+  if (link.holding) { link.holding = false; banner("손을 놓았어요"); return; }
+  if (childDist() < 0.95) {
+    if (emo.state === "LIMP" || emo.state === "FLAIL") {
+      // 림프 상태 캐리 시도
+      link.carrying = true; link.slip = 0;
+      banner(emo.tone < 0.4 ? "죽은 무게… 15kg이 이렇게 무겁다니" : "아이를 안아 들었어요");
+    } else {
+      link.holding = true; banner("아이 손을 잡았어요 — 아이 속도에 맞춰 걸어요");
+    }
+  }
+}
+function actionLabel() {
+  if (link.carrying) return "내려놓기";
+  if (link.holding) return "손 놓기";
+  if (childDist() < 0.95) return emo.state === "LIMP" || emo.state === "FLAIL" ? "안아 들기" : "손잡기";
+  return "행동";
+}
+
+/* ---------- 대화 ---------- */
+const LINES = [
+  { tag: "감정코칭", cls: "t-good", text: "“젤리 갖고 싶었구나. 속상했지. 엄마가 옆에 있어.”", dTemp: -20 },
+  { tag: "회유", cls: "t-trap", text: "“알았어 알았어, 다음에 두 개 사줄게! 일어나자, 응?”", dTemp: -9 },
+  { tag: "위협", cls: "t-bad", text: "“셋 셀 동안 안 일어나면 엄마 진짜 두고 간다!”", dTemp: +16 },
+];
+let lineCooldown = 0;
+const dialogEl = document.getElementById("dialog");
+LINES.forEach((l, i) => {
+  const b = document.createElement("button");
+  b.innerHTML = '<span class="tag ' + l.cls + '">' + l.tag + "</span>" + l.text;
+  b.addEventListener("click", () => pickLine(i));
+  dialogEl.appendChild(b);
+});
+function dialogAvailable() {
+  return parent.crouch && childDist() < 1.1 && (emo.state === "LIMP" || emo.state === "WANT" || emo.state === "FLAIL") && !link.carrying;
+}
+function pickLine(i) {
+  if (!dialogAvailable() || lineCooldown > 0 || stats.done) return;
+  const l = LINES[i];
+  lineCooldown = 1.4;
+  emo.temp = Math.max(0, Math.min(100, emo.temp + l.dTemp));
+  if (l.tag === "감정코칭") { stats.coach++; banner("아이 어깨의 힘이 조금 풀렸어요"); }
+  if (l.tag === "회유") { stats.bribe++; banner("울음은 잦아들지만… 뭔가 계산이 밀린 기분"); emo.desire = Math.min(100, emo.desire + 25); }
+  if (l.tag === "위협") { stats.threat++; banner("아이 몸이 더 굳어요 — 유리병 기질은 위협에 얼어붙어요"); }
+}
+
+/* ---------- 감정 상태머신 ---------- */
+function setState(s) {
+  if (emo.state === s) return;
+  emo.state = s; emo.timer = 0;
+  if (s === "WANT") { emo.temp = Math.max(emo.temp, 48); banner("이안이가 젤리 앞에 딱 멈췄어요 — 잡은 손이 무거워져요"); }
+  if (s === "FLAIL") { banner("떼가 터졌어요!"); link.holding = false; }
+  if (s === "LIMP") {
+    banner("온몸에 힘이 빠졌어요 — 드러눕기");
+    // 아이는 스스로 몸을 던진다 — 상체에 전도 임펄스 (부모 반대쪽으로)
+    const dir = child.pts.head.x >= parent.x ? 1 : -1;
+    child.pts.head.px -= dir * 0.075;
+    child.pts.chest.px -= dir * 0.05;
+    child.pts.pelvis.px -= dir * 0.02;
+  }
+  if (s === "RECOVER") banner("마음이 풀려요… 몸에 힘이 돌아와요");
+  if (s === "CALM") banner("이안이가 다시 일어섰어요");
+}
+function emoTick(dt) {
+  emo.timer += dt;
+  lineCooldown = Math.max(0, lineCooldown - dt);
+  stats.maxTemp = Math.max(stats.maxTemp, emo.temp);
+  const px = child.pts.pelvis.x;
+  const nearJelly = Math.abs(px - WORLD.shelfJelly) < 1.05;
+
+  switch (emo.state) {
+    case "CALM":
+      emo.coop = 1;
+      emo.temp = Math.max(20, emo.temp - dt * 1.2);
+      if (nearJelly && emo.desire < 100) setState("WANT");
+      toneTo(0.85, dt, 1.2);
+      break;
+    case "WANT": {
+      emo.coop = 0.12; // 발이 안 떨어진다
+      emo.desire = Math.min(100, emo.desire + dt * 12);
+      if (emo.dragHeat > 0.5) emo.temp += dt * 9; // 끌려가는 중
+      else emo.temp += dt * 2.2;
+      toneTo(0.7, dt, 1);
+      if (emo.temp >= 72) setState("FLAIL");
+      else if (emo.temp < 38 && emo.timer > 1.5) { emo.desire = 100; setState("CALM"); banner("젤리는 다음에 — 아이가 받아들였어요"); }
+      else if (!nearJelly && emo.temp < 55) { setState("CALM"); }
+      break;
+    }
+    case "FLAIL":
+      emo.coop = 0;
+      toneTo(0.32, dt, 4);
+      if (emo.timer > 1.4) setState("LIMP");
+      break;
+    case "LIMP":
+      emo.coop = 0;
+      toneTo(0.05, dt, 3);
+      emo.temp = Math.max(30, emo.temp - dt * 0.8); // 아주 천천히 식는다
+      if (emo.temp < 45) setState("RECOVER");
+      break;
+    case "RECOVER":
+      emo.coop = 0.4;
+      toneTo(0.85, dt, 0.8);
+      // 회복으로 사건 종결 — 같은 매대에 다시 불붙지 않는다 (아이도 한 번 소화한 욕구는 지나간다)
+      if (emo.tone > 0.78) { setState("CALM"); emo.desire = 100; }
+      break;
+  }
+  emo.dragHeat = Math.max(0, emo.dragHeat - dt * 2);
+}
+function toneTo(target, dt, rate) {
+  emo.tone += (target - emo.tone) * Math.min(1, dt * rate);
+  // 위협 직후 얼어붙기: 온도 높고 LIMP 아닐 때 뻣뻣
+  if (emo.state === "WANT" && emo.temp > 60) emo.tone = Math.min(emo.tone, 0.6);
+}
+
+/* ---------- 아이 물리 틱 ---------- */
+function childTick(dt) {
+  const pts = child.pts;
+  // 1) 루트 로코모션 (협조도 기반)
+  let desired = child.rootX;
+  if (link.holding) desired = parent.x + parent.face * 0.42;
+  else if (emo.state === "WANT") desired = WORLD.shelfJelly;
+  const maxV = 1.7 * emo.coop;
+  child.rootX += Math.max(-maxV * dt, Math.min(maxV * dt, desired - child.rootX));
+  child.gait += Math.abs(desired - child.rootX) > 0.02 ? dt * 7 : 0;
+
+  // 2) 적분
+  for (const k in pts) integrate(pts[k], dt);
+
+  // 3) 포즈 매칭 (근긴장도)
+  if (emo.tone > 0.08 && !link.carrying) {
+    const g = child.gait, walk = emo.coop > 0.2 && Math.abs(desired - child.rootX) > 0.02;
+    for (const k in POSE) {
+      let tx = child.rootX + POSE[k][0], ty = POSE[k][1];
+      if (walk) { // 간단한 걸음: 발 교차
+        if (k === "footL") { tx += Math.sin(g) * 0.13; ty += Math.max(0, Math.sin(g + 1.5)) * 0.06; }
+        if (k === "footR") { tx += Math.sin(g + Math.PI) * 0.13; ty += Math.max(0, Math.sin(g + Math.PI + 1.5)) * 0.06; }
+      }
+      // 젤리를 향해 손을 뻗는다 — 욕구의 신체 언어
+      if (emo.state === "WANT" && k === "handL") {
+        const dir = WORLD.shelfJelly > child.rootX ? 1 : -1;
+        tx = child.rootX + dir * 0.3; ty = 0.68;
+      }
+      const kk = Math.min(0.32, emo.tone * POSE_K[k] * dt * 60);
+      pts[k].x += (tx - pts[k].x) * kk;
+      pts[k].y += (ty - pts[k].y) * kk;
+    }
+  }
+  // FLAIL: 발버둥 임펄스
+  if (emo.state === "FLAIL" && Math.random() < dt * 14) {
+    const limbs = ["handL","handR","footL","footR"];
+    const p = pts[limbs[(Math.random() * 4) | 0]];
+    p.px -= (Math.random() - 0.5) * 0.09;
+    p.py -= Math.random() * 0.05;
+  }
+
+  // 4) 손잡기 constraint + 장력 측정
+  if (link.holding) {
+    const h = parentHand(), hp = pts.handR;
+    const dx = h.x - hp.x, dy = h.y - hp.y;
+    const tension = Math.hypot(dx, dy);
+    hp.x += dx * 0.7; hp.y += dy * 0.7;
+    if (tension > 0.34) { // 끌기
+      pts.chest.x += dx * 0.10; // 몸통이 끌려온다
+      emo.dragHeat = 1;
+      if (emo.state === "WANT") { stats.dragT = (stats.dragT || 0) + dt; if ((stats.dragT | 0) > stats.drags) { stats.drags = stats.dragT | 0; if (stats.drags === 1) banner("팔이 당겨져요 — 세게 끌면 마음 온도가 올라요"); } }
+    }
+    if (tension > 0.62 && emo.tone < 0.4) { link.holding = false; banner("힘 빠진 손이 스르륵 빠져나가요"); }
+  }
+
+  // 5) 캐리 constraint + 슬립
+  if (link.carrying) {
+    const s = carrySocket();
+    const strength = 0.18 + emo.tone * 0.55; // 림프 = 약한 유지력
+    [["chest", 0], ["pelvis", -0.22], ["head", 0.2]].forEach(([k, off]) => {
+      const p = pts[k];
+      p.x += (s.x - p.x) * strength;
+      p.y += (s.y + off - p.y) * strength;
+    });
+    child.rootX = parent.x;
+    if (emo.tone < 0.4) {
+      link.slip += Math.abs(parent.speed) * dt * 1.35 + dt * 0.12;
+      if (link.slip > 0.75 && link.slip < 0.9) banner("흘러내려요…! 천천히, 아니면 먼저 달래야 해요");
+      if (link.slip >= 1) { link.carrying = false; link.slip = 0; stats.drops++; banner("아이가 스르륵 흘러내렸어요 — 진정이 먼저예요"); }
+    } else link.slip = Math.max(0, link.slip - dt * 0.5);
+  }
+
+  // 6) 본 constraints + 지면
+  for (let it = 0; it < 6; it++) {
+    for (const [a, b, rest] of BONES) stick(pts[a], pts[b], rest);
+    for (const k in pts) ground(pts[k]);
+  }
+}
+
+/* ---------- 부모 틱 ---------- */
+function parentTick(dt) {
+  let v = 0;
+  const base = parent.crouch ? 0.7 : 2.15;
+  if (input.left) v -= base;
+  if (input.right) v += base;
+  // 손잡기 중엔 아이 협조도가 속도 상한 (실전 육아의 핵심 감각)
+  if (link.holding) {
+    const cap = 0.5 + emo.coop * 1.5;
+    v = Math.max(-cap, Math.min(cap, v)) * 0.92;
+    // 아이가 버티면(WANT) 몸이 무겁다
+    if (emo.coop < 0.3) v *= 0.55;
+  }
+  if (link.carrying) v *= emo.tone < 0.4 ? 0.62 : 0.85;
+  parent.speed = v;
+  parent.x = Math.max(0.4, Math.min(WORLD.end - 0.4, parent.x + v * dt));
+  if (v > 0.05) parent.face = 1;
+  if (v < -0.05) parent.face = -1;
+}
+
+/* ---------- 승리 판정 ---------- */
+function checkWin() {
+  if (stats.done) return;
+  const together = link.carrying || (link.holding && childDist() < 1.2);
+  if (parent.x > WORLD.exit + 0.3 && together && emo.temp < 65) {
+    stats.done = true;
+    showClear();
+  }
+}
+function showClear() {
+  const el = document.getElementById("clear-stats");
+  const mins = (stats.t / 60) | 0, secs = Math.round(stats.t % 60);
+  el.innerHTML =
+    row("걸린 시간", mins + "분 " + secs + "초") +
+    row("최고 마음 온도", Math.round(stats.maxTemp)) +
+    row("끌기(장력 초과)", (stats.drags || 0) + "회") +
+    row("감정코칭 / 회유 / 위협", stats.coach + " / " + stats.bribe + " / " + stats.threat) +
+    row("캐리 중 흘러내림", stats.drops + "회");
+  const note = document.getElementById("clear-note");
+  if (stats.threat === 0 && stats.drags <= 1 && stats.maxTemp < 72)
+    note.textContent = "전조를 읽고 몸의 속도를 아이에게 맞췄어요 — 오늘 마트의 부모는 코치였습니다.";
+  else if (stats.coach > 0)
+    note.textContent = "폭발이 있었지만 회복시켰어요. 실제 육아처럼 — 실수보다 회복이 관계를 만듭니다.";
+  else
+    note.textContent = "빠져나오긴 했지만 아이 마음에 온도가 남았어요. 다음 판엔 젤리 코너 앞에서 한 번 멈춰 보세요.";
+  document.getElementById("ov-clear").classList.remove("hide");
+}
+function row(k, v) { return '<div class="stat-row"><span>' + k + "</span><b>" + v + "</b></div>"; }
+document.getElementById("btn-retry").addEventListener("click", () => location.reload());
+document.getElementById("btn-start").addEventListener("click", () => {
+  document.getElementById("ov-intro").classList.add("hide");
+  stats.started = true;
+});
+
+/* ---------- 렌더 ---------- */
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  // 배경
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, "#122436"); bg.addColorStop(1, "#0B1622");
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+  // 바닥
+  ctx.fillStyle = "#101E2C";
+  ctx.fillRect(0, GROUND_SY(), W, H - GROUND_SY());
+  ctx.strokeStyle = "rgba(157,180,200,.25)"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, GROUND_SY()); ctx.lineTo(W, GROUND_SY()); ctx.stroke();
+
+  // 진열대
+  for (const s of SHELVES) {
+    const x0 = sx(s.x - s.w / 2), x1 = sx(s.x + s.w / 2);
+    const top = sy(1.55);
+    ctx.fillStyle = s.jelly ? "rgba(242,199,124,.13)" : "rgba(22,41,60,.85)";
+    ctx.strokeStyle = s.jelly ? "rgba(242,199,124,.55)" : "rgba(157,180,200,.22)";
+    ctx.lineWidth = 1.5;
+    roundRect(x0, top, x1 - x0, GROUND_SY() - top, 8, true, true);
+    // 선반 줄 + 상품
+    for (let i = 1; i <= 3; i++) {
+      const yy = top + (GROUND_SY() - top) * i / 3.6;
+      ctx.strokeStyle = "rgba(157,180,200,.16)";
+      ctx.beginPath(); ctx.moveTo(x0 + 5, yy); ctx.lineTo(x1 - 5, yy); ctx.stroke();
+      for (let j = 0; j < 4; j++) {
+        const ix = x0 + 12 + j * ((x1 - x0 - 24) / 3);
+        ctx.fillStyle = s.jelly ? "rgba(242,199,124," + (0.5 - i * 0.08) + ")" : "rgba(111,176,222," + (0.4 - i * 0.07) + ")";
+        roundRect(ix, yy - 14, 12, 12, 3, true, false);
+      }
+    }
+    ctx.fillStyle = s.jelly ? "var(--amber)" : "#7E95A8";
+    ctx.fillStyle = s.jelly ? "#F2C77C" : "#7E95A8";
+    ctx.font = "700 11px " + getComputedStyle(document.body).fontFamily;
+    ctx.textAlign = "center";
+    ctx.fillText(s.label, (x0 + x1) / 2, top - 8);
+  }
+
+  // 출구
+  const ex = sx(WORLD.exit + 0.55), et = sy(1.9);
+  ctx.fillStyle = "rgba(87,196,180,.12)";
+  ctx.strokeStyle = "rgba(87,196,180,.55)";
+  roundRect(ex, et, 74, GROUND_SY() - et, 8, true, true);
+  ctx.fillStyle = "#57C4B4";
+  ctx.font = "800 12px " + getComputedStyle(document.body).fontFamily;
+  ctx.fillText("EXIT", ex + 37, et + 22);
+
+  drawChild();
+  drawParent();
+
+  // 손잡기 라인 (팔)
+  if (link.holding) {
+    const h = parentHand(), hp = child.pts.handR;
+    ctx.strokeStyle = "rgba(242,199,124,.8)"; ctx.lineWidth = 3; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(sx(h.x), sy(h.y)); ctx.lineTo(sx(hp.x), sy(hp.y)); ctx.stroke();
+  }
+}
+function roundRect(x, y, w, h, r, fill, stroke) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  if (fill) ctx.fill(); if (stroke) ctx.stroke();
+}
+function limb(a, b, w, color) {
+  ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(sx(a.x), sy(a.y)); ctx.lineTo(sx(b.x), sy(b.y)); ctx.stroke();
+}
+function drawChild() {
+  const p = child.pts;
+  const skin = "#F2D6BC", cloth = "#57C4B4", pants = "#31506B";
+  limb(p.pelvis, p.kneeL, 9, pants); limb(p.kneeL, p.footL, 8, pants);
+  limb(p.pelvis, p.kneeR, 9, pants); limb(p.kneeR, p.footR, 8, pants);
+  limb(p.pelvis, p.chest, 13, cloth);
+  limb(p.chest, p.elbL, 7, cloth); limb(p.elbL, p.handL, 6, skin);
+  limb(p.chest, p.elbR, 7, cloth); limb(p.elbR, p.handR, 6, skin);
+  // 머리
+  const hx = sx(p.head.x), hy = sy(p.head.y);
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.arc(hx, hy, 12, 0, 7); ctx.fill();
+  ctx.fillStyle = "#3D4C58";
+  ctx.beginPath(); ctx.arc(hx, hy - 4, 12, Math.PI, 2 * Math.PI); ctx.fill();
+  // 표정
+  ctx.fillStyle = "#26313B";
+  const dir = child.face;
+  if (emo.state === "FLAIL" || (emo.state === "LIMP" && emo.temp > 50)) {
+    // 우는 눈 + 눈물
+    ctx.strokeStyle = "#26313B"; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(hx - 5, hy + 1); ctx.quadraticCurveTo(hx - 3, hy + 3, hx - 1, hy + 1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(hx + 1, hy + 1); ctx.quadraticCurveTo(hx + 3, hy + 3, hx + 5, hy + 1); ctx.stroke();
+    ctx.fillStyle = "#8FC8EE";
+    ctx.beginPath(); ctx.arc(hx - 6, hy + 6, 2, 0, 7); ctx.fill();
+  } else if (emo.state === "LIMP") {
+    ctx.fillRect(hx - 5, hy + 1, 3.4, 1.8); ctx.fillRect(hx + 2, hy + 1, 3.4, 1.8); // 감은 눈
+  } else {
+    ctx.beginPath(); ctx.arc(hx - 3.5 + dir, hy + 1, 1.9, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(hx + 3.5 + dir, hy + 1, 1.9, 0, 7); ctx.fill();
+  }
+}
+function drawParent() {
+  const x = parent.x, f = parent.face;
+  const hTop = parent.crouch ? 1.18 : 1.62; // 머리 높이
+  const hipY = parent.crouch ? 0.55 : 0.86;
+  const chest = { x, y: hTop - 0.34 };
+  const skin = "#E8C5A6", coat = "#F2C77C", pants2 = "#24435F";
+  // 다리 (프로시저럴)
+  const gait = Math.abs(parent.speed) > 0.05 ? performance.now() / 110 : 0;
+  const legSpread = Math.abs(parent.speed) > 0.05 ? Math.sin(gait) * 0.14 : 0.05;
+  limb({ x, y: hipY }, { x: x + legSpread, y: 0.02 }, 10, pants2);
+  limb({ x, y: hipY }, { x: x - legSpread, y: 0.02 }, 10, pants2);
+  // 몸통
+  limb({ x, y: hipY }, chest, 15, coat);
+  // 팔: 아이와 연결 중이면 그쪽으로
+  const hand = parentHand();
+  if (link.holding || link.carrying) limb(chest, { x: hand.x, y: hand.y }, 8, coat);
+  else limb(chest, { x: x + f * 0.14, y: hipY + 0.1 }, 8, coat);
+  // 머리
+  const hx2 = sx(x), hy2 = sy(hTop);
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.arc(hx2, hy2, 14, 0, 7); ctx.fill();
+  ctx.fillStyle = "#2E3A45";
+  ctx.beginPath(); ctx.arc(hx2, hy2 - 5, 14, Math.PI, 2 * Math.PI); ctx.fill();
+  ctx.fillStyle = "#26313B";
+  ctx.beginPath(); ctx.arc(hx2 + f * 4, hy2 + 1, 2, 0, 7); ctx.fill();
+}
+
+/* ---------- 메인 루프 ---------- */
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.032, (now - last) / 1000);
+  last = now;
+  if (stats.started && !stats.done) {
+    stats.t += dt;
+    parentTick(dt);
+    emoTick(dt);
+    const sub = 3;
+    for (let i = 0; i < sub; i++) childTick(dt / sub);
+    // 아이 시선
+    child.face = parent.x > child.pts.head.x ? 1 : -1;
+    checkWin();
+  }
+  camX += ((parent.x + 1.2) - camX) * 0.08;
+  camX = Math.max(2.2, Math.min(WORLD.end - (W * 0.55) / SCALE, camX));
+  draw();
+  updateHud();
+  document.getElementById("btn-act").textContent = actionLabel();
+  dialogEl.classList.toggle("show", dialogAvailable() && !stats.done);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ---------- 테스트 훅 ---------- */
+window.__demo = {
+  get: () => ({ state: emo.state, temp: emo.temp, tone: emo.tone, px: parent.x, cx: child.pts.pelvis.x, cy: child.pts.head.y, holding: link.holding, carrying: link.carrying, done: stats.done, started: stats.started }),
+  start: () => { document.getElementById("ov-intro").classList.add("hide"); stats.started = true; },
+  act: doAction, crouch: toggleCrouch, line: pickLine,
+};
+</script>
