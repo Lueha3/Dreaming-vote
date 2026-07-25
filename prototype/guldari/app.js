@@ -23,7 +23,7 @@
   var ui = {};
   ['entryOverlay','enterBtn','hud','toastWrap','gaugeFill','gaugeWrap','spVal','audVal',
    'clapBtn','flashBtn','coinBtn','reverbBtn','ratingPanel','endOverlay','endStats','againBtn',
-   'songTitle','phaseLabel'].forEach(function (id) { ui[id] = document.getElementById(id); });
+   'songTitle','phaseLabel','songProgress','songIndex','artistName','endNext'].forEach(function (id) { ui[id] = document.getElementById(id); });
 
   function toast(msg, ms) {
     var el = document.createElement('div');
@@ -340,6 +340,7 @@
   }
 
   function initAudio() {
+    if (A.ctx) { if (A.ctx.state === 'suspended') A.ctx.resume(); return; }
     var ctx = new (window.AudioContext || window.webkitAudioContext)();
     A.ctx = ctx;
     A.master = ctx.createGain(); A.master.gain.value = 0.9; A.master.connect(ctx.destination);
@@ -383,8 +384,13 @@
 
   var song = { bpm: 74, bars: 0, totalBars: 12, startTime: 0, nextBar: 0, timer: null, running: false };
 
-  function scheduleBar(barIdx, when) {
-    var ctx = A.ctx, spb = 60 / song.bpm; // sec per beat
+  // 오프라인 렌더링용 컨텍스트 스왑 (데모 곡을 AudioBuffer로 굽는 데 사용)
+  var RC = null;
+  function actx() { return RC ? RC.ctx : A.ctx; }
+  function adest() { return RC ? RC.dest : A.musicBus; }
+
+  function scheduleBar(barIdx, when, bpmOverride) {
+    var ctx = actx(), spb = 60 / (bpmOverride || song.bpm); // sec per beat
     var chord = CHORDS[barIdx % 4];
     // 패드
     chord.forEach(function (n, i) {
@@ -395,7 +401,7 @@
       g.gain.setValueAtTime(0.0001, when);
       g.gain.linearRampToValueAtTime(i === 0 ? 0.09 : 0.045, when + 0.3);
       g.gain.setTargetAtTime(0.0001, when + spb * 3.4, 0.25);
-      o.connect(f); f.connect(g); g.connect(A.musicBus);
+      o.connect(f); f.connect(g); g.connect(adest());
       o.start(when); o.stop(when + spb * 4 + 1);
     });
     // 킥 (1,3박) + 해트(8분) + 스네어(2,4박)
@@ -405,7 +411,7 @@
         var ko = ctx.createOscillator(), kg = ctx.createGain();
         ko.frequency.setValueAtTime(120, t); ko.frequency.exponentialRampToValueAtTime(42, t + 0.12);
         kg.gain.setValueAtTime(0.5, t); kg.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
-        ko.connect(kg); kg.connect(A.musicBus); ko.start(t); ko.stop(t + 0.3);
+        ko.connect(kg); kg.connect(adest()); ko.start(t); ko.stop(t + 0.3);
       } else { // snare-ish
         noiseBurst(t, 0.09, 1800, 0.10);
       }
@@ -422,13 +428,13 @@
       g.gain.setValueAtTime(0.0001, t);
       g.gain.linearRampToValueAtTime(0.16, t + 0.02);
       g.gain.setTargetAtTime(0.0001, t + m[3] * spb * 0.6, 0.09);
-      o.connect(f); f.connect(g); g.connect(A.musicBus);
+      o.connect(f); f.connect(g); g.connect(adest());
       o.start(t); o.stop(t + m[3] * spb + 0.5);
     });
   }
 
   function noiseBurst(t, dur, freq, vol, dest) {
-    var ctx = A.ctx;
+    var ctx = actx();
     var len = Math.max(1, Math.floor(ctx.sampleRate * dur));
     var buf = ctx.createBuffer(1, len, ctx.sampleRate);
     var d = buf.getChannelData(0);
@@ -436,7 +442,7 @@
     var src = ctx.createBufferSource(); src.buffer = buf;
     var f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 0.9;
     var g = ctx.createGain(); g.gain.value = vol;
-    src.connect(f); f.connect(g); g.connect(dest || A.musicBus);
+    src.connect(f); f.connect(g); g.connect(dest || adest());
     src.start(t);
   }
 
@@ -484,16 +490,85 @@
     }, 40);
   }
 
+  // 데모 곡을 AudioBuffer로 오프라인 렌더 (스튜디오 '데모 곡으로 체험'용)
+  function renderDemoSong() {
+    initAudio();
+    var bpm = 74, bars = 12, spb = 60 / bpm, barLen = spb * 4;
+    var dur = bars * barLen + 1.5, sr = 44100;
+    var oc = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, Math.ceil(sr * dur), sr);
+    var dest = oc.createGain(); dest.gain.value = 0.9; dest.connect(oc.destination);
+    RC = { ctx: oc, dest: dest };
+    for (var b = 0; b < bars; b++) scheduleBar(b, 0.05 + b * barLen, bpm);
+    RC = null;
+    return oc.startRendering();
+  }
+
+  // ---------- 업로드 곡 재생 ----------
+  var live = { list: null, idx: 0, src: null, cues: [], cueIdx: 0, t0: 0, dur: 0, stopping: false };
+  var fx = { flare: 0, color: 0, hue: 0 };
+
+  function fireCue(c) {
+    if (c.type === 'flare') { fx.flare = 1; }
+    else if (c.type === 'color') { fx.hue = (fx.hue + 0.28) % 1; fx.color = 1; }
+    else if (c.type === 'dim') { fx.flare = -0.6; }
+    else if (c.type === 'singalong') {
+      toast('🎤 떼창 구간 — 관중이 따라 부릅니다');
+      crowd.forEach(function (p) { p.userData.jump = 0.6; });
+      addGauge(10);
+    }
+  }
+
+  function playSongAt(i) {
+    var s = live.list[i];
+    live.idx = i;
+    ui.songTitle.innerHTML = '‘' + s.title + '’ ' +
+      (s.aiLabeled ? '<span style="color:#8fb8ff">· AI 생성</span>' : '<span style="opacity:.7">· 자작곡</span>');
+    ui.songIndex.textContent = (i + 1) + ' / ' + live.list.length + '곡';
+    var src = A.ctx.createBufferSource();
+    src.buffer = s.buffer;
+    var g = A.ctx.createGain(); g.gain.value = s.gain || 1;
+    src.connect(g); g.connect(A.musicBus);
+    live.src = src; live.cues = s.cues || []; live.cueIdx = 0;
+    live.t0 = A.ctx.currentTime; live.dur = s.buffer.duration;
+    src.onended = function () { if (!live.stopping) nextSong(); };
+    src.start();
+  }
+
+  function nextSong() {
+    live.src = null;
+    if (live.idx + 1 < live.list.length) {
+      applause(1.4);
+      var ments = ['다음 곡도 제가 만든 거예요', '와 주셔서 고맙습니다. 다음 곡 갈게요',
+                   '이 노래는 새벽에 썼어요', '조금만 더 들어주실래요?'];
+      toast('🎙 미도: “' + ments[live.idx % ments.length] + '”');
+      setTimeout(function () { playSongAt(live.idx + 1); }, 3200);
+    } else {
+      songEnded();
+    }
+  }
+
   // ---------- 공연 흐름 ----------
-  function enter() {
+  function enter() { begin(null); }
+
+  function begin(list) {
     ui.entryOverlay.classList.add('hide');
     ui.hud.classList.add('show');
     initAudio();
     state.phase = 'live';
     ui.phaseLabel.textContent = 'LIVE';
-    toast('미도(MIDO)의 첫 공연이 시작됩니다 — 자작곡 ‘유성우’');
-    setTimeout(function () { toast('굴다리 아래에선 노래가 두 배 좋게 들려요 (터널 리버브 ON)'); }, 3600);
-    startSong(74, 12, songEnded);
+    if (list && list.length) {
+      live.list = list; live.stopping = false; state.songCount = list.length;
+      state.ownStage = true;
+      ui.artistName.innerHTML = '나의 첫 무대 <span style="font-weight:400;color:#8aa">MY DEBUT</span>';
+      toast('당신의 셋리스트 ' + list.length + '곡, 굴다리 무대에 오릅니다');
+      setTimeout(function () { toast('굴다리 터널 리버브를 통과한 당신의 곡입니다 — 우측 하단에서 껐다 켜보세요'); }, 4200);
+      setTimeout(function () { playSongAt(0); }, 1200);
+    } else {
+      ui.songIndex.textContent = '1 / 1곡';
+      toast('미도(MIDO)의 첫 공연이 시작됩니다 — 자작곡 ‘유성우’');
+      setTimeout(function () { toast('굴다리 아래에선 노래가 두 배 좋게 들려요 (터널 리버브 ON)'); }, 3600);
+      startSong(74, 12, songEnded);
+    }
   }
 
   function songEnded() {
@@ -513,9 +588,18 @@
       setTimeout(function () {
         state.phase = 'encore';
         ui.phaseLabel.textContent = 'ENCORE';
-        ui.songTitle.textContent = '‘새벽 산책’ — 숨겨둔 앙코르 곡';
-        toast('앙코르! 숨겨둔 곡 ‘새벽 산책’ 🎶');
-        startSong(84, 8, showEnd);
+        if (live.list && live.list.length) {
+          // 셋리스트 첫 곡을 앙코르로 재연 (숨겨둔 곡 자리)
+          toast('앙코르! 다시 한 번 ‘' + live.list[0].title + '’ 🎶');
+          live.list = [live.list[0]];
+          playSongAt(0);
+          live.encore = true;
+          live.src.onended = function () { if (!live.stopping) showEnd(); };
+        } else {
+          ui.songTitle.textContent = '‘새벽 산책’ — 숨겨둔 앙코르 곡';
+          toast('앙코르! 숨겨둔 곡 ‘새벽 산책’ 🎶');
+          startSong(84, 8, showEnd);
+        }
       }, 1400);
     } else {
       setTimeout(showEnd, 1600);
@@ -524,12 +608,18 @@
 
   function showEnd() {
     state.phase = 'end';
+    live.stopping = true;
     applause(2.2);
+    var n = state.songCount || 1;
+    if (state.ownStage) {
+      ui.endNext.innerHTML = '오늘 당신의 곡이 <b>처음으로 관객 앞에서 울렸습니다</b><br>' +
+        '다음 목표 — <b>동네 스팟 · 옥상 루프탑 (800 SP)</b>, 관객 50명의 무대';
+    }
     ui.endStats.innerHTML =
       '<div class="stat"><b>' + state.audience + '명</b><span>오늘의 관객</span></div>' +
       '<div class="stat"><b>' + state.coins + '닢</b><span>받은 동전</span></div>' +
       '<div class="stat"><b>' + (state.stars || '-') + '점</b><span>내가 준 별점</span></div>' +
-      '<div class="stat"><b>+1곡</b><span>이번 주 처음으로<br>관객을 만난 곡</span></div>';
+      '<div class="stat"><b>+' + n + '곡</b><span>이번 주 처음으로<br>관객을 만난 곡</span></div>';
     ui.endOverlay.classList.add('show');
   }
 
@@ -584,20 +674,35 @@
       bass += ((sum / 6 / 255) - bass) * 0.25;
     } else bass *= 0.95;
 
-    // 나트륨등: 미세 플리커 + 저음 펄스
-    lamp.intensity = 1.15 + Math.sin(t * 31) * 0.03 + Math.sin(t * 7.3) * 0.02 + bass * 0.55;
-    stageLight.intensity = 0.75 + bass * 0.8;
-    lampGlow.material.opacity = 0.09 + bass * 0.08;
+    // 연출 큐 진행 (업로드 곡의 자동 생성 시퀀스)
+    if (live.src && A.ctx) {
+      var pt = A.ctx.currentTime - live.t0;
+      while (live.cueIdx < live.cues.length && live.cues[live.cueIdx].t <= pt) {
+        fireCue(live.cues[live.cueIdx]); live.cueIdx++;
+      }
+      if (ui.songProgress) ui.songProgress.style.width = Math.min(100, pt / live.dur * 100) + '%';
+    }
+    fx.flare += (0 - fx.flare) * dt * 1.6;
+    fx.color += (0 - fx.color) * dt * 2.2;
+
+    // 나트륨등: 미세 플리커 + 저음 펄스 + 연출 플레어
+    lamp.intensity = 1.15 + Math.sin(t * 31) * 0.03 + Math.sin(t * 7.3) * 0.02 + bass * 0.55 + fx.flare * 1.6;
+    stageLight.intensity = 0.75 + bass * 0.8 + fx.flare * 1.2;
+    stageLight.color.setHSL((0.09 + fx.hue) % 1, 0.55, 0.62);
+    lampGlow.material.opacity = 0.09 + bass * 0.08 + Math.max(0, fx.flare) * 0.12;
     neon.material.opacity = 0.85 + Math.sin(t * 2.2) * 0.08 + bass * 0.2;
     stringBulbs.forEach(function (b, i) {
       var tw = 0.75 + 0.25 * Math.sin(t * 3 + i * 1.7);
-      b.material.opacity = state.phase === 'encore' ? (Math.sin(t * 8 + i) > 0 ? 1 : 0.25) : tw;
+      if (fx.color > 0.05) b.material.color.setHSL((fx.hue + i * 0.012) % 1, 0.6, 0.65);
+      b.material.opacity = state.phase === 'encore' ? (Math.sin(t * 8 + i) > 0 ? 1 : 0.25)
+        : Math.min(1, tw + Math.max(0, fx.flare) * 0.5);
     });
 
-    // 아티스트: 바운스 + 스트로크
-    var groove = song.running ? 1 : 0.3;
-    artist.position.y = 0.18 + Math.abs(Math.sin(t * (song.bpm / 60) * Math.PI)) * 0.05 * groove;
-    strumArm.rotation.z = -0.9 + Math.sin(t * (song.bpm / 60) * Math.PI * 2) * 0.35 * groove;
+    // 아티스트: 바운스 + 스트로크 (프로시저럴 곡 / 업로드 곡 공통)
+    var groove = (song.running || live.src) ? 1 : 0.3;
+    var curBpm = live.src && live.list ? (live.list[live.idx].bpm || 100) : song.bpm;
+    artist.position.y = 0.18 + Math.abs(Math.sin(t * (curBpm / 60) * Math.PI)) * 0.05 * groove;
+    strumArm.rotation.z = -0.9 + Math.sin(t * (curBpm / 60) * Math.PI * 2) * 0.35 * groove;
     artist.userData.head.rotation.z = Math.sin(t * 1.9) * 0.08;
 
     // 관중: 바운스(저음 반응) + 점프 + 플래시
@@ -607,7 +712,7 @@
       var baseY = ud.baseY !== undefined ? ud.baseY : (ud.baseY = p.position.y);
       if (ud.jump && ud.jump > 0) { ud.jump -= dt * 2.2; }
       var jumpY = ud.jump > 0 ? Math.sin((0.6 - ud.jump) / 0.6 * Math.PI) * 0.16 : 0;
-      p.position.y = baseY + Math.abs(Math.sin(t * (song.bpm / 60) * Math.PI + ud.phase)) * amp + jumpY;
+      p.position.y = baseY + Math.abs(Math.sin(t * (curBpm / 60) * Math.PI + ud.phase)) * amp + jumpY;
       ud.head.rotation.x = Math.sin(t * 2 + ud.phase) * 0.06;
       var want = (state.flashOn && !ud.sitting) || (state.flashOn && i % 2 === 0) ? 0.85 : 0;
       ud.flash.material.opacity += (want - ud.flash.material.opacity) * 0.08;
@@ -616,8 +721,9 @@
     });
 
     // 게이지 자연 상승(플래시 유지 시) + 흥분도 감쇠
-    if (state.flashOn && song.running) addGauge(dt * 1.2);
-    if (song.running) addGauge(dt * 0.35);
+    var isPlaying = song.running || !!live.src;
+    if (state.flashOn && isPlaying) addGauge(dt * 1.2);
+    if (isPlaying) addGauge(dt * 0.35);
     state.excitement = Math.max(0.12, state.excitement - dt * 0.01);
 
     // 행인 NPC
@@ -681,4 +787,16 @@
     renderer.render(scene, camera);
   }
   animate();
+
+  // ---------- 스튜디오 연동 API ----------
+  window.Guldari = {
+    toast: toast,
+    ensureAudio: initAudio,
+    decode: function (arrayBuffer) {
+      initAudio();
+      return A.ctx.decodeAudioData(arrayBuffer);
+    },
+    renderDemoSong: renderDemoSong,
+    begin: begin
+  };
 })();

@@ -119,6 +119,132 @@
   .stat span { font-size: 11.5px; color: #9db0c6; line-height: 1.5; display: block; margin-top: 6px; }
   #endOverlay .next { font-size: 13px; color: #b9c6d8; line-height: 1.8; }
   #againBtn { padding: 12px 36px; font-size: 15px; font-weight: 700; color: #06231b; background: var(--mint); border: none; border-radius: 999px; cursor: pointer; }
+
+  /* ---------- 스튜디오 ---------- */
+  #studioOpenBtn {
+    margin-top: 2px; padding: 12px 34px; font-size: 15px; font-weight: 600; color: #dff6ee;
+    background: rgba(127,240,212,0.09); border: 1px solid rgba(127,240,212,0.42); border-radius: 999px; cursor: pointer;
+    transition: background 0.2s;
+  }
+  #studioOpenBtn:hover { background: rgba(127,240,212,0.18); }
+  #studio {
+    position: fixed; inset: 0; z-index: 40; overflow-y: auto; padding: 28px 20px 60px;
+    background: linear-gradient(180deg, #080c15 0%, #0b1220 100%);
+    opacity: 0; visibility: hidden; transition: opacity 0.4s, visibility 0.4s;
+  }
+  #studio.show { opacity: 1; visibility: visible; }
+  .st-wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+  .st-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .st-head h2 { font-size: 21px; letter-spacing: -0.01em; }
+  .st-head h2 span { color: var(--mint); }
+  .st-head p { font-size: 12.5px; color: #8fa0b6; margin-top: 5px; line-height: 1.6; }
+  #studioCloseBtn { background: none; border: 1px solid rgba(255,255,255,0.18); color: #b9c6d8; border-radius: 999px; padding: 7px 14px; font-size: 13px; cursor: pointer; flex-shrink: 0; }
+  .st-panel { background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.09); border-radius: 18px; padding: 20px; }
+  .st-panel > h3 { font-size: 14px; color: #cfdcec; margin-bottom: 4px; }
+  .st-panel > .sub { font-size: 12px; color: #7f90a6; margin-bottom: 14px; line-height: 1.6; }
+
+  #dropzone {
+    border: 1.5px dashed rgba(127,240,212,0.4); border-radius: 14px; padding: 30px 20px; text-align: center;
+    cursor: pointer; transition: background 0.2s, border-color 0.2s;
+  }
+  #dropzone:hover, #dropzone.over { background: rgba(127,240,212,0.07); border-color: var(--mint); }
+  #dropzone.disabled { opacity: 0.4; pointer-events: none; }
+  #dropzone .dz-big { font-size: 15px; font-weight: 600; color: #e6eef8; }
+  #dropzone .dz-sub { font-size: 12px; color: #8698ae; margin-top: 6px; }
+  .st-or { display: flex; align-items: center; gap: 12px; margin: 14px 0 0; color: #64758c; font-size: 11.5px; }
+  .st-or::before, .st-or::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.09); }
+  #demoBtn { width: 100%; margin-top: 12px; padding: 11px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.13); color: #d3dfec; font-size: 13.5px; cursor: pointer; }
+  #demoBtn:hover { background: rgba(255,255,255,0.09); }
+
+  #analyzing { display: none; align-items: center; gap: 11px; font-size: 13.5px; color: #b6c6da; padding: 16px 4px 2px; }
+  #analyzing.show { display: flex; }
+  .spinner { width: 15px; height: 15px; border: 2px solid rgba(127,240,212,0.25); border-top-color: var(--mint); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2s; } }
+
+  #songCard { display: none; }
+  #songCard.show { display: block; }
+  #songCard.approved .rights,
+  #songCard.approved #reviewBtn,
+  #songCard.approved #reviewSteps,
+  #songCard.approved > .sub { display: none; }
+  #songCard.approved #titleInput { pointer-events: none; opacity: 0.75; }
+  #waveCanvas { width: 100%; height: 78px; display: block; border-radius: 9px; background: rgba(0,0,0,0.28); }
+  #titleInput {
+    width: 100%; margin-top: 14px; padding: 11px 13px; border-radius: 10px; font-size: 15px; font-weight: 600;
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.14); color: #eef2f8;
+  }
+  #titleInput:focus, select:focus, input[type="text"]:focus { outline: 2px solid rgba(127,240,212,0.6); outline-offset: 1px; }
+  .meta-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .meta-row span { font-size: 11.5px; color: #a7b8cd; background: rgba(255,255,255,0.06); border-radius: 999px; padding: 5px 11px; font-variant-numeric: tabular-nums; }
+  #cuePreview { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .cue-title { font-size: 11.5px; color: #8fa0b6; margin-right: 2px; }
+  .cue-chip { font-size: 11px; border-radius: 6px; padding: 4px 9px; background: rgba(255,255,255,0.07); }
+  .cue-flare { color: #ffb45f; } .cue-color { color: #8fb8ff; } .cue-singalong { color: #ff9dbb; } .cue-dim { color: #94a3b8; }
+
+  .rights { margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 11px; }
+  .rights label { display: flex; gap: 9px; align-items: flex-start; font-size: 13px; color: #ccd8e6; line-height: 1.55; cursor: pointer; }
+  .rights input[type="checkbox"] { margin-top: 2px; width: 16px; height: 16px; accent-color: #7ff0d4; flex-shrink: 0; }
+  .rights .ai-row { display: flex; gap: 9px; align-items: center; font-size: 13px; color: #ccd8e6; flex-wrap: wrap; }
+  .rights select, .rights input[type="text"] {
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.14); color: #eef2f8;
+    border-radius: 8px; padding: 8px 10px; font-size: 13px;
+  }
+  #aiToolWrap { display: none; gap: 8px; align-items: center; }
+  #reviewBtn {
+    margin-top: 16px; width: 100%; padding: 13px; border-radius: 11px; border: none; cursor: pointer;
+    background: var(--mint); color: #06231b; font-size: 15px; font-weight: 700;
+  }
+  #reviewBtn:disabled { background: rgba(255,255,255,0.09); color: #6b7c92; cursor: not-allowed; }
+
+  #reviewSteps { display: flex; flex-direction: column; gap: 9px; margin-top: 14px; }
+  .rv-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: #9db0c6; }
+  .rv-ico { width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0; border: 2px solid rgba(127,240,212,0.3); }
+  .rv-row.running .rv-ico { border-top-color: var(--mint); animation: spin 0.8s linear infinite; }
+  .rv-row.done .rv-ico { border-color: var(--mint); background: var(--mint); }
+  .rv-row.done .rv-label { color: #dce6f2; }
+  .rv-note { font-size: 11.5px; color: #7f90a6; margin-left: auto; text-align: right; }
+  .rv-result { display: none; margin-top: 16px; padding: 15px 17px; border-radius: 13px; font-size: 13px; line-height: 1.65; }
+  .rv-result.show { display: block; }
+  .rv-result.ok { background: rgba(127,240,212,0.09); border: 1px solid rgba(127,240,212,0.32); }
+  .rv-result.warn { background: rgba(255,180,95,0.09); border: 1px solid rgba(255,180,95,0.35); }
+  .rv-result b { display: block; margin-bottom: 5px; font-size: 14px; color: #fff; }
+  .rv-result p { color: #c2d0e0; }
+  .rv-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .rv-actions .ghost { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.16); color: #d5e0ee; border-radius: 8px; padding: 7px 13px; font-size: 12px; cursor: pointer; }
+  .ai-badge { font-size: 10px; background: rgba(143,184,255,0.2); color: #a9c7ff; border-radius: 5px; padding: 2px 6px; vertical-align: middle; }
+
+  #setlistWrap { display: none; }
+  #setlistWrap.show { display: block; }
+  .sl-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .sl-head h3 { font-size: 14px; color: #cfdcec; }
+  #setlistCount { font-size: 12px; color: var(--mint); background: rgba(127,240,212,0.12); border-radius: 999px; padding: 4px 11px; font-variant-numeric: tabular-nums; }
+  #setlistCount.full { color: #ffb45f; background: rgba(255,180,95,0.14); }
+  #setlistTime { font-size: 11.5px; color: #7f90a6; margin-left: auto; font-variant-numeric: tabular-nums; }
+  #setlistItems { display: flex; flex-direction: column; gap: 7px; }
+  .sl-row { display: flex; align-items: center; gap: 11px; background: rgba(255,255,255,0.045); border-radius: 10px; padding: 10px 13px; }
+  .sl-no { font-size: 12px; color: var(--mint); width: 18px; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .sl-title { font-size: 13.5px; color: #e6eef8; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sl-meta { font-size: 11px; color: #7f90a6; margin-left: auto; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .sl-ctl { display: flex; gap: 3px; flex-shrink: 0; }
+  .sl-ctl button { background: rgba(255,255,255,0.07); border: none; color: #a8b8cb; width: 25px; height: 25px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  .sl-ctl button:hover { background: rgba(255,255,255,0.15); color: #fff; }
+  .sl-actions { display: flex; gap: 9px; margin-top: 16px; }
+  #addMoreBtn { flex: 1; padding: 12px; border-radius: 11px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); color: #d5e0ee; font-size: 14px; cursor: pointer; }
+  #goStageBtn { flex: 1.4; padding: 12px; border-radius: 11px; border: none; background: var(--mint); color: #06231b; font-size: 15px; font-weight: 700; cursor: pointer; }
+  #goStageBtn:disabled, #addMoreBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .st-foot { font-size: 11.5px; color: #64758c; line-height: 1.7; text-align: center; }
+
+  /* HUD 곡 진행 */
+  .song-prog { height: 3px; border-radius: 99px; background: rgba(255,255,255,0.13); margin-top: 8px; overflow: hidden; }
+  #songProgress { height: 100%; width: 0%; background: var(--mint); }
+  #songIndex { font-size: 11px; color: #8aa; margin-top: 5px; display: block; font-variant-numeric: tabular-nums; }
+
+  @media (max-width: 620px) {
+    .actions { flex-wrap: wrap; justify-content: center; max-width: 94vw; }
+    .actions button { font-size: 13px; padding: 10px 14px; }
+    .rv-note { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -129,17 +255,92 @@
   <div class="logo">굴다리<small>GULDARI</small></div>
   <div class="mission">음악을 만드는 일은 쉬워졌지만, 들려주는 일은 더 어려워졌습니다.<br><b>무대는 작아도, 박수는 진짜입니다.</b></div>
   <div class="ticket">🎫 오늘 밤 21:40 · <b>굴다리 아래</b> · 미도(MIDO) 첫 공연 — 자작곡 ‘유성우’</div>
-  <button id="enterBtn">입장하기</button>
+  <button id="enterBtn">관객으로 입장하기</button>
+  <button id="studioOpenBtn">🎤 내 곡으로 데뷔하기 — 스튜디오</button>
   <div class="hint">🔊 사운드가 재생됩니다 · 드래그로 주변을 둘러보세요 · 웹 프로토타입 목업</div>
+</div>
+
+<!-- 스튜디오: 업로드 → 검수 → 셋리스트 → 무대 -->
+<div id="studio">
+  <div class="st-wrap">
+    <div class="st-head">
+      <div>
+        <h2>스튜디오 — <span>데뷔 예약</span></h2>
+        <p>Suno에 잠든 곡, 컴퓨터에 묻힌 데모. 파일 하나면 오늘 밤 굴다리 무대에 섭니다.</p>
+      </div>
+      <button id="studioCloseBtn">닫기</button>
+    </div>
+
+    <div class="st-panel">
+      <h3>1. 곡 올리기</h3>
+      <div class="sub">mp3 · wav · m4a — 파일은 이 브라우저 밖으로 나가지 않습니다(프로토타입)</div>
+      <div id="dropzone">
+        <div class="dz-big">🎵 곡 파일을 여기에 놓거나 클릭해 선택하세요</div>
+        <div class="dz-sub">업로드하면 파형·BPM·라우드니스를 분석하고 연출을 자동으로 짭니다</div>
+      </div>
+      <input type="file" id="fileInput" accept="audio/*" hidden>
+      <div class="st-or">또는</div>
+      <button id="demoBtn">가진 파일이 없다면 — 데모 곡으로 전체 흐름 체험하기</button>
+      <div id="analyzing"><span class="spinner"></span><span>곡을 분석하고 연출을 짜는 중…</span></div>
+    </div>
+
+    <div class="st-panel" id="songCard">
+      <h3>2. 곡 정보와 권리 확인</h3>
+      <div class="sub">플랫폼이 대신 책임지지 않습니다 — 업로더 본인이 권리를 보증하는 구조입니다</div>
+      <canvas id="waveCanvas"></canvas>
+      <input type="text" id="titleInput" placeholder="곡 제목" maxlength="40">
+      <div class="meta-row">
+        <span id="metaBpm"></span><span id="metaLen"></span><span id="metaLoud"></span>
+      </div>
+      <div id="cuePreview"></div>
+
+      <div class="rights">
+        <label><input type="checkbox" id="chkOwn"> 이 곡은 제가 직접 만들었거나, 상업적 이용 권리를 가지고 있습니다</label>
+        <label><input type="checkbox" id="chkThird"> 타인의 곡을 복제·커버하지 않았고, 제3자 권리를 침해하지 않습니다</label>
+        <div class="ai-row">
+          <span>AI 사용 여부</span>
+          <select id="aiUse">
+            <option value="none">사용 안 함 — 직접 작사·작곡</option>
+            <option value="partial">일부 사용 (편곡·보조)</option>
+            <option value="full">AI 생성곡</option>
+          </select>
+          <span id="aiToolWrap"><input type="text" id="aiTool" placeholder="사용 툴 (예: Suno Pro)"></span>
+        </div>
+      </div>
+      <button id="reviewBtn" disabled>검수 요청하기</button>
+      <div id="reviewSteps"></div>
+      <div id="reviewResult" class="rv-result"></div>
+    </div>
+
+    <div class="st-panel" id="setlistWrap">
+      <div class="sl-head">
+        <h3>3. 셋리스트</h3>
+        <span id="setlistCount">0 / 15곡</span>
+        <span id="setlistTime"></span>
+      </div>
+      <div id="setlistItems"></div>
+      <div class="sl-actions">
+        <button id="addMoreBtn">곡 더 올리기</button>
+        <button id="goStageBtn" disabled>🌉 무대에 오르기</button>
+      </div>
+    </div>
+
+    <div class="st-foot">
+      검수 단계는 시뮬레이션입니다 — 실제 제품에서는 ACRCloud 핑거프린트·커버 인식·AI 판별 API가 이 자리에 들어갑니다.<br>
+      파형 분석·BPM 감지·연출 자동 생성·터널 리버브 재생은 실제로 동작합니다.
+    </div>
+  </div>
 </div>
 
 <!-- HUD -->
 <div id="hud">
   <div class="card">
     <div><span class="live-dot"></span><span id="phaseLabel">LIVE</span></div>
-    <div class="artist">미도 <span style="font-weight:400;color:#8aa">MIDO</span></div>
+    <div class="artist" id="artistName">미도 <span style="font-weight:400;color:#8aa">MIDO</span></div>
     <div class="song" id="songTitle">‘유성우’ — 직접 만든 첫 곡</div>
     <div class="place">🌉 굴다리 아래 · 관객 <b id="audVal">9</b>명</div>
+    <div class="song-prog"><div id="songProgress"></div></div>
+    <span id="songIndex">1 / 1곡</span>
   </div>
   <div class="wallet"><b id="spVal">120</b> SP<span>관람·평가로 모으는 무료 재화</span></div>
 
@@ -175,11 +376,12 @@
 <div id="endOverlay">
   <h2>오늘, 한 곡이 <em>처음으로 관객</em>을 만났습니다</h2>
   <div id="endStats"></div>
-  <div class="next">미도의 다음 목표 — <b>동네 스팟 · 옥상 루프탑 (800 SP)</b><br>당신의 다음 목표 — 계속 모으면 <b>당신도 이 무대에 설 수 있어요</b></div>
+  <div class="next" id="endNext">미도의 다음 목표 — <b>동네 스팟 · 옥상 루프탑 (800 SP)</b><br>당신의 다음 목표 — 계속 모으면 <b>당신도 이 무대에 설 수 있어요</b></div>
   <button id="againBtn">다시 입장하기</button>
 </div>
 
 <script src="./three.min.js"></script>
 <script src="./app.js"></script>
+<script src="./studio.js"></script>
 </body>
 </html>
