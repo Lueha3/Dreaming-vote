@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>굴다리 — 소형 무대 프로토타입</title>
+<style>
+  :root {
+    --mint: #7ff0d4; --amber: #ffb45f; --ink: #0a0e18;
+    --panel: rgba(12, 16, 28, 0.82);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; background: var(--ink); font-family: 'Apple SD Gothic Neo', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif; color: #eef2f8; }
+  #scene { position: fixed; inset: 0; }
+  #scene canvas { display: block; }
+
+  /* 입장 오버레이 */
+  #entryOverlay {
+    position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 18px; text-align: center;
+    background: radial-gradient(ellipse at 50% 60%, rgba(20,28,48,0.88), rgba(6,8,14,0.97));
+    transition: opacity 0.8s, visibility 0.8s;
+  }
+  #entryOverlay.hide { opacity: 0; visibility: hidden; }
+  .logo { font-size: 52px; font-weight: 800; letter-spacing: 0.12em; color: var(--mint); text-shadow: 0 0 24px rgba(127,240,212,0.55); }
+  .logo small { display: block; font-size: 13px; letter-spacing: 0.5em; color: #9fb2c8; margin-top: 6px; font-weight: 500; }
+  .mission { font-size: 15px; color: #c7d3e2; line-height: 1.7; }
+  .mission b { color: #fff; }
+  .ticket {
+    margin-top: 6px; padding: 14px 26px; border: 1px dashed rgba(255,255,255,0.25); border-radius: 12px;
+    font-size: 14px; color: #d8e0ec; background: rgba(255,255,255,0.03);
+  }
+  .ticket b { color: var(--amber); }
+  #enterBtn {
+    margin-top: 10px; padding: 14px 46px; font-size: 17px; font-weight: 700; color: #06231b;
+    background: var(--mint); border: none; border-radius: 999px; cursor: pointer;
+    box-shadow: 0 0 28px rgba(127,240,212,0.45); transition: transform 0.15s;
+  }
+  #enterBtn:hover { transform: scale(1.05); }
+  .hint { font-size: 12px; color: #7686a0; }
+
+  /* HUD */
+  #hud { position: fixed; inset: 0; z-index: 20; pointer-events: none; opacity: 0; transition: opacity 0.8s; }
+  #hud.show { opacity: 1; }
+  .card {
+    position: absolute; top: 16px; left: 16px; background: var(--panel); border-radius: 14px;
+    padding: 12px 16px; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08);
+  }
+  .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ff5964; margin-right: 6px; animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .card .artist { font-size: 16px; font-weight: 700; }
+  .card .song { font-size: 13px; color: #b9c6d8; margin-top: 3px; }
+  .card .place { font-size: 12px; color: #8aa; margin-top: 5px; }
+  #phaseLabel { font-size: 11px; font-weight: 700; color: #ff8f97; letter-spacing: 0.08em; }
+
+  .wallet {
+    position: absolute; top: 16px; right: 16px; background: var(--panel); border-radius: 14px;
+    padding: 12px 18px; text-align: right; border: 1px solid rgba(255,255,255,0.08);
+  }
+  .wallet b { font-size: 18px; color: var(--amber); }
+  .wallet span { font-size: 11px; color: #9aa8bc; display: block; margin-top: 2px; }
+
+  /* 앙코르 게이지 */
+  #gaugeWrap {
+    position: absolute; left: 50%; transform: translateX(-50%); bottom: 96px; width: min(420px, 72vw);
+    background: var(--panel); border-radius: 999px; padding: 8px 14px; border: 1px solid rgba(255,255,255,0.08);
+  }
+  #gaugeWrap .lbl { font-size: 11px; color: #a8b6c9; margin-bottom: 5px; display: flex; justify-content: space-between; }
+  .gauge-track { height: 8px; border-radius: 99px; background: rgba(255,255,255,0.1); overflow: hidden; }
+  #gaugeFill { height: 100%; width: 0%; border-radius: 99px; background: linear-gradient(90deg, var(--mint), #ffd76e); transition: width 0.4s; }
+
+  /* 하단 버튼 */
+  .actions {
+    position: absolute; left: 50%; transform: translateX(-50%); bottom: 22px; display: flex; gap: 10px;
+    pointer-events: auto;
+  }
+  .actions button {
+    padding: 12px 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14);
+    background: var(--panel); color: #eef2f8; font-size: 14px; font-weight: 600; cursor: pointer;
+    backdrop-filter: blur(8px); transition: transform 0.12s, background 0.2s;
+  }
+  .actions button:hover { transform: translateY(-2px); }
+  .actions button.on { background: rgba(127,240,212,0.22); border-color: var(--mint); color: var(--mint); }
+
+  /* 토스트 */
+  #toastWrap { position: absolute; top: 84px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; align-items: center; width: 100%; pointer-events: none; }
+  .toast {
+    background: var(--panel); border: 1px solid rgba(255,255,255,0.1); color: #e8eef7;
+    padding: 10px 20px; border-radius: 999px; font-size: 13.5px; opacity: 0; transform: translateY(-8px);
+    transition: opacity 0.35s, transform 0.35s; max-width: 86vw; text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* 별점 패널 */
+  #ratingPanel {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -46%) scale(0.96); z-index: 25;
+    background: var(--panel); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px;
+    padding: 26px 34px; text-align: center; opacity: 0; visibility: hidden;
+    transition: all 0.4s; backdrop-filter: blur(12px); pointer-events: auto;
+  }
+  #ratingPanel.show { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+  #ratingPanel h3 { font-size: 18px; margin-bottom: 4px; }
+  #ratingPanel p { font-size: 12.5px; color: #9db0c6; margin-bottom: 14px; }
+  #ratingPanel .stars { display: flex; gap: 8px; justify-content: center; }
+  #ratingPanel .star { font-size: 34px; background: none; border: none; cursor: pointer; filter: grayscale(1) brightness(0.7); transition: filter 0.15s, transform 0.15s; }
+  #ratingPanel .star.lit { filter: none; transform: scale(1.12); }
+
+  /* 종료 오버레이 */
+  #endOverlay {
+    position: fixed; inset: 0; z-index: 28; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+    background: rgba(6, 9, 16, 0.86); opacity: 0; visibility: hidden; transition: all 0.7s; text-align: center; backdrop-filter: blur(6px);
+  }
+  #endOverlay.show { opacity: 1; visibility: visible; }
+  #endOverlay h2 { font-size: 26px; }
+  #endOverlay h2 em { color: var(--mint); font-style: normal; }
+  #endStats { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  .stat { background: var(--panel); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 16px 22px; min-width: 108px; }
+  .stat b { font-size: 22px; color: var(--amber); display: block; }
+  .stat span { font-size: 11.5px; color: #9db0c6; line-height: 1.5; display: block; margin-top: 6px; }
+  #endOverlay .next { font-size: 13px; color: #b9c6d8; line-height: 1.8; }
+  #againBtn { padding: 12px 36px; font-size: 15px; font-weight: 700; color: #06231b; background: var(--mint); border: none; border-radius: 999px; cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<!-- 입장 -->
+<div id="entryOverlay">
+  <div class="logo">굴다리<small>GULDARI</small></div>
+  <div class="mission">음악을 만드는 일은 쉬워졌지만, 들려주는 일은 더 어려워졌습니다.<br><b>무대는 작아도, 박수는 진짜입니다.</b></div>
+  <div class="ticket">🎫 오늘 밤 21:40 · <b>굴다리 아래</b> · 미도(MIDO) 첫 공연 — 자작곡 ‘유성우’</div>
+  <button id="enterBtn">입장하기</button>
+  <div class="hint">🔊 사운드가 재생됩니다 · 드래그로 주변을 둘러보세요 · 웹 프로토타입 목업</div>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="card">
+    <div><span class="live-dot"></span><span id="phaseLabel">LIVE</span></div>
+    <div class="artist">미도 <span style="font-weight:400;color:#8aa">MIDO</span></div>
+    <div class="song" id="songTitle">‘유성우’ — 직접 만든 첫 곡</div>
+    <div class="place">🌉 굴다리 아래 · 관객 <b id="audVal">9</b>명</div>
+  </div>
+  <div class="wallet"><b id="spVal">120</b> SP<span>관람·평가로 모으는 무료 재화</span></div>
+
+  <div id="gaugeWrap">
+    <div class="lbl"><span>앙코르 게이지</span><span>박수·플래시·동전으로 채워요</span></div>
+    <div class="gauge-track"><div id="gaugeFill"></div></div>
+  </div>
+
+  <div class="actions">
+    <button id="clapBtn">👏 박수</button>
+    <button id="flashBtn">🔦 플래시</button>
+    <button id="coinBtn">🪙 동전 던지기 <span style="opacity:0.65">-5 SP</span></button>
+    <button id="reverbBtn" class="on">🌉 터널 리버브 ON</button>
+  </div>
+
+  <div id="toastWrap"></div>
+</div>
+
+<!-- 별점 -->
+<div id="ratingPanel">
+  <h3>오늘 무대, 어땠나요?</h3>
+  <p>리워드는 별점 값과 무관하게 관람 완료 기준으로 지급됩니다</p>
+  <div class="stars">
+    <button class="star" data-v="1">⭐</button>
+    <button class="star" data-v="2">⭐</button>
+    <button class="star" data-v="3">⭐</button>
+    <button class="star" data-v="4">⭐</button>
+    <button class="star" data-v="5">⭐</button>
+  </div>
+</div>
+
+<!-- 종료 -->
+<div id="endOverlay">
+  <h2>오늘, 한 곡이 <em>처음으로 관객</em>을 만났습니다</h2>
+  <div id="endStats"></div>
+  <div class="next">미도의 다음 목표 — <b>동네 스팟 · 옥상 루프탑 (800 SP)</b><br>당신의 다음 목표 — 계속 모으면 <b>당신도 이 무대에 설 수 있어요</b></div>
+  <button id="againBtn">다시 입장하기</button>
+</div>
+
+<script src="./three.min.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
