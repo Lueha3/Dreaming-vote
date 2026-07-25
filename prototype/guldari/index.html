@@ -245,6 +245,23 @@
     .actions button { font-size: 13px; padding: 10px 14px; }
     .rv-note { display: none; }
   }
+
+  /* ---------- 멀티플레이 ---------- */
+  .mp-join { display: flex; align-items: center; gap: 9px; margin-top: 4px; font-size: 12.5px; color: #9db0c6; }
+  .mp-join input {
+    width: 150px; padding: 7px 10px; border-radius: 8px; background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.16); color: #eef2f8; font-size: 13px;
+  }
+  .mp-status { font-size: 11.5px; color: #7f90a6; }
+  .mp-status.wait { color: #ffb45f; }
+  .mp-status.on { color: var(--mint); }
+  .mp-status.off { color: #94a3b8; }
+  #mpPanel { display: none; }
+  #mpPanel.show { display: block; }
+  .mp-title { font-size: 12.5px; color: #cfdcec; margin-bottom: 7px; }
+  .mp-title b { color: var(--mint); }
+  .mp-list { display: flex; flex-direction: column; gap: 5px; max-width: 160px; }
+  .mp-chip { font-size: 11.5px; color: #d8e2ee; background: rgba(127,240,212,0.1); border-radius: 999px; padding: 4px 10px; }
 </style>
 </head>
 <body>
@@ -257,6 +274,11 @@
   <div class="ticket">🎫 오늘 밤 21:40 · <b>굴다리 아래</b> · 미도(MIDO) 첫 공연 — 자작곡 ‘유성우’</div>
   <button id="enterBtn">관객으로 입장하기</button>
   <button id="studioOpenBtn">🎤 내 곡으로 데뷔하기 — 스튜디오</button>
+  <div class="mp-join">
+    <span>닉네임</span>
+    <input type="text" id="mpNick" maxlength="16">
+    <span id="mpStatus" class="mp-status">서버 연결은 입장 시 시도됩니다</span>
+  </div>
   <div class="hint">🔊 사운드가 재생됩니다 · 드래그로 주변을 둘러보세요 · 웹 프로토타입 목업</div>
 </div>
 
@@ -344,6 +366,11 @@
   </div>
   <div class="wallet"><b id="spVal">120</b> SP<span>관람·평가로 모으는 무료 재화</span></div>
 
+  <div class="card" id="mpPanel" style="top:auto; bottom:16px; left:16px;">
+    <div class="mp-title">🧑‍🤝‍🧑 함께 보는 사람 <b id="mpCount">0</b>명</div>
+    <div id="mpList" class="mp-list"></div>
+  </div>
+
   <div id="gaugeWrap">
     <div class="lbl"><span>앙코르 게이지</span><span>박수·플래시·동전으로 채워요</span></div>
     <div class="gauge-track"><div id="gaugeFill"></div></div>
@@ -381,7 +408,9 @@
 </div>
 
 <script src="./three.min.js"></script>
+<script src="./colyseus.js"></script>
 <script src="./app.js"></script>
 <script src="./studio.js"></script>
+<script src="./multiplayer.js"></script>
 </body>
 </html>

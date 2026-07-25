@@ -292,6 +292,86 @@
   addAudience(new THREE.Vector3(-2.35, 0.32, 0.62), true); // 벤치
   addAudience(new THREE.Vector3(-2.85, 0.32, 0.9), true);
 
+  // 멀티플레이 배정용 예비 슬롯(기본은 NPC처럼 서 있다가, 실제 플레이어가 입장하면 그 사람이 됨)
+  var MP_SLOTS = 6;
+  var mpSlotCrowdIndex = [];
+  var mpSlotPositions = [
+    new THREE.Vector3(-3.4, 0, 1.9), new THREE.Vector3(3.1, 0, 1.3),
+    new THREE.Vector3(1.9, 0, 1.9), new THREE.Vector3(-1.7, 0, 2.1),
+    new THREE.Vector3(3.0, 0, 2.1), new THREE.Vector3(-3.3, 0, 0.6)
+  ];
+  for (var mi = 0; mi < MP_SLOTS; mi++) {
+    var mp = addAudience(mpSlotPositions[mi], false, 0x596879);
+    mp.userData.isMpSlot = true; mp.userData.mpTaken = false;
+    mpSlotCrowdIndex.push(crowd.length - 1);
+  }
+
+  // 닉네임 스프라이트 (항상 카메라를 향함)
+  function nameSprite(text, mine) {
+    var cv = document.createElement('canvas'); cv.width = 256; cv.height = 64;
+    var cx = cv.getContext('2d');
+    cx.font = 'bold 30px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+    cx.fillStyle = 'rgba(6,10,18,0.55)';
+    var w = Math.min(240, cx.measureText(text).width + 28);
+    cx.beginPath(); cx.roundRect ? cx.roundRect(128 - w / 2, 14, w, 36, 18) : cx.rect(128 - w / 2, 14, w, 36);
+    cx.fill();
+    cx.fillStyle = mine ? '#7ff0d4' : '#eef2f8';
+    cx.fillText(text, 128, 33);
+    var tex = new THREE.CanvasTexture(cv);
+    var spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+    spr.scale.set(0.9, 0.225, 1);
+    return spr;
+  }
+
+  // ---------- 멀티플레이 바인딩: 서버 슬롯(0~5) ↔ 로컬 관중 아바타 ----------
+  function bindRemoteToSlot(slot, name, isMine) {
+    var idx = mpSlotCrowdIndex[slot];
+    if (idx === undefined) return null;
+    var p = crowd[idx];
+    p.userData.mpTaken = true; p.userData.remoteBound = true; p.userData.mpFlashOn = false; p.userData.isMine = isMine;
+    if (p.userData.tag) { p.remove(p.userData.tag); }
+    var tag = nameSprite(isMine ? name + ' (나)' : name, isMine);
+    tag.position.set(0, 1.62, 0);
+    p.add(tag); p.userData.tag = tag;
+    p.userData.jump = 0.5; // 입장 리액션
+    return { crowdIndex: idx };
+  }
+  function unbindSlot(slot) {
+    var idx = mpSlotCrowdIndex[slot];
+    if (idx === undefined) return;
+    var p = crowd[idx];
+    p.userData.mpTaken = false; p.userData.remoteBound = false; p.userData.mpFlashOn = false;
+    if (p.userData.tag) { p.remove(p.userData.tag); p.userData.tag = null; }
+  }
+  function setSlotFlash(slot, on) {
+    var idx = mpSlotCrowdIndex[slot];
+    if (idx === undefined) return;
+    crowd[idx].userData.mpFlashOn = !!on;
+  }
+  function renameSlot(slot, name) {
+    var idx = mpSlotCrowdIndex[slot];
+    if (idx === undefined) return;
+    var p = crowd[idx];
+    if (p.userData.tag) { p.remove(p.userData.tag); }
+    var tag = nameSprite(p.userData.isMine ? name + ' (나)' : name, p.userData.isMine);
+    tag.position.set(0, 1.62, 0);
+    p.add(tag); p.userData.tag = tag;
+  }
+  function remoteCoinDrop() {
+    var donors = crowd.filter(function (p) { return p.userData.remoteBound; });
+    var from = donors.length ? donors[Math.floor(Math.random() * donors.length)].position : new THREE.Vector3(-2, 1.5, 2);
+    var c = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.012, 14), M.coin);
+    c.position.set(from.x, 1.3, from.z);
+    var target = CASE_POS.clone().add(new THREE.Vector3((Math.random() - 0.5) * 0.25, 0, (Math.random() - 0.5) * 0.2));
+    var T = 0.8;
+    var vel = target.clone().sub(c.position).multiplyScalar(1 / T);
+    vel.y = (target.y - c.position.y) / T + 0.5 * 9.8 * T;
+    c.userData = { vel: vel, t: 0, spin: 8 + Math.random() * 6 };
+    world.add(c); coins.push(c);
+    coinSfx();
+  }
+  function setGaugeFromServer(v) { state.gauge = Math.max(0, Math.min(100, v)); ui.gaugeFill.style.width = state.gauge + '%'; }
+
   // 행인 NPC
   var passerby = { g: makePerson(0x777d88, 1.0), state: 'idle', t: 0, dir: 1, stopX: 0 };
   passerby.g.visible = false; world.add(passerby.g);
@@ -556,6 +636,10 @@
     initAudio();
     state.phase = 'live';
     ui.phaseLabel.textContent = 'LIVE';
+    if (window.GuldariMultiplayer) {
+      var nickEl = document.getElementById('mpNick');
+      window.GuldariMultiplayer.connect(nickEl && nickEl.value);
+    }
     if (list && list.length) {
       live.list = list; live.stopping = false; state.songCount = list.length;
       state.ownStage = true;
@@ -629,17 +713,20 @@
   ui.clapBtn.addEventListener('click', function () {
     clapSfx(3); addGauge(4); state.excitement = Math.min(1, state.excitement + 0.05);
     crowd.forEach(function (p) { p.userData.jump = 0.6; });
+    if (window.GuldariMultiplayer) window.GuldariMultiplayer.sendClap();
   });
   ui.flashBtn.addEventListener('click', function () {
     state.flashOn = !state.flashOn;
     ui.flashBtn.classList.toggle('on', state.flashOn);
     if (state.flashOn) { addGauge(10); state.excitement = Math.min(1, state.excitement + 0.08); toast('폰 플래시 물결 🔦'); }
+    if (window.GuldariMultiplayer) window.GuldariMultiplayer.sendFlash(state.flashOn);
   });
   ui.coinBtn.addEventListener('click', function () {
     if (state.sp < 5) { toast('SP가 부족합니다'); return; }
     setSp(state.sp - 5); state.coins++;
     tossCoin(); coinSfx(); addGauge(8);
     state.excitement = Math.min(1, state.excitement + 0.07);
+    if (window.GuldariMultiplayer) window.GuldariMultiplayer.sendCoin();
   });
   ui.reverbBtn.addEventListener('click', function () {
     state.reverbOn = !state.reverbOn;
@@ -714,7 +801,9 @@
       var jumpY = ud.jump > 0 ? Math.sin((0.6 - ud.jump) / 0.6 * Math.PI) * 0.16 : 0;
       p.position.y = baseY + Math.abs(Math.sin(t * (curBpm / 60) * Math.PI + ud.phase)) * amp + jumpY;
       ud.head.rotation.x = Math.sin(t * 2 + ud.phase) * 0.06;
-      var want = (state.flashOn && !ud.sitting) || (state.flashOn && i % 2 === 0) ? 0.85 : 0;
+      var want = ud.remoteBound
+        ? (ud.mpFlashOn ? 0.9 : 0)
+        : ((state.flashOn && !ud.sitting) || (state.flashOn && i % 2 === 0) ? 0.85 : 0);
       ud.flash.material.opacity += (want - ud.flash.material.opacity) * 0.08;
       if (ud.flash.material.opacity > 0.05)
         ud.flash.position.x = 0.16 + Math.sin(t * 2.4 + ud.phase) * 0.1;
@@ -797,6 +886,12 @@
       return A.ctx.decodeAudioData(arrayBuffer);
     },
     renderDemoSong: renderDemoSong,
-    begin: begin
+    begin: begin,
+    bindRemoteToSlot: bindRemoteToSlot,
+    unbindSlot: unbindSlot,
+    setSlotFlash: setSlotFlash,
+    renameSlot: renameSlot,
+    remoteCoinDrop: remoteCoinDrop,
+    setGauge: setGaugeFromServer
   };
 })();
