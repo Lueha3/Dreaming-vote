@@ -82,28 +82,36 @@
 
 ## 8. 데이터 모델 초안 (ERD 스케치)
 
+> 실제 구현은 `prototype/guldari/db/001_init_schema.sql`(3-렌즈 어드버서리 리뷰 반영, 새 Supabase
+> 프로젝트에 적용됨). 아래 스케치는 최종 스키마에 맞춰 갱신했다 — email은 Supabase
+> `auth.users`에 위임(profiles가 1:1 확장), trust_score는 저장 컬럼이 아니라
+> `trust_weight(verified_ci, created_at, abuse_flag)` 파생 함수로 매 시점 계산한다.
+
 ```
-User (id, email, nickname, avatar_config, created_at, trust_score, verified_ci)
+User (id, nickname, avatar_config, created_at, verified_ci, abuse_flag, deleted_at)
  ├─ ArtistProfile (user_id FK, stage_name, bio, popularity_score, tier)
  ├─ Song (id, artist_id FK, title, duration, audio_url, hls_url,
  │        source_type: 'ORIGINAL'|'AI_GENERATED',
  │        review_status: 'PENDING'|'FINGERPRINT_FLAGGED'|'APPROVED'|'REJECTED',
  │        acr_result_json, ai_probability)
  ├─ Setlist (id, artist_id FK)
- │   └─ SetlistItem (setlist_id, song_id, position)   -- CHECK position <= 15
+ │   └─ SetlistItem (setlist_id, song_id, position)   -- PK(setlist_id,position)이 15곡 상한을 물리적으로 강제
  ├─ Venue (id, name, capacity, scene_asset_key, physics_profile, tier)
  ├─ Concert (id, artist_id, setlist_id, venue_id, scheduled_at,
  │           status: 'DRAFT'|'FUNDED'|'LIVE'|'ENDED'|'CANCELLED',
- │           funding_cost_sp, effects_timeline_json, opening_guest_artist_id)
+ │           funding_cost_sp, effects_timeline_json, opening_guest_artist_id, opening_guest_song_count)
+ │           -- LIVE 전이 시 셋리스트 전 곡 APPROVED 여부를 트리거로 재확인
  │   ├─ Attendance (concert_id, user_id, joined_at, left_at, shard_id, presence_ratio)
- │   ├─ Rating (concert_id, user_id, stars 1-5, best_moment_ts, created_at)
- │   │     -- UNIQUE(concert_id, user_id), Attendance(presence_ratio >= 0.6) 필수
- │   └─ ConcertStats (concert_id, peak_ccu, avg_stars, weighted_stars, encore_reached)
- ├─ FanRegistration (artist_id, user_id, fan_number, created_at)   -- 1호 팬
- ├─ SpLedger (id, user_id, amount, balance_after,
- │        reason: 'VIEW_REWARD'|'RATING_REWARD'|'MISSION'|'CONCERT_FUNDING'|'SEASON_DECAY',
- │        ref_id, created_at)                          -- append-only, 폐쇄 루프
- ├─ PayoutLedger (id, artist_id, gross, fee, withholding, net, source, period)  -- 현금 정산 분리
+ │   ├─ Rating (concert_id, user_id, segment: 'MAIN'|'OPENING', stars 1-5, best_moment_ts, created_at)
+ │   │     -- UNIQUE(concert_id, user_id, segment), Attendance(presence_ratio >= 0.6) 필수(트리거)
+ │   │     -- segment='OPENING'은 오프닝 게스트 무대 평가(01 §2-4의 1.5배 가중 집계용)
+ │   └─ ConcertStats (concert_id, peak_ccu, avg_stars, weighted_stars, encore_reached, encore_reached_at)
+ ├─ FanRegistration (artist_id, user_id, fan_number, created_at)   -- 1호 팬, advisory lock으로 채번 직렬화
+ ├─ SpLedger (id, seq, user_id, amount, balance_after,
+ │        reason: 'VIEW_REWARD'|'RATING_REWARD'|'MISSION'|'ARTIST_SHOW_REWARD'|'VENUE_FUNDING'|'PROMO_SPEND'|'SEASON_DECAY',
+ │        ref_id, created_at)  -- append-only(UPDATE/DELETE 트리거 차단), balance_after는 seq 기준 서버 계산
+ │        -- VIEW_REWARD=20·RATING_REWARD=10 고정값 CHECK로 못박아 "별점 값과 무관"을 스키마가 보증
+ ├─ PayoutLedger (id, artist_id, gross, fee, withholding, net, source, period)  -- 현금 정산 분리, net은 생성 컬럼
  └─ RankingSeason (id, quarter, starts_at, ends_at, status)
       └─ SeasonScore (season_id, artist_id, weighted_score, rank, prize_paid)
 ```

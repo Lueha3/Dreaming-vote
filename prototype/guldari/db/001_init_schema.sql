@@ -28,6 +28,15 @@ begin
 end;
 $$ language plpgsql;
 
+-- append-only 강제용 공용 트리거 함수(sp_ledger, ratings 등에서 재사용) — UPDATE/DELETE 자체를 거부한다.
+create or replace function block_mutation()
+returns trigger as $$
+begin
+  raise exception '% is append-only — % not allowed', tg_table_name, tg_op
+    using errcode = 'insufficient_privilege';
+end;
+$$ language plpgsql;
+
 -- ----------------------------------------------------------------------------
 -- profiles — Supabase Auth 사용자의 앱 확장 정보
 -- verified_ci/abuse_flag는 03 §3 신뢰가중치(trust_weight) 산정의 원재료.
@@ -38,7 +47,11 @@ create table profiles (
   avatar_config jsonb not null default '{}'::jsonb,
   verified_ci  boolean not null default false, -- 본인인증(CI) 완료 여부
   abuse_flag   boolean not null default false, -- 어뷰징 클러스터 판정(수동/배치)
-  created_at   timestamptz not null default now()
+  created_at   timestamptz not null default now(),
+  -- 소프트 삭제 — sp_ledger/payout_ledger 등 감사 기록이 no action FK로 보호되므로
+  -- 활동 이력이 있는 계정은 하드 delete가 애초에 막힌다. 탈퇴는 이 컬럼으로 처리
+  -- (Blue-Humanity 프로젝트 User.deletedAt과 동일한 관례).
+  deleted_at   timestamptz
 );
 
 -- 신뢰가중치 t: 어뷰징 0 > 본인인증 1.0 > 신규(14일 미만) 0.3 > 그 외 비인증 0.1
@@ -51,7 +64,7 @@ returns numeric as $$
     when now() - p_created_at < interval '14 days' then 0.3
     else 0.1
   end;
-$$ language sql immutable;
+$$ language sql stable; -- now()에 의존해 결과가 시간에 따라 변함 — immutable 계약 위반이라 stable로 선언
 
 -- ----------------------------------------------------------------------------
 -- artist_profiles — T0 취미 / T1 파트너 / T2 어워드 수상자 (03 §1-2)
@@ -71,7 +84,10 @@ create table artist_profiles (
 -- ----------------------------------------------------------------------------
 create table songs (
   id              uuid primary key default gen_random_uuid(),
-  artist_id       uuid not null references artist_profiles(user_id) on delete cascade,
+  -- restrict(기본 no action)로 둔다: cascade면 이 곡이 setlist_items에 편성된 상태에서
+  -- 아티스트를 지울 때 setlist_items.song_id restrict와 충돌해 트랜잭션이 항상 실패한다.
+  -- 계정 삭제는 앱 레이어에서 concerts→setlists→setlist_items→songs 순으로 먼저 정리한다.
+  artist_id       uuid not null references artist_profiles(user_id),
   title           text not null check (char_length(title) between 1 and 40),
   duration_seconds int not null check (duration_seconds > 0),
   audio_url       text,
@@ -97,7 +113,9 @@ create index songs_review_status_idx on songs(review_status);
 -- ----------------------------------------------------------------------------
 create table setlists (
   id         uuid primary key default gen_random_uuid(),
-  artist_id  uuid not null references artist_profiles(user_id) on delete cascade,
+  -- songs와 동일한 이유로 cascade 대신 no action — concerts.setlist_id restrict와의
+  -- 충돌을 피하고, 콘서트 이력이 있는 아티스트의 삭제는 앱 레이어가 순서대로 처리한다.
+  artist_id  uuid not null references artist_profiles(user_id),
   created_at timestamptz not null default now()
 );
 
@@ -128,7 +146,8 @@ create table venues (
 -- ----------------------------------------------------------------------------
 create table concerts (
   id                       uuid primary key default gen_random_uuid(),
-  artist_id                uuid not null references artist_profiles(user_id) on delete cascade,
+  -- no action(기본) — cascade면 콘서트 이력(별점·SP원장이 참조)까지 통째로 사라진다.
+  artist_id                uuid not null references artist_profiles(user_id),
   setlist_id               uuid not null references setlists(id) on delete restrict,
   venue_id                 uuid not null references venues(id) on delete restrict,
   scheduled_at             timestamptz not null,
@@ -136,6 +155,8 @@ create table concerts (
                              check (status in ('DRAFT', 'FUNDED', 'LIVE', 'ENDED', 'CANCELLED')),
   funding_cost_sp          int not null default 0 check (funding_cost_sp >= 0),
   effects_timeline         jsonb not null default '[]'::jsonb, -- 연출 시퀀서 큐(조명/파이로/색전환 등)
+  -- on delete set null은 opening_guest_song_count와 짝을 이루는 check 제약과 충돌하므로
+  -- (SET NULL은 이 컬럼만 null화하고 song_count는 그대로 남겨 check 위반을 일으킴) 쓰지 않는다.
   opening_guest_artist_id  uuid references artist_profiles(user_id),
   opening_guest_song_count smallint check (opening_guest_song_count between 1 and 3),
   created_at               timestamptz not null default now(),
@@ -147,6 +168,30 @@ create table concerts (
 create trigger concerts_set_updated_at before update on concerts
   for each row execute function set_updated_at();
 
+-- 02 §6-3: "업로드 즉시 비공개 리허설은 가능, 공개 공연은 검수 통과 후" — LIVE 전이 시점에
+-- 셋리스트의 모든 곡이 APPROVED인지 구조적으로 재확인한다(검수 대기 중인 곡의 공개 유출 방지).
+create or replace function enforce_setlist_approved_before_live()
+returns trigger as $$
+declare
+  v_unapproved int;
+begin
+  if new.status = 'LIVE' and old.status is distinct from 'LIVE' then
+    select count(*) into v_unapproved
+      from setlist_items si
+      join songs s on s.id = si.song_id
+      where si.setlist_id = new.setlist_id and s.review_status <> 'APPROVED';
+    if v_unapproved > 0 then
+      raise exception 'concert cannot go LIVE — % song(s) in setlist are not APPROVED', v_unapproved
+        using errcode = 'check_violation';
+    end if;
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger concerts_require_approved_setlist before update on concerts
+  for each row execute function enforce_setlist_approved_before_live();
+
 create index concerts_artist_scheduled_idx on concerts(artist_id, scheduled_at);
 create index concerts_venue_idx on concerts(venue_id);
 
@@ -156,10 +201,13 @@ create table concert_stats (
   peak_ccu       int not null default 0,
   rating_count   int not null default 0,
   avg_stars      numeric(2,1),
-  weighted_stars numeric, -- avg_stars × log10(1+Σ신뢰가중 관중) — 03 §1-2 시즌 점수 산식의 콘서트 단위 값
+  weighted_stars numeric, -- avg_stars × log10(1+Σ신뢰가중 관중) — 03 §3/§7 시즌 점수 산식의 콘서트 단위 값
   encore_reached boolean not null default false,
+  encore_reached_at timestamptz, -- 앙코르 게이지 100% 도달 시각(01 §2-5: 도달 속도도 인기 지표)
   updated_at     timestamptz not null default now()
 );
+
+create index concert_stats_weighted_stars_idx on concert_stats(weighted_stars desc);
 
 create trigger concert_stats_set_updated_at before update on concert_stats
   for each row execute function set_updated_at();
@@ -197,18 +245,26 @@ create table ratings (
   id             uuid primary key default gen_random_uuid(),
   concert_id     uuid not null,
   user_id        uuid not null,
+  -- 오프닝 게스트 무대는 본공연과 별개로 평가되고 1.5배 가중이 붙는다(01 §2-4).
+  -- segment='OPENING'이면 concerts.opening_guest_artist_id가 그 평가의 실제 대상 아티스트.
+  segment        text not null default 'MAIN' check (segment in ('MAIN', 'OPENING')),
   stars          smallint not null check (stars between 1 and 5),
   best_moment_ts numeric, -- '베스트 순간' 태깅(01 §5) — 곡 재생 경과초
   created_at     timestamptz not null default now(),
-  unique (concert_id, user_id),
+  unique (concert_id, user_id, segment), -- 관중 1명이 본공연·오프닝 각각 1회씩 평가 가능
   foreign key (concert_id, user_id) references attendances(concert_id, user_id) on delete cascade
+  -- segment='OPENING'이 실제 오프닝 게스트가 있는 콘서트에서만 허용되는지는 CHECK가 다른
+  -- 테이블을 못 봐서(subquery 불가) enforce_rating_requires_min_presence 트리거에서 검증한다.
 );
 
--- 관람 60% 미만이면 참석 레코드는 있어도 평가 자격 없음 — FK만으로는 못 막아 트리거로 보강
+-- 관람 60% 미만이면 참석 레코드는 있어도 평가 자격 없음 — FK만으로는 못 막아 트리거로 보강.
+-- segment='OPENING' 평가도 실제 오프닝 게스트가 배정된 콘서트에서만 허용되는지 여기서 같이 검증
+-- (CHECK 제약은 다른 테이블을 조회하는 subquery를 못 쓰므로 트리거가 유일한 방법).
 create or replace function enforce_rating_requires_min_presence()
 returns trigger as $$
 declare
   v_ratio numeric(3,2);
+  v_has_opening boolean;
 begin
   select presence_ratio into v_ratio
     from attendances
@@ -218,6 +274,16 @@ begin
     raise exception 'rating requires attendance presence_ratio >= 0.6 (got %)', v_ratio
       using errcode = 'check_violation';
   end if;
+
+  if new.segment = 'OPENING' then
+    select opening_guest_artist_id is not null into v_has_opening
+      from concerts where id = new.concert_id;
+    if not coalesce(v_has_opening, false) then
+      raise exception 'OPENING rating requires concerts.opening_guest_artist_id to be set'
+        using errcode = 'check_violation';
+    end if;
+  end if;
+
   return new;
 end;
 $$ language plpgsql;
@@ -225,7 +291,15 @@ $$ language plpgsql;
 create trigger ratings_require_presence before insert on ratings
   for each row execute function enforce_rating_requires_min_presence();
 
--- 별점 등록/취소 시 concert_stats 롤업 갱신(평균 별점 + 03 §1-2 가중 점수)
+-- 평가는 1회성 — 수정 대신 append-only로 다룬다(sp_ledger와 동일 철학).
+-- 취소(재관람 유도 등 운영 사유)는 DELETE만 허용하고, stats 재계산 트리거가 반영한다.
+create trigger ratings_block_update before update on ratings
+  for each row execute function block_mutation();
+
+-- 별점 등록/취소 시 concert_stats 롤업 갱신(평균 별점 + 03 §3/§7 가중 점수).
+-- 오프닝 게스트 평가(segment='OPENING')는 헤드라이너의 콘서트 통계에 섞지 않고 MAIN만 집계한다.
+-- concert_stats 행 자체를 advisory lock으로 잠가 동시 별점 제출의 lost-update를 막는다
+-- (fan_registrations·sp_ledger와 동일한 방어 패턴 — 네임스페이스 3 = concert_stats).
 create or replace function refresh_concert_stats_on_rating()
 returns trigger as $$
 declare
@@ -234,15 +308,17 @@ declare
   v_avg        numeric;
   v_trust_sum  numeric;
 begin
+  perform pg_advisory_xact_lock(3, hashtext(v_concert_id::text));
+
   select count(*), avg(r.stars)
     into v_count, v_avg
-    from ratings r where r.concert_id = v_concert_id;
+    from ratings r where r.concert_id = v_concert_id and r.segment = 'MAIN';
 
   select coalesce(sum(trust_weight(p.verified_ci, p.created_at, p.abuse_flag)), 0)
     into v_trust_sum
     from ratings r
     join profiles p on p.id = r.user_id
-    where r.concert_id = v_concert_id;
+    where r.concert_id = v_concert_id and r.segment = 'MAIN';
 
   update concert_stats
      set rating_count   = v_count,
@@ -277,7 +353,7 @@ returns trigger as $$
 declare
   v_next int;
 begin
-  perform pg_advisory_xact_lock(hashtext(new.artist_id::text));
+  perform pg_advisory_xact_lock(1, hashtext(new.artist_id::text)); -- 네임스페이스 1 = fan_registrations
   select coalesce(max(fan_number), 0) + 1 into v_next
     from fan_registrations where artist_id = new.artist_id;
   new.fan_number := v_next;
@@ -295,7 +371,13 @@ create trigger fan_registrations_assign_number before insert on fan_registration
 -- ----------------------------------------------------------------------------
 create table sp_ledger (
   id            uuid primary key default gen_random_uuid(),
-  user_id       uuid not null references profiles(id) on delete cascade,
+  -- seq: balance_after 계산의 유일한 순서 기준. created_at(=now(), 트랜잭션 시작 시각)은
+  -- 락 대기로 커밋 순서가 뒤바뀔 수 있어 "직전 잔액" 판별에 못 쓴다 — bigserial은
+  -- 시퀀스 nextval() 채번 자체가 전역적으로 직렬화돼 있어 삽입 순서를 정확히 보존한다.
+  seq           bigint generated always as identity,
+  -- no action — append-only 원장 행은 계정 삭제로도 사라지면 안 된다(감사 가능성 보존).
+  -- 계정 삭제는 profiles.deleted_at 소프트 삭제로 처리한다.
+  user_id       uuid not null references profiles(id),
   amount        int not null check (amount <> 0), -- 양수=적립, 음수=차감(대관료 등)
   balance_after int not null check (balance_after >= 0),
   reason        text not null check (reason in (
@@ -307,22 +389,27 @@ create table sp_ledger (
                    'PROMO_SPEND',        -- 홍보슬롯·앞좌석·응원배너 등 소비(음수)
                    'SEASON_DECAY'        -- 시즌말 이월 상한 초과분 소멸(음수)
                  )),
+  -- 리워드는 별점 값과 무관해야 한다(03 §설계원칙, 04 §2 게임산업법 §28 사행성 회피 근거) —
+  -- 고정 지급액을 CHECK로 못박아 "5점 줄수록 SP를 더 준다" 류 구현을 애초에 불가능하게 만든다.
+  constraint sp_ledger_view_reward_amount   check (reason <> 'VIEW_REWARD' or amount = 20),
+  constraint sp_ledger_rating_reward_amount check (reason <> 'RATING_REWARD' or amount = 10),
   ref_id        text, -- 관련 concert_id/song_id 등(느슨한 참조, 원장 자체 append-only 유지 위해 FK 미설정)
   created_at    timestamptz not null default now()
 );
 
-create index sp_ledger_user_created_idx on sp_ledger(user_id, created_at desc);
+create unique index sp_ledger_seq_idx on sp_ledger(seq);
+create index sp_ledger_user_seq_idx on sp_ledger(user_id, seq desc);
 
 create or replace function sp_ledger_compute_balance()
 returns trigger as $$
 declare
   v_prev int;
 begin
-  perform pg_advisory_xact_lock(hashtext(new.user_id::text));
+  perform pg_advisory_xact_lock(2, hashtext(new.user_id::text)); -- 네임스페이스 2 = sp_ledger
   select balance_after into v_prev
     from sp_ledger
     where user_id = new.user_id
-    order by created_at desc, id desc
+    order by seq desc
     limit 1;
   new.balance_after := coalesce(v_prev, 0) + new.amount;
   return new;
@@ -333,14 +420,7 @@ create trigger sp_ledger_before_insert before insert on sp_ledger
   for each row execute function sp_ledger_compute_balance();
 
 -- append-only 강제: UPDATE/DELETE를 코드 레벨에서 아예 차단(04 §2 "환전 금지" 설계의 근간)
-create or replace function block_mutation()
-returns trigger as $$
-begin
-  raise exception '% is append-only — % not allowed', tg_table_name, tg_op
-    using errcode = 'insufficient_privilege';
-end;
-$$ language plpgsql;
-
+-- block_mutation()은 파일 상단 공통 섹션에서 정의(ratings에서도 재사용).
 create trigger sp_ledger_block_update before update on sp_ledger
   for each row execute function block_mutation();
 create trigger sp_ledger_block_delete before delete on sp_ledger
@@ -352,7 +432,8 @@ create trigger sp_ledger_block_delete before delete on sp_ledger
 -- ----------------------------------------------------------------------------
 create table payout_ledger (
   id          uuid primary key default gen_random_uuid(),
-  artist_id   uuid not null references artist_profiles(user_id) on delete cascade,
+  -- no action — 현금 정산 기록도 세무·감사 목적상 계정 삭제와 무관하게 보존한다.
+  artist_id   uuid not null references artist_profiles(user_id),
   source      text not null check (source in ('SPONSOR_BOOST', 'MERCH', 'SEASON_PRIZE')),
   gross       numeric(12,2) not null check (gross >= 0),
   fee         numeric(12,2) not null default 0 check (fee >= 0),
@@ -389,3 +470,26 @@ create table season_scores (
 );
 
 create index season_scores_season_rank_idx on season_scores(season_id, rank);
+
+-- ============================================================================
+-- Row Level Security — 전 테이블 활성화 + 정책 0개(deny-all to anon/authenticated).
+-- prisma/rls.sql(Blue-Humanity 프로젝트)과 동일한 관례: 서비스는 서버 사이드
+-- Postgres 소유자 연결(Prisma 등)로만 접근하고, Supabase PostgREST를 통한 anon
+-- 직접 접근은 정책이 하나도 없으므로 전면 차단된다. 이후 실제 클라이언트 직접
+-- 조회(예: Realtime 리더보드)가 필요해지면 그때 최소 범위 정책을 추가한다.
+-- ============================================================================
+alter table profiles          enable row level security;
+alter table artist_profiles   enable row level security;
+alter table songs             enable row level security;
+alter table setlists          enable row level security;
+alter table setlist_items     enable row level security;
+alter table venues            enable row level security;
+alter table concerts          enable row level security;
+alter table concert_stats     enable row level security;
+alter table attendances       enable row level security;
+alter table ratings           enable row level security;
+alter table fan_registrations enable row level security;
+alter table sp_ledger         enable row level security;
+alter table payout_ledger     enable row level security;
+alter table ranking_seasons   enable row level security;
+alter table season_scores     enable row level security;
