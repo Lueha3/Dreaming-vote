@@ -115,10 +115,13 @@ npx prisma validate --schema=prototype/guldari/db/schema.prisma   # ✅ 통과
 npx prisma generate --schema=prototype/guldari/db/schema.prisma   # ✅ src/generated/guldari-client 생성
 npm run typecheck                                                  # ✅ 앱 전체 0 에러
 npm run build                                                      # ✅ /api/guldari/health, /api/guldari/venues 정상 빌드
-npm run start → curl /api/guldari/health                           # ✅ Prisma가 실제로
-  aws-0-ap-northeast-2.pooler.supabase.com:6543에 접속을 시도하고, placeholder 비밀번호라
-  "Can't reach database server"로 실패 — 배선이 전부 맞고 진짜 비밀번호만 없다는 뜻
 ```
+
+실제 DB 연결까지는 별도의 최소 테스트 프로젝트를 Vercel에 배포해 실제 비밀번호로 확인했다
+(개발 샌드박스 자체는 Supabase로 나가는 아웃바운드가 정책상 막혀있어 여기서는 확인 불가) —
+`GET /api/health` → `{"ok":true,"db":"guldari","counts":{"venues":7,"artistProfiles":0,"songs":0}}`.
+이 과정에서 pooler 호스트가 `aws-0`가 아니라 **`aws-1-ap-northeast-2`**라는 걸 확인했다 — `aws-N` 번호는
+프로젝트마다 다르게 배정되므로 대시보드 Connect 화면에서 그대로 복사해야 한다(추측 금지).
 
 `venues` 테이블에는 06 문서의 티어 사다리(길 위 2종·동네 스팟 2종·클럽·페스티벌·스타디움)를
 실제로 시드했다 — `002_hardening.sql` 다음에 `seed_venue_tier_ladder` 마이그레이션 참고.
@@ -129,9 +132,11 @@ npm run start → curl /api/guldari/health                           # ✅ Prism
 # 1) 이 DB 전용 클라이언트 생성 (최초 1회 + 스키마 바뀔 때마다)
 npm run guldari:generate
 
-# 2) .env.local에 아래 두 값 추가 (Supabase 대시보드 → guldari 프로젝트 → Settings → Database
-#    → Reset database password로 받은 실제 값으로 [PASSWORD] 교체)
-GULDARI_DATABASE_URL=postgresql://postgres.drwrrabpcfixpvzwmlii:[PASSWORD]@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true
+# 2) .env.local에 아래 두 값 추가 (Supabase 대시보드 → guldari 프로젝트 → Connect 화면에서
+#    그대로 복사 — pooler 호스트의 aws-N 번호는 프로젝트마다 다르므로 직접 만들지 말 것.
+#    비밀번호는 Settings → Database → Reset database password로 받고, 특수문자가 있으면
+#    percent-encode할 것(예: * → %2A))
+GULDARI_DATABASE_URL=postgresql://postgres.drwrrabpcfixpvzwmlii:[PASSWORD]@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true
 GULDARI_DIRECT_URL=postgresql://postgres:[PASSWORD]@db.drwrrabpcfixpvzwmlii.supabase.co:5432/postgres
 
 # 3) 평소처럼
