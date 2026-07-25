@@ -79,18 +79,68 @@ I  팬 넘버 자동 채번 1, 2, 3 순차 확인
 -- (테스트 스크립트 원본은 이 세션의 대화 로그 참조 — 별도 파일로는 보관하지 않음)
 ```
 
-## 연결 정보 / 앱에서 쓰려면
+## 앱 연결 — Prisma + API 라우트 (완료)
+
+기존 루트 `prisma/schema.prisma`(Blue-Humanity 전용)는 건드리지 않고, 이 DB 전용 스키마를
+별도 파일로 추가해 앱에 연결했다.
+
+| 파일 | 내용 |
+|---|---|
+| `schema.prisma` | 이 프로젝트 전용 Prisma 스키마. `001_init_schema.sql`/`002_hardening.sql`을 1:1로 반영한 타입 레이어 — 여기서 스키마를 바꾸지 말 것(SQL 마이그레이션이 먼저, 이 파일은 그걸 따라간다) |
+| `src/lib/guldariDb.ts` | 싱글턴 Prisma 클라이언트(`src/lib/db.ts`와 동일한 패턴, 별도 인스턴스) |
+| `src/app/api/guldari/health/route.ts` | DB 연결 확인용(venues/artistProfiles/songs count) |
+| `src/app/api/guldari/venues/route.ts` | 공연장 티어 목록 조회 |
+
+### 스키마 → 앱 매핑에서 실제로 신경 쓴 것
+
+- **auth.users 참조**: Prisma `multiSchema` preview feature로 `auth.users`를 최소 스텁(`AuthUser`,
+  id 컬럼만)으로 선언해 `profiles`와의 FK 관계를 표현했다. 이 프로젝트가 `auth.users`를
+  직접 관리하지는 않는다(Supabase Auth SDK 전용).
+- **트리거가 항상 덮어쓰는 컬럼**(`sp_ledger.balanceAfter`, `fan_registrations.fanNumber`)은
+  Prisma에 안전한 기본값(`@default(0)`)만 주고, 실제 값은 절대 신뢰하지 않는다 — DB가 매번
+  재계산한다는 걸 스키마 주석에 명시.
+- **`payout_ledger.net`**(Postgres `GENERATED ALWAYS AS ... STORED`)은 Prisma가 계산 컬럼을
+  표현 못 해 `Decimal? @default(dbgenerated())`로 선언 — 이 필드에 값을 보내면 DB가 에러를
+  던진다(의도된 동작, 주석으로 경고).
+- **Attendance ↔ Rating은 1:N**(1:1 아님) — 같은 참석(concertId, userId)에 대해
+  세그먼트(MAIN/OPENING)별로 평가가 최대 2건 있을 수 있어서다. 처음에 1:1로 잘못 선언했다가
+  `prisma validate`가 정확히 이 지점에서 잡아줬다.
+- `text` 컬럼(`title`, `nickname`, `stage_name` 등)에 `@db.VarChar`를 잘못 붙였던 것도
+  `list_tables(verbose: true)`로 실제 DB 컬럼 타입과 대조해 잡아 제거했다.
+
+### 검증한 것 (전부 실행해서 확인, 추측 아님)
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=https://drwrrabpcfixpvzwmlii.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<Supabase 대시보드 → Settings → API에서 확인>
-DATABASE_URL=postgresql://postgres.drwrrabpcfixpvzwmlii:[DB_PASSWORD]@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true
-DIRECT_URL=postgresql://postgres:[DB_PASSWORD]@db.drwrrabpcfixpvzwmlii.supabase.co:5432/postgres
+npx prisma validate --schema=prototype/guldari/db/schema.prisma   # ✅ 통과
+npx prisma generate --schema=prototype/guldari/db/schema.prisma   # ✅ src/generated/guldari-client 생성
+npm run typecheck                                                  # ✅ 앱 전체 0 에러
+npm run build                                                      # ✅ /api/guldari/health, /api/guldari/venues 정상 빌드
+npm run start → curl /api/guldari/health                           # ✅ Prisma가 실제로
+  aws-0-ap-northeast-2.pooler.supabase.com:6543에 접속을 시도하고, placeholder 비밀번호라
+  "Can't reach database server"로 실패 — 배선이 전부 맞고 진짜 비밀번호만 없다는 뜻
 ```
 
-`[DB_PASSWORD]`는 프로젝트 생성 시 Supabase가 발급한 값으로, 보안상 이 레포/문서에는 남기지 않는다 —
-Supabase 대시보드(Settings → Database)에서 재설정해 받아야 한다. anon key도 같은 대시보드 API 탭에서
-확인한다(둘 다 커밋해도 되는 공개 가능 값이지만, 이 문서에는 URL만 남기고 실제 값은 `.env.local`에만 둘 것).
+`venues` 테이블에는 06 문서의 티어 사다리(길 위 2종·동네 스팟 2종·클럽·페스티벌·스타디움)를
+실제로 시드했다 — `002_hardening.sql` 다음에 `seed_venue_tier_ladder` 마이그레이션 참고.
 
-Prisma로 연결하려면 이 프로젝트 전용 `schema.prisma`가 별도로 필요하다(기존 루트 `prisma/schema.prisma`는
-Blue-Humanity 전용이라 건드리지 않았다) — 아직 작성하지 않음, 다음 단계에서 실제 API 라우트를 붙일 때 추가한다.
+### 실행 방법
+
+```bash
+# 1) 이 DB 전용 클라이언트 생성 (최초 1회 + 스키마 바뀔 때마다)
+npm run guldari:generate
+
+# 2) .env.local에 아래 두 값 추가 (Supabase 대시보드 → guldari 프로젝트 → Settings → Database
+#    → Reset database password로 받은 실제 값으로 [PASSWORD] 교체)
+GULDARI_DATABASE_URL=postgresql://postgres.drwrrabpcfixpvzwmlii:[PASSWORD]@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true
+GULDARI_DIRECT_URL=postgresql://postgres:[PASSWORD]@db.drwrrabpcfixpvzwmlii.supabase.co:5432/postgres
+
+# 3) 평소처럼
+npm run dev
+curl http://localhost:3000/api/guldari/venues
+```
+
+**주의**: `guldari:generate`는 루트 `postinstall`(`prisma generate`)에 체이닝하지 않았다 — 아직
+실험 단계 기능이라, `GULDARI_DATABASE_URL`을 설정하지 않은 사람의 `npm install`/배포까지
+깨뜨리고 싶지 않아서다. `src/lib/guldariDb.ts`를 import하는 코드(현재 `/api/guldari/*` 라우트)를
+새로 체크아웃한 환경에서 빌드하려면 `npm run guldari:generate`를 먼저 한 번 실행해야 한다
+(연결 정보는 아무 문자열이어도 된다 — generate는 실제 DB 접속이 필요 없다).
