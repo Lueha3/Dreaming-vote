@@ -146,6 +146,89 @@ body {
   .press:active { transform: none; }
 }
 
+/* ---------- 앱 실행 스플래시 (SplashIntro) ---------- */
+/* 기본은 숨김 — layout.tsx <head> 인라인 스크립트가 첫 페인트 전에 html.splash-on을 찍을 때만 보인다.
+   그래서 일반 브라우저 방문자에겐 마크업이 있어도 번쩍임이 전혀 없다.
+   애니메이션과 해제를 전부 CSS가 처리하므로 JS가 실패해도 화면이 잠기지 않는다. */
+.splash-intro { display: none; }
+
+html.splash-on .splash-intro {
+  display: grid;
+  place-items: center;
+  position: fixed;
+  inset: 0;
+  /* MonthlyRecap z-[75]·ProfilePeek z-[70]보다 위 */
+  z-index: 100;
+  /* body 배경과 동일 — 스플래시가 걷힐 때 배경 점프가 없다(manifest background_color와도 정렬) */
+  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 58%, var(--bg-low) 100%);
+  animation: splashOut 0.32s ease 1.5s forwards;
+}
+
+.splash-lock {
+  /* 로고 PNG(250x100) 기하 — 심볼 x10~83, 텍스트 x89~236.
+     심볼만 보이도록 오른쪽을 66.8% 잘랐다가 열어 '꿈꾸는교회'를 드러낸다.
+     translateX는 '보이는 부분의 중심'을 화면 중앙에 맞추는 보정값
+     (심볼 중심 18.6% → 31.4% 이동 / 전체 로고 중심 49.2% → 0.8% 이동). */
+  clip-path: inset(0 66.8% 0 0);
+  transform: scale(1.34) translateX(31.4%);
+  animation: splashLock 1.8s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+.splash-logo {
+  display: block;
+  width: min(300px, 76vw);
+  height: auto;
+}
+
+.splash-zoom { animation: splashZoom 1.8s ease-in both; }
+
+.splash-foot {
+  position: absolute;
+  inset-inline: 0;
+  bottom: calc(46px + env(safe-area-inset-bottom));
+  margin: 0;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgba(58, 65, 73, 0.42);
+  animation: splashFootOut 0.3s ease 1.38s forwards;
+}
+
+@keyframes splashLock {
+  /* ① 심볼 단독 유지 */
+  0%, 28.9% { clip-path: inset(0 66.8% 0 0); transform: scale(1.34) translateX(31.4%); }
+  /* ② 워드마크 펼침 → ③ 전체 로고 유지 */
+  50%, 61.1% { clip-path: inset(0 0% 0 0); transform: scale(1) translateX(0.8%); }
+  /* ④ 워드마크가 다시 심볼 속으로 감김 */
+  83.3%, 100% { clip-path: inset(0 66.8% 0 0); transform: scale(1.34) translateX(31.4%); }
+}
+
+/* ⑤ 앱으로 넘어갈 때 살짝 다가오며 사라진다 */
+@keyframes splashZoom {
+  0%, 83.3% { transform: scale(1); }
+  100% { transform: scale(1.12); }
+}
+
+/* 마지막 100%에서 visibility까지 끄는 이유 — JS가 죽어도 오버레이가 터치를 먹지 않게 하는 폴백 */
+@keyframes splashOut {
+  0% { opacity: 1; }
+  99% { opacity: 0; visibility: visible; pointer-events: none; }
+  100% { opacity: 0; visibility: hidden; pointer-events: none; }
+}
+
+@keyframes splashFootOut {
+  to { opacity: 0; }
+}
+
+/* 모션 최소화 — 애니메이션 없이 로고만 잠깐 보여주고 걷는다 */
+@media (prefers-reduced-motion: reduce) {
+  .splash-lock { animation: none; clip-path: none; transform: none; }
+  .splash-zoom { animation: none; }
+  .splash-foot { animation: none; }
+  html.splash-on .splash-intro { animation: splashOut 0.2s ease 0.6s forwards; }
+}
+
 /* ---------- 광장 소식 카드 스택 (PlazaStack) ---------- */
 /* 위치·높이·그림자는 JS 스프링 루프가 인라인으로 제어. 여기선 정적 스타일과 진입 모션만. */
 .plaza-stage { touch-action: none; }

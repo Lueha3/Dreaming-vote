@@ -6,6 +6,7 @@ import { SkyBackdrop } from "@/components/SkyBackdrop";
 import { AutoPushPrompt } from "@/components/AutoPushPrompt";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { ProfilePeekProvider } from "@/components/ProfilePeek";
+import { SplashIntro } from "@/components/SplashIntro";
 
 export const metadata: Metadata = {
   title: "BlueHumanity — 꿈꾸는교회 청년부",
@@ -44,6 +45,31 @@ const SUPABASE_ORIGIN = (() => {
 
 const FONT_CSS =
   "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css";
+
+/**
+ * 앱 실행 스플래시 노출 판정 — 첫 페인트 '전에' 끝내야 하므로 <head> 인라인 스크립트로 돈다.
+ * (useEffect로 판정하면 하이드레이션 이후라 콘텐츠가 먼저 보였다가 스플래시가 덮는 역전이 생긴다.)
+ *
+ * 조건: 홈 화면에 추가한 앱(standalone) + 이번 실행의 첫 진입.
+ *  - standalone 판정은 lib/displayMode.ts와 같은 규칙(display-mode + iOS navigator.standalone).
+ *    여긴 번들 밖 인라인이라 import를 못 해 불가피하게 같은 식을 한 번 더 쓴다.
+ *  - sessionStorage는 홈 화면 아이콘으로 켤 때마다 비므로 정확히 '앱 콜드스타트'를 뜻한다.
+ *    앱 안에서 페이지를 옮기거나 새로고침할 때는 유지되어 다시 뜨지 않는다.
+ *    (localStorage를 쓰면 평생 1회만 떠서 의도와 다르다.)
+ *  - /admin은 다크 테마 별세계라 하늘색 스플래시가 이질적이므로 제외.
+ *  - ?splash=1 은 일반 브라우저에서 확인해보기 위한 강제 노출 스위치.
+ * 프라이빗 모드 등 sessionStorage 접근 실패 시엔 조용히 스플래시를 생략한다(화면이 막히면 안 됨).
+ */
+const SPLASH_GATE = `(function(){try{
+var q=location.search.indexOf('splash=1')>=0;
+if(!q){
+if(location.pathname.indexOf('/admin')===0)return;
+if(!(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true))return;
+if(sessionStorage.getItem('bh-splash-shown'))return;
+sessionStorage.setItem('bh-splash-shown','1');
+}
+document.documentElement.classList.add('splash-on');
+}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -84,8 +110,12 @@ export default function RootLayout({
           {/* eslint-disable-next-line @next/next/no-css-tags */}
           <link rel="stylesheet" href={FONT_CSS} crossOrigin="anonymous" />
         </noscript>
+        {/* 스플래시 노출 판정 — 반드시 body 페인트 전에 실행되어야 한다(위 상수 주석 참고) */}
+        <script dangerouslySetInnerHTML={{ __html: SPLASH_GATE }} />
       </head>
       <body className="antialiased">
+        {/* 앱 실행 스플래시 — 전역 오버레이라 Provider 밖 body 첫 자식으로 둔다 */}
+        <SplashIntro />
         <SkyBackdrop />
         <ProfilePeekProvider>
           <Header />
