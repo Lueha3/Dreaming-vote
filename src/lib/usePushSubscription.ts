@@ -2,19 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { fetchJson } from "@/lib/http";
-
-type IosNavigator = Navigator & { standalone?: boolean };
-
-function isIosDevice(): boolean {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
-}
-
-function isStandaloneDisplay(): boolean {
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (navigator as IosNavigator).standalone === true
-  );
-}
+import { isIosDevice, isStandaloneDisplay } from "@/lib/displayMode";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
