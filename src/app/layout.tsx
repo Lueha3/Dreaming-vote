@@ -7,6 +7,7 @@ import { AutoPushPrompt } from "@/components/AutoPushPrompt";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { ProfilePeekProvider } from "@/components/ProfilePeek";
 import { SplashIntro } from "@/components/SplashIntro";
+import { STARTUP_IMAGES, startupImageMedia, startupImageUrl } from "@/lib/startupImages";
 
 export const metadata: Metadata = {
   title: "BlueHumanity — 꿈꾸는교회 청년부",
@@ -22,6 +23,12 @@ export const metadata: Metadata = {
     capable: true,
     title: "꿈꾸는동아리",
     statusBarStyle: "default",
+    // 런치 이미지 — 없으면 앱을 켤 때 OS가 흰 화면을 띄운 채 로딩을 기다린다.
+    // 기기별 미디어쿼리가 정확히 맞아야 iOS가 사용한다(startupImages.ts 참고).
+    startupImage: STARTUP_IMAGES.map((s) => ({
+      url: startupImageUrl(s),
+      media: startupImageMedia(s),
+    })),
   },
 };
 
@@ -68,7 +75,16 @@ if(!(window.matchMedia('(display-mode: standalone)').matches||navigator.standalo
 if(sessionStorage.getItem('bh-splash-shown'))return;
 sessionStorage.setItem('bh-splash-shown','1');
 }
-document.documentElement.classList.add('splash-on');
+var d=document.documentElement;
+d.classList.add('splash-on');
+var started=false;
+function go(){if(started)return;started=true;d.classList.add('splash-go');}
+function whenPainted(){requestAnimationFrame(function(){requestAnimationFrame(go);});}
+if(document.visibilityState==='hidden'){
+document.addEventListener('visibilitychange',function h(){
+if(document.visibilityState!=='hidden'){document.removeEventListener('visibilitychange',h);whenPainted();}});
+setTimeout(go,4000);
+}else{whenPainted();}
 }catch(e){}})();`;
 
 export default function RootLayout({
