@@ -169,8 +169,7 @@ export function OwnedClubCard({ club }: { club: OwnedClub }) {
                     <div className="flex min-w-0 items-start gap-2">
                       {a.applicantAvatarUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={a.applicantAvatarUrl}
+                        <img loading="lazy" decoding="async" src={a.applicantAvatarUrl}
                           alt=""
                           className="mt-0.5 h-6 w-6 shrink-0 rounded-full object-cover"
                         />

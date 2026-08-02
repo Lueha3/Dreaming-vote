@@ -183,8 +183,7 @@ export default function AdminMembersPage() {
                     <div className="mb-2 flex flex-wrap items-center gap-2">
                       {m.avatarUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={m.avatarUrl}
+                        <img loading="lazy" decoding="async" src={m.avatarUrl}
                           alt=""
                           className="h-7 w-7 rounded-full border border-white/10 object-cover"
                         />

@@ -350,6 +350,8 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
                     <img
                       src={m.avatarUrl}
                       alt=""
+                      loading="lazy"
+                      decoding="async"
                       className="h-9 w-9 rounded-full object-cover ring-2 ring-white"
                     />
                   ) : (
@@ -441,6 +443,8 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
                     <img
                       src={img.url}
                       alt={img.caption || `사진 ${i + 2}`}
+                      loading="lazy"
+                      decoding="async"
                       className="h-28 w-28 rounded-xl border border-sky-line object-cover"
                     />
                     {img.caption && (

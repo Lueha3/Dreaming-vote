@@ -391,8 +391,7 @@ export function ClubMeetingCalendar({ clubId, isMember, isOwner, membershipStatu
             >
               {m.coverImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={m.coverImage}
+                <img loading="lazy" decoding="async" src={m.coverImage}
                   alt=""
                   className="h-12 w-12 shrink-0 rounded-lg border border-sky-line object-cover"
                 />
