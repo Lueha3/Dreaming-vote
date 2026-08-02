@@ -262,8 +262,7 @@ export default function ManageMembershipPage() {
                     )}
                     {u.avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={u.avatarUrl}
+                      <img loading="lazy" decoding="async" src={u.avatarUrl}
                         alt=""
                         className="h-9 w-9 shrink-0 rounded-full object-cover"
                       />

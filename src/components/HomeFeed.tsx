@@ -108,6 +108,8 @@ function PlazaAvatar({ url, name, size }: { url: string | null; name: string; si
       <img
         src={url}
         alt=""
+        loading="lazy"
+        decoding="async"
         className="shrink-0 rounded-full object-cover"
         style={{ width: size, height: size }}
       />
@@ -123,7 +125,6 @@ function PlazaAvatar({ url, name, size }: { url: string | null; name: string; si
   );
 }
 
-/** 텍스트형 리드 카드 배경 워시 — 카테고리별 은은한 브랜드 톤. */
 /** 작성자명 옆 배지 묶음 — 시스템(새가족/생일)·응답됨·새가족·역할. 익명 글은 신원 배지 억제. */
 function PlazaBadges({ post }: { post: PlazaPost }) {
   const roles = post.isAnonymous ? [] : displayRoles(post.authorRole);

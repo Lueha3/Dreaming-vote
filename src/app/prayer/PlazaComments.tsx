@@ -105,7 +105,7 @@ function CommentRow({
       >
         {comment.authorAvatar ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={comment.authorAvatar} alt="" className="h-6 w-6 rounded-full object-cover" />
+          <img loading="lazy" decoding="async" src={comment.authorAvatar} alt="" className="h-6 w-6 rounded-full object-cover" />
         ) : (
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-skyx/20 text-[10px] text-skyx-ink">
             {comment.authorName[0]}

@@ -237,8 +237,7 @@ function HomeScreenSection() {
         <div className="mt-3 flex justify-center">
           <div className="w-full max-w-[220px]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/guide-homescreen-example.jpg"
+            <img loading="lazy" decoding="async" src="/guide-homescreen-example.jpg"
               alt="홈 화면에 추가하면 유튜브·인스타처럼 아이콘이 그대로 생겨요"
               className="w-full rounded-xl border border-white/90 shadow-sm"
             />

@@ -572,8 +572,7 @@ export default function MeetingDetailPage({ params }: PageProps) {
                 {data.rsvp.going.map((g, i) =>
                   g.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      key={i}
+                    <img loading="lazy" decoding="async" key={i}
                       src={g.avatarUrl}
                       alt=""
                       title={g.nickname ?? ""}
@@ -639,8 +638,7 @@ export default function MeetingDetailPage({ params }: PageProps) {
                   className="group relative aspect-square overflow-hidden rounded-xl border border-sky-line"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={img.url}
+                  <img loading="lazy" decoding="async" src={img.url}
                     alt={img.caption || `사진 ${i + 1}`}
                     className="h-full w-full object-cover transition-transform group-hover:scale-105"
                   />
@@ -689,8 +687,7 @@ export default function MeetingDetailPage({ params }: PageProps) {
                 <li key={r.id} className="flex gap-2.5">
                   {r.authorAvatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={r.authorAvatarUrl}
+                    <img loading="lazy" decoding="async" src={r.authorAvatarUrl}
                       alt=""
                       className="h-8 w-8 shrink-0 rounded-full object-cover"
                     />

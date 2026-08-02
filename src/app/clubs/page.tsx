@@ -172,8 +172,7 @@ export default function ClubsPage() {
                   >
                     {club.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={club.imageUrl}
+                      <img loading="lazy" decoding="async" src={club.imageUrl}
                         alt=""
                         className="aspect-[2/1] w-full object-cover"
                       />

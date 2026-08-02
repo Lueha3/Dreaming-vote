@@ -14,7 +14,7 @@ type BuddyInfo = {
 function Avatar({ person }: { person: Person }) {
   return person.avatarUrl ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={person.avatarUrl} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+    <img loading="lazy" decoding="async" src={person.avatarUrl} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
   ) : (
     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-skyx/20 text-xs text-skyx-ink">
       {person.nickname?.[0] ?? "?"}

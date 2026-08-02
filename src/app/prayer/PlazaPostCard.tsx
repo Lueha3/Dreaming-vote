@@ -90,10 +90,18 @@ function ImageCarousel({
       <button
         type="button"
         onClick={() => handleTap(0)}
-        className="relative mt-3 block w-full overflow-hidden rounded-xl border border-sky-line bg-white/55"
+        /* min-h — 지연 로딩된 이미지가 도착하기 전 높이 0으로 접히면 스크롤이 튀고,
+           브라우저가 '전부 화면 안'으로 판단해 지연 로딩이 무력화된다. */
+        className="relative mt-3 flex min-h-[200px] w-full items-center justify-center overflow-hidden rounded-xl border border-sky-line bg-white/55"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={images[0]} alt="" className="w-full max-h-96 object-contain" />
+        <img
+          src={images[0]}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="max-h-96 w-full object-contain"
+        />
         {burst?.index === 0 && <HeartBurst burstKey={burst.key} />}
       </button>
     );
@@ -119,7 +127,13 @@ function ImageCarousel({
             className="relative aspect-square w-full flex-none snap-start overflow-hidden border border-sky-line bg-white/55 first:rounded-l-xl last:rounded-r-xl"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={url} alt="" className="h-full w-full object-cover" />
+            <img
+              src={url}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover"
+            />
             {burst?.index === i && <HeartBurst burstKey={burst.key} />}
           </button>
         ))}
@@ -146,7 +160,13 @@ function ClubAdCard({ club }: { club: PlazaClubRef }) {
 
   const cover = club.imageUrl ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={club.imageUrl} alt="" className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+    <img
+      src={club.imageUrl}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      className="h-14 w-14 shrink-0 rounded-xl object-cover"
+    />
   ) : (
     <div
       className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${
@@ -268,7 +288,13 @@ export function PlazaPostCard({
             >
               {post.authorAvatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={post.authorAvatar} alt="" className="h-6 w-6 rounded-full object-cover" />
+                <img
+                  src={post.authorAvatar}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="h-6 w-6 rounded-full object-cover"
+                />
               ) : (
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-skyx/25 text-xs text-skyx-ink">
                   {post.authorName[0]}

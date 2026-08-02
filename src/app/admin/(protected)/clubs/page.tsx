@@ -158,8 +158,7 @@ export default function AdminClubsPage() {
                     <div className="mb-3 flex gap-1.5">
                       {club.images.slice(0, 5).map((img, i) => (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          key={i}
+                        <img loading="lazy" decoding="async" key={i}
                           src={img.url}
                           alt={img.caption || `카드 ${i + 1}`}
                           className="h-14 w-14 rounded-lg object-cover border border-white/10"

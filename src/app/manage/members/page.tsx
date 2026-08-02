@@ -118,7 +118,7 @@ export default function ManageMembersPage() {
                 <div className="flex min-w-0 items-center gap-2.5">
                   {u.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={u.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
+                    <img loading="lazy" decoding="async" src={u.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
                   ) : (
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-skyx/25 text-sm">
                       👤

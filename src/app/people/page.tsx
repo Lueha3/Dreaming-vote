@@ -109,7 +109,7 @@ export default function PeoplePage() {
               <div className="mb-2 flex items-center gap-2.5">
                 {p.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.avatarUrl} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
+                  <img loading="lazy" decoding="async" src={p.avatarUrl} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
                 ) : (
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-skyx/20 text-sm text-skyx-ink">
                     {p.nickname?.[0] ?? "?"}
