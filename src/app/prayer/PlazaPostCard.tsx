@@ -277,8 +277,11 @@ export function PlazaPostCard({
         <p className="mb-2 text-xs font-semibold text-gold-ink">🎉 새가족이 왔어요</p>
       )}
       {/* 작성자 + 시간 */}
-      <div className="mb-2.5 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="mb-2.5 flex items-start justify-between gap-2">
+        {/* flex-wrap 필수 — 이름·배지·시간을 한 줄에 못 담으면 항목 단위로 다음 줄에 내린다.
+            wrap이 없으면 아바타·배지가 shrink-0라 시간 텍스트만 짜부라져
+            '· 1일 전'이 '1일 / 전'처럼 문구 중간에서 잘린다(댓글·모임 후기는 이미 wrap 방식). */}
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
           {post.authorId ? (
             <button
               type="button"
@@ -306,14 +309,17 @@ export function PlazaPostCard({
               {post.authorName[0]}
             </div>
           )}
-          <span className="text-xs text-ink-soft">{post.authorName}</span>
+          <span className="max-w-full truncate text-xs text-ink-soft">{post.authorName}</span>
           {displayRoles(post.authorRole).map((r) => (
             <RoleBadge key={r} role={r} size="sm" />
           ))}
           {post.isNewcomer && <NewcomerBadge size="sm" />}
-          <span className="text-xs text-ink-faint">· {timeAgo(post.createdAt)}</span>
+          {/* 시간·수정됨은 한 덩어리로 — 절대 문구 중간에서 끊기지 않게 */}
+          <span className="shrink-0 whitespace-nowrap text-xs text-ink-faint">
+            · {timeAgo(post.createdAt)}
+          </span>
           {isEdited(post.createdAt, post.updatedAt) && (
-            <span className="text-xs text-ink-faint">· 수정됨</span>
+            <span className="shrink-0 whitespace-nowrap text-xs text-ink-faint">· 수정됨</span>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">

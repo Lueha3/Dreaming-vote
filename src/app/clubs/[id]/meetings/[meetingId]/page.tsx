@@ -704,9 +704,11 @@ export default function MeetingDetailPage({ params }: PageProps) {
                       {displayRoles(r.authorRole).map((role) => (
                         <RoleBadge key={role} role={role} size="sm" />
                       ))}
-                      <span className="text-[11px] text-ink-faint">{fmtReviewTime(r.createdAt)}</span>
+                      <span className="shrink-0 whitespace-nowrap text-[11px] text-ink-faint">
+                        {fmtReviewTime(r.createdAt)}
+                      </span>
                       {isEdited(r.createdAt, r.updatedAt) && (
-                        <span className="text-[11px] text-ink-faint">· 수정됨</span>
+                        <span className="shrink-0 whitespace-nowrap text-[11px] text-ink-faint">· 수정됨</span>
                       )}
                     </div>
                     {editingReviewId === r.id ? (
