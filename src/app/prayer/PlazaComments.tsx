@@ -119,9 +119,11 @@ function CommentRow({
             <RoleBadge key={r} role={r} size="sm" />
           ))}
           {comment.isNewcomer && <NewcomerBadge size="sm" />}
-          <span className="text-xs text-ink-faint">· {timeAgo(comment.createdAt)}</span>
+          <span className="shrink-0 whitespace-nowrap text-xs text-ink-faint">
+            · {timeAgo(comment.createdAt)}
+          </span>
           {isEdited(comment.createdAt, comment.updatedAt) && (
-            <span className="text-xs text-ink-faint">· 수정됨</span>
+            <span className="shrink-0 whitespace-nowrap text-xs text-ink-faint">· 수정됨</span>
           )}
           <span className="ml-auto flex items-center gap-2">
             {comment.canEdit && !editing && (
