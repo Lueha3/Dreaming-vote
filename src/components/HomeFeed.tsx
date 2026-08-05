@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { timeAgo } from "@/lib/time";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
+import { MiniHompyAd } from "@/components/home/MiniHompyAd";
 import { HomeClubCarousel } from "@/components/HomeClubCarousel";
 import { HomeSectionHeader } from "@/components/HomeSectionHeader";
 import { RoleBadge } from "@/components/RoleBadge";
@@ -668,6 +669,9 @@ export function HomeFeed({ initial }: { initial?: HomeView }) {
           <PlazaStack posts={recentPosts} />
         </section>
       )}
+
+      {/* 광고 구좌 — '미니홈피' 부활 티저(2026.10). 광장 소식 바로 아래 고정. */}
+      <MiniHompyAd />
 
       {/* 성향 카드 미작성 멤버 — 다음 스텝 유도(피드 아래). 피드가 비어도 이 카드가 채워준다. */}
       {!hasPersonalityReport && <CreateCardCTA />}
