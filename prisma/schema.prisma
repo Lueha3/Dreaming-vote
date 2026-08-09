@@ -33,6 +33,10 @@ model User {
   membershipAppliedAt DateTime?
   membershipDecidedAt DateTime?
   membershipNote      String? // 거절 사유 (신청자에게 표시)
+  // 승인 후 최초 진입 시 성격유형 고르기(/start) 1회 안내를 마친 시각.
+  // null인 승인 멤버가 홈(/)에 오면 /start?welcome=1로 보낸다. 기록은 /start 실제 방문 시
+  // 클라이언트가 POST /api/my/start-seen으로 남긴다(홈 RSC 렌더에서 쓰면 프리페치가 소모해버림).
+  startPromptSeenAt   DateTime?
   deletedAt           DateTime? // 탈퇴 처리 일시 — null이면 활성. 재로그인 시 즉시 해제(쿨다운 없음).
   // 생일 축하 카드 발송용 — 연도는 받지 않는다(개인정보 최소화, 나이는 age로 이미 별도 수집).
   birthMonth          Int?
