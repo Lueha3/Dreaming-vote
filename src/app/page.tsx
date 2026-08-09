@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { ChurchLineArt } from "@/components/ChurchLineArt";
@@ -57,6 +58,13 @@ export default async function Home() {
         ? "pending"
         : "apply"; // none · rejected
     return <HomeShowcase status={status} />;
+  }
+
+  // 승인 후 최초 진입 1회 — 성격유형 고르기(/start)를 첫 화면으로 보여준다.
+  // 표시 완료 기록은 /start가 실제 마운트될 때 클라이언트가 남긴다(StartWelcome).
+  // 여기(RSC)에서 기록하면 링크 프리페치 렌더가 플래그를 소모해 실제 화면 노출 없이 끝나버린다.
+  if (!user.startPromptSeenAt) {
+    redirect("/start?welcome=1");
   }
 
   const greet = greetingParts(user.nickname);
