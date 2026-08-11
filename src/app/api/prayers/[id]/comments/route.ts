@@ -18,7 +18,15 @@ const createSchema = z.object({
 /** GET /api/prayers/[id]/comments — 댓글 목록 (공개). 답글(대댓글)은 단일 깊이로 부모 아래 묶어 반환. */
 export async function GET(req: NextRequest, { params }: Params) {
   const { id } = params instanceof Promise ? await params : params;
+
+  // 댓글도 본문과 같은 기준으로 승인 멤버 전용 — 목록(GET /api/prayers)과 동일.
+  // 댓글 작성자 표시명 역시 실명을 포함하므로 비로그인에게 내주지 않는다.
   const user = await getAuthUser();
+  if (!user) {
+    return NextResponse.json({ ok: false, error: "로그인이 필요합니다." }, { status: 401 });
+  }
+  const gate = membershipGate(user);
+  if (gate) return gate;
 
   const prayer = await prisma.prayer.findUnique({ where: { id }, select: { userId: true } });
   if (!prayer) return NextResponse.json({ ok: false, error: "글을 찾을 수 없습니다." }, { status: 404 });
