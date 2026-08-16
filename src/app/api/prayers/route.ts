@@ -140,7 +140,7 @@ export async function GET(req: NextRequest) {
 /** POST /api/prayers — 광장 글 올리기 (내용 또는 사진 최소 1개 필요) */
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
-  if (!checkRateLimit(ip, { windowMs: 60_000, max: 10 })) {
+  if (!checkRateLimit(`prayer-create:${ip}`, { windowMs: 60_000, max: 10 })) {
     return NextResponse.json(
       { ok: false, error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
       { status: 429 },
