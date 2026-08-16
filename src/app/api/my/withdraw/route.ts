@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { createAdminNotification } from "@/lib/notifications";
+import { withdrawUser } from "@/lib/withdrawal";
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
@@ -19,38 +19,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "로그인이 필요합니다." }, { status: 401 });
   }
 
-  // PII 익명화 + 소프트 탈퇴.
-  // role도 반드시 "member"로 리셋 — 즉시 재가입(쿨다운 없음)이 가능해진 이상,
-  // staff/admin이 탈퇴해도 role이 남아있으면 membershipGate/roleGate가 role만 보고
-  // membershipStatus와 무관하게 통과시켜 PII 없는 유령 계정이 운영진 권한을 유지하게 된다.
+  // PII 파기 + 툼스톤 — 상세 규칙과 DB CHECK 제약은 lib/withdrawal.ts 참고.
   //
   // 실패 시 스택을 남기고 JSON으로 응답한다 — 잡지 않으면 Next가 HTML 500을 반환해
   // 클라이언트의 fetchJson이 파싱 단계에서 터지고, 진짜 원인이 화면에도 로그에도 안 남는다.
   try {
-    await prisma.user.update({
-      where: { id: user.dbUserId },
-      data: {
-        deletedAt: new Date(),
-        membershipStatus: "none",
-        role: "member",
-        nickname: null,
-        avatarUrl: null,
-        realName: null,
-        age: null,
-        gender: null,
-        dreamGroup: null,
-        phone: null,
-        membershipAppliedAt: null,
-        membershipDecidedAt: null,
-        membershipNote: null,
-      },
-    });
-
-    // 소유 동아리 비공개 처리 (탈퇴자 동아리 자동 숨김)
-    await prisma.club.updateMany({
-      where: { ownerUserId: user.dbUserId },
-      data: { isActive: false },
-    });
+    await withdrawUser(user.dbUserId);
   } catch (e) {
     console.error(`[withdraw] 실패 userId=${user.dbUserId}`, e);
     return NextResponse.json(
