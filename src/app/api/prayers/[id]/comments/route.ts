@@ -86,7 +86,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { id } = params instanceof Promise ? await params : params;
 
   const ip = getClientIp(req);
-  if (!checkRateLimit(ip, { windowMs: 60_000, max: 20 })) {
+  if (!checkRateLimit(`prayer-comment:${ip}`, { windowMs: 60_000, max: 20 })) {
     return NextResponse.json(
       { ok: false, error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
       { status: 429 },

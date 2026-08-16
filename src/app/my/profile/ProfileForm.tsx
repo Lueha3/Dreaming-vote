@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import imageCompression from "browser-image-compression";
 import { createClient } from "@/lib/supabase/client";
-import { fetchJson } from "@/lib/http";
+import { ApiError, fetchJson } from "@/lib/http";
 import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { BuddyInfoCard } from "@/components/BuddyInfoCard";
 import { BirthdayField } from "@/components/BirthdayField";
@@ -153,8 +153,14 @@ export function ProfileForm({
       setTimeout(() => {
         window.location.href = "/";
       }, 1800);
-    } catch {
-      setWithdrawError("탈퇴 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    } catch (err) {
+      // 서버가 준 이유를 그대로 보여준다 — 예전엔 429(요청 과다)든 500이든 같은 문구라
+      // 사용자도 운영진도 무엇 때문에 막혔는지 알 수 없었다.
+      setWithdrawError(
+        err instanceof ApiError && err.message
+          ? err.message
+          : "탈퇴 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+      );
       setWithdrawing(false);
     }
   }
