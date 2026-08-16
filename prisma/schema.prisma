@@ -37,7 +37,12 @@ model User {
   // null인 승인 멤버가 홈(/)에 오면 /start?welcome=1로 보낸다. 기록은 /start 실제 방문 시
   // 클라이언트가 POST /api/my/start-seen으로 남긴다(홈 RSC 렌더에서 쓰면 프리페치가 소모해버림).
   startPromptSeenAt   DateTime?
-  deletedAt           DateTime? // 탈퇴 처리 일시 — null이면 활성. 재로그인 시 즉시 해제(쿨다운 없음).
+  // 탈퇴 처리 일시 — null이면 활성. 탈퇴는 되돌릴 수 없다(재로그인은 새 행을 만든다).
+  // DB에 Prisma로 표현 불가한 CHECK 제약이 걸려 있다(마이그레이션 fix_withdrawal_resurrection):
+  //   CHECK ( ("supabaseId" LIKE 'withdrawn:%') = ("deletedAt" IS NOT NULL) )
+  // 즉 deletedAt과 supabaseId 툼스톤은 반드시 함께 세팅해야 한다 — lib/withdrawal.ts 경유 필수.
+  // (직접 update로 deletedAt만 찍으면 23514로 실패한다.)
+  deletedAt           DateTime?
   // 생일 축하 카드 발송용 — 연도는 받지 않는다(개인정보 최소화, 나이는 age로 이미 별도 수집).
   birthMonth          Int?
   birthDay            Int?
