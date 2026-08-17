@@ -26,7 +26,7 @@ export default function GuidePage() {
       </div>
 
       <p className="mt-10 text-center text-xs text-ink-faint">
-        꿈꾸는교회 청년부 · 꿈꾸는동아리 사용 설명서
+        꿈꾸는교회 청년부 · 동아리드림 사용 설명서
       </p>
     </div>
   );
@@ -42,7 +42,7 @@ function Hero() {
         <AppIconMark px={48} />
       </div>
       <span className="mb-2 inline-block text-[11px] font-extrabold tracking-widest text-teal-ink uppercase">
-        꿈꾸는동아리 사용 설명서
+        동아리드림 사용 설명서
       </span>
       <h1 className="mb-2 text-2xl font-extrabold text-ink sm:text-3xl">
         <span className="gradient-text">휴대폰으로 쉽게 시작하기</span>
