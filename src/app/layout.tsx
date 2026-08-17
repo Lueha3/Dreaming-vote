@@ -10,18 +10,18 @@ import { SplashIntro } from "@/components/SplashIntro";
 import { STARTUP_IMAGES, startupImageMedia, startupImageUrl } from "@/lib/startupImages";
 
 export const metadata: Metadata = {
-  title: "BlueHumanity — 꿈꾸는교회 청년부",
+  title: "동아리드림 — 꿈꾸는교회 청년부",
   description:
     "새 소식, 모임, 기도제목, 생일까지. 우리 청년부 이야기가 매일 여기 올라와요.",
   openGraph: {
-    title: "오늘의, 청년부 — BlueHumanity",
+    title: "오늘의, 청년부 — 동아리드림",
     description: "새 소식, 모임, 기도제목, 생일까지. 우리 청년부 이야기가 매일 여기 올라와요.",
-    siteName: "BlueHumanity",
+    siteName: "동아리드림",
   },
   // iOS "홈 화면에 추가" 시 아이콘 아래 표시되는 이름 — 미설정 시 <title>이 길게 잘려 노출됨.
   appleWebApp: {
     capable: true,
-    title: "꿈꾸는동아리",
+    title: "동아리드림",
     statusBarStyle: "default",
     // 런치 이미지 — 없으면 앱을 켤 때 OS가 흰 화면을 띄운 채 로딩을 기다린다.
     // 기기별 미디어쿼리가 정확히 맞아야 iOS가 사용한다(startupImages.ts 참고).

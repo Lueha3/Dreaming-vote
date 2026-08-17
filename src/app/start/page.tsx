@@ -4,7 +4,7 @@ import { PromptSection } from "@/app/components/PromptSection";
 import { StartWelcome } from "./StartWelcome";
 
 export const metadata = {
-  title: "성격유형 고르기 — BlueHumanity",
+  title: "성격유형 고르기 — 동아리드림",
 };
 
 /**

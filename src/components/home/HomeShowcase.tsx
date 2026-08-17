@@ -191,7 +191,7 @@ export function HomeShowcase({ status }: { status: ShowcaseStatus }) {
         </div>
         <p className="pt-6 text-center text-[12.5px] font-medium text-ink/55">
           Dreaming Church <span className="mx-1 text-ink/30">·</span> 꿈꾸는교회 청년부{" "}
-          <span className="mx-1 text-ink/30">·</span> BlueHumanity
+          <span className="mx-1 text-ink/30">·</span> 동아리드림
         </p>
       </footer>
     </div>
