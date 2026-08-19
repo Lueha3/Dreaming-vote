@@ -39,6 +39,8 @@ const ICON: Record<string, string> = {
   buddy_ended: "🫂",
   buddy_assigned: "🤝",
   buddy_matched: "🤝",
+  admin_support_ticket_created: "🎧",
+  support_reply: "🎧",
 };
 
 // 운영자 전용 알림(admin_*) — 벨 목록에서 살짝 다른 톤으로 구분 표시.

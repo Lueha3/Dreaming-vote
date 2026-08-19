@@ -65,6 +65,8 @@ model User {
   buddyRequestsSent     BuddyMatch[]       @relation("BuddyRequester")
   buddyRequestsReceived BuddyMatch[]       @relation("BuddyRecipient")
   icebreakerPrompts   IcebreakerPrompt[]
+  supportTickets      SupportTicket[]
+  supportReplies      SupportReply[]       @relation("SupportStaff")
 
   @@index([membershipStatus, membershipAppliedAt])
 }
@@ -511,4 +513,44 @@ model MonthlyRecap {
   topPostAuthorName   String?
   topPostReactionCount Int?
   createdAt           DateTime @default(now())
+}
+
+// 고객센터 문의 — 광장과 별개로 운영진에게 전달되는 1:1 문의/건의함.
+// isSecret=false(기본)면 승인 멤버 전체가 볼 수 있는 공개 게시판(광장과 동일한 노출 범위),
+// isSecret=true면 작성자 본인 + 운영진만 볼 수 있다. 두 옵션 다 미승인(pending 등) 유저도
+// 로그인만 하면 문의를 남기고 자기 글은 볼 수 있다(가입 절차 자체에 대한 문의도 여기로 온다) —
+// 다만 미승인 유저는 다른 사람의 공개 글까지는 못 본다(API에서 강제).
+// isAnonymous는 광장 '기도해주세요'와 동일한 의미로, 운영진에게도 신원을 가린다(진짜 익명).
+// 댓글 개념이 없다 — 답글(SupportReply)은 오직 운영진(staff+)만 작성 가능.
+model SupportTicket {
+  id          String   @id @default(cuid())
+  userId      String
+  content     String
+  isAnonymous Boolean  @default(false)
+  isSecret    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replies SupportReply[]
+
+  @@index([isSecret, createdAt])
+  @@index([userId])
+}
+
+// 고객센터 답글 — 운영진(staff+)만 작성. 작성한 스태프 본인·다른 운영진에게는 실명이 보이지만,
+// 문의를 남긴 당사자에게는 항상 "운영진"으로만 표시된다(개별 운영진이 답변 때문에 특정
+// 민원의 표적이 되지 않도록 — prayers/route.ts의 "익명 글은 관리자 신원도 숨긴다"와 같은 원칙을
+// 여기서는 답변자 쪽에 선제적으로 적용). staffId는 표시용이 아니라 내부 식별용이라 탈퇴해도
+// 보존할 필요가 없어 SetNull.
+model SupportReply {
+  id        String   @id @default(cuid())
+  ticketId  String
+  staffId   String?
+  content   String
+  createdAt DateTime @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  staff  User?          @relation("SupportStaff", fields: [staffId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId, createdAt])
 }
