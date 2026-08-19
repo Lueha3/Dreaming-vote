@@ -2,28 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db";
-import { getAuthUser, roleGate, type AuthUser } from "@/lib/auth";
+import { getAuthUser, roleGate } from "@/lib/auth";
 import { hasAtLeast } from "@/lib/roles";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { createNotification } from "@/lib/notifications";
+import { canSeeTicket } from "@/lib/support";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
 const createSchema = z.object({
   content: z.string().trim().min(1, "답글을 입력해주세요.").max(2000, "답글이 너무 깁니다."),
 });
-
-/**
- * 요청자가 이 문의를 볼 권한이 있는지 — GET /api/support의 목록 노출 규칙과 동일해야 한다.
- * 어긋나면 목록에서는 안 보이던 비밀글의 답글을 URL만 알면 읽을 수 있는 구멍이 생긴다.
- */
-function canSeeTicket(ticket: { userId: string; isSecret: boolean }, user: AuthUser | null): boolean {
-  if (!user) return false;
-  if (hasAtLeast(user.role, "staff")) return true;
-  if (ticket.userId === user.dbUserId) return true;
-  if (ticket.isSecret) return false;
-  return user.membershipStatus === "approved";
-}
 
 /** GET /api/support/[id]/replies — 문의에 달린 운영진 답글 목록. */
 export async function GET(req: NextRequest, { params }: Params) {

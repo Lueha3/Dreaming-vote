@@ -5,6 +5,7 @@ import { getAuthUser } from "@/lib/auth";
 import { hasAtLeast } from "@/lib/roles";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { recordAudit } from "@/lib/audit";
+import { canSeeTicket } from "@/lib/support";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
@@ -21,9 +22,18 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     );
   }
 
-  const ticket = await prisma.supportTicket.findUnique({ where: { id }, select: { userId: true } });
-  if (!ticket) return NextResponse.json({ ok: false, error: "문의를 찾을 수 없습니다." }, { status: 404 });
+  const ticket = await prisma.supportTicket.findUnique({
+    where: { id },
+    select: { userId: true, isSecret: true },
+  });
+  // "존재하지 않음"과 "볼 권한이 없음"을 같은 404로 응답한다 — 403을 쓰면 그 자체로
+  // "이 id의 비밀글이 실재한다"는 사실이 새어나간다(replies 라우트와 동일 원칙, lib/support.ts).
+  if (!ticket || !canSeeTicket(ticket, user)) {
+    return NextResponse.json({ ok: false, error: "문의를 찾을 수 없습니다." }, { status: 404 });
+  }
 
+  // 여기까지 왔다면 이미 이 티켓이 "보인다"는 걸 아는 상태(본인 글이거나 공개 글이거나 운영진)이므로,
+  // 삭제 권한이 없다는 403은 새로운 정보를 흘리지 않는다.
   const isStaff = hasAtLeast(user.role, "staff");
   const isModeration = ticket.userId !== user.dbUserId;
   if (isModeration && !isStaff) {
