@@ -173,6 +173,7 @@ export function Header() {
                   <div className="my-1.5 mx-4 border-t border-sky-line" />
                   <MobileNavLink href="/guide" onClick={() => setMenuOpen(false)}>📖 설명서</MobileNavLink>
                   <MobileNavLink href="/my" onClick={() => setMenuOpen(false)}>🪪 내 정보</MobileNavLink>
+                  <MobileNavLink href="/support" onClick={() => setMenuOpen(false)}>🎧 고객센터</MobileNavLink>
                   {canManage(role) && (
                     <MobileNavLink href="/manage" onClick={() => setMenuOpen(false)}>
                       🛠 운영 관리

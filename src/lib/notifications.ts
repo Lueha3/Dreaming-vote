@@ -29,7 +29,9 @@ export type NotificationType =
   | "buddy_accepted" // 내가 보낸 짝꿍 신청이 수락됨 (→ 신청한 사람)
   | "buddy_ended" // 짝꿍 관계가 해제됨 (→ 상대방)
   | "buddy_assigned" // (구) 새가족의 환영 짝꿍으로 지정됨 — 과거 알림 렌더 호환용
-  | "buddy_matched"; // (구) 나의 환영 짝꿍이 정해짐 — 과거 알림 렌더 호환용
+  | "buddy_matched" // (구) 나의 환영 짝꿍이 정해짐 — 과거 알림 렌더 호환용
+  | "admin_support_ticket_created" // 새 고객센터 문의 접수 (→ 운영진+)
+  | "support_reply"; // 내 고객센터 문의에 운영진 답글 (→ 문의 작성자)
 
 type NotificationInput = {
   userId: string;
