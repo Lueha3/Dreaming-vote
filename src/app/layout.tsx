@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
 import { AutoPushPrompt } from "@/components/AutoPushPrompt";
 import { BottomTabBar } from "@/components/BottomTabBar";
+import { SessionTimeoutGuard } from "@/components/SessionTimeoutGuard";
 import { ProfilePeekProvider } from "@/components/ProfilePeek";
 import { SplashIntro } from "@/components/SplashIntro";
 import { STARTUP_IMAGES, startupImageMedia, startupImageUrl } from "@/lib/startupImages";
@@ -133,6 +134,8 @@ export default function RootLayout({
         {/* 앱 실행 스플래시 — 전역 오버레이라 Provider 밖 body 첫 자식으로 둔다 */}
         <SplashIntro />
         <SkyBackdrop />
+        {/* 자동 로그아웃 타이머 — 렌더 결과가 없는 상주 컴포넌트라 위치는 무관하다 */}
+        <SessionTimeoutGuard />
         <ProfilePeekProvider>
           <Header />
           {children}
