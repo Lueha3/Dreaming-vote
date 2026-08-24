@@ -121,6 +121,7 @@ function CommentRow({
   const [moreOpen, setMoreOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [reported, setReported] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
   const { open: openPeek } = useProfilePeek();
 
@@ -196,7 +197,7 @@ function CommentRow({
                       ✏️ 수정
                     </button>
                   )}
-                  {canReport && (
+                  {canReport && !reported && (
                     <button
                       onClick={() => { setMoreOpen(false); setReportOpen(true); }}
                       className="flex w-full items-center rounded-lg px-3 py-2 text-left text-xs text-ink-soft hover:bg-white/80 hover:text-ink"
@@ -254,7 +255,9 @@ function CommentRow({
             disabled={!loggedIn}
             aria-pressed={comment.iLiked}
             aria-label={comment.iLiked ? "좋아요 취소" : "좋아요"}
-            className={`flex items-center gap-1 text-xs transition-colors disabled:opacity-40 ${
+            /* -my-1.5 py-1.5 — 손가락이 닿는 영역만 위아래로 넓히고 줄 높이는 그대로 둔다.
+               text-xs 글자 높이(약 16px)만으로는 모바일에서 정확히 겨누기 어렵다. */
+            className={`-my-1.5 flex items-center gap-1 py-1.5 text-xs transition-colors disabled:opacity-40 ${
               comment.iLiked ? "text-rose-500" : "text-ink-faint hover:text-rose-400"
             }`}
           >
@@ -266,6 +269,9 @@ function CommentRow({
               답글
             </button>
           )}
+          {/* 접수 확인 — ReportButton은 제출 직후 걷히므로 자체 '신고 접수됨'을 띄우지 못한다.
+              이게 없으면 신고가 들어갔는지 알 길이 없어 같은 글을 또 신고하게 된다. */}
+          {reported && <span className="text-xs text-ink-faint">신고 접수됨</span>}
         </div>
 
         {/* 삭제 확인 — ⋯ 메뉴의 '삭제'로 진입. 메뉴 클릭 한 번에 바로 지워지지 않게 한 단계 둔다. */}
@@ -290,6 +296,7 @@ function CommentRow({
             targetType="comment"
             targetId={comment.id}
             forceOpen
+            onSubmitted={() => setReported(true)}
             onClose={() => setReportOpen(false)}
           />
         )}
