@@ -43,6 +43,10 @@ export async function GET(req: NextRequest, { params }: Params) {
       userId: true,
       parentId: true,
       user: { select: { nickname: true, avatarUrl: true, role: true, membershipDecidedAt: true } },
+      // 좋아요는 개수만 세고, "내가 눌렀는지"는 내 행 1건만 골라 확인한다 —
+      // likes를 통째로 가져오면 인기 댓글 하나가 응답을 수백 행으로 부풀린다.
+      _count: { select: { likes: true } },
+      likes: { where: { userId: user.dbUserId }, select: { id: true }, take: 1 },
     },
   });
 
@@ -60,6 +64,8 @@ export async function GET(req: NextRequest, { params }: Params) {
       authorRole: c.user?.role ?? null,
       isNewcomer: isNewcomer(c.user?.membershipDecidedAt ?? null),
       isMine: !!user && c.userId === user.dbUserId,
+      likeCount: c._count.likes,
+      iLiked: c.likes.length > 0,
       // 작성자 본인 · 글쓴이(글 모더레이션) · 운영진+ 가 삭제 가능
       canDelete: !!user && (c.userId === user.dbUserId || postAuthorId === user.dbUserId || isStaff),
       // 수정은 본인 댓글만 — 모더레이션 권한과 분리

@@ -53,6 +53,7 @@ model User {
   prayers             Prayer[]
   prayerIntercessions PrayerIntercession[]
   prayerComments      PrayerComment[]
+  prayerCommentLikes  PrayerCommentLike[]
   announcements       Announcement[]       @relation("AuthoredAnnouncements")
   meetingReviews      ClubMeetingReview[]
   meetingImages       ClubMeetingImage[]   @relation("MeetingImageUploader")
@@ -380,10 +381,27 @@ model PrayerComment {
   user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   parent  PrayerComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies PrayerComment[] @relation("CommentReplies")
+  likes   PrayerCommentLike[]
 
   @@index([prayerId, createdAt])
   @@index([userId])
   @@index([parentId])
+}
+
+// 광장 댓글 좋아요 — 댓글당 유저 1회(토글). 글 공감(PrayerIntercession)의 댓글판.
+// 행의 존재 자체가 "좋아요 눌림"이라 취소는 삭제다(토글 처닝은 API에서 rate limit).
+model PrayerCommentLike {
+  id        String   @id @default(cuid())
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  comment PrayerComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 같은 댓글에 두 번 눌러도 행이 하나뿐이도록 — 동시 요청 경합의 최종 방어선.
+  @@unique([commentId, userId])
+  @@index([commentId])
 }
 
 // 동아리 카드뉴스 이미지 — 개설 시 등록, 순서 보존
