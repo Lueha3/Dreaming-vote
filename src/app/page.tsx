@@ -9,6 +9,18 @@ import { getAuthUser } from "@/lib/auth";
 import { getFeedData } from "@/lib/feed";
 import { NICKNAME_RE } from "@/lib/membership";
 import { hasAtLeast } from "@/lib/roles";
+import { SESSION_TIMEOUT_MESSAGE } from "@/lib/sessionTimeout";
+
+/** 자동 로그아웃 안내 — 랜딩 히어로 위에 한 줄. 다시 이동하면 자연히 사라진다. */
+function SessionTimeoutNotice() {
+  return (
+    <div className="px-4 pt-3" role="status">
+      <p className="glass-card mx-auto max-w-2xl px-4 py-3 text-center text-xs leading-relaxed text-gold-ink">
+        {SESSION_TIMEOUT_MESSAGE}
+      </p>
+    </div>
+  );
+}
 
 // 승인 멤버용 — 피드 데이터를 서버에서 채워 스트리밍(Suspense).
 async function ApprovedFeedSection({ userId }: { userId: string }) {
@@ -46,7 +58,11 @@ function greetingParts(nickname: string | null): { date: string; line: string; e
  *  - 비로그인·미가입·반려·승인대기: 방문자용 쇼케이스 랜딩(스크롤 시연 슬라이드 포함)
  *  - 승인 멤버(운영진 포함): 기존 피드 우선 홈 (콤팩트 히어로 + 활동 피드 스트리밍)
  */
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const user = await getAuthUser();
   const isApprovedMember =
     !!user && (hasAtLeast(user.role, "staff") || user.membershipStatus === "approved");
@@ -57,7 +73,15 @@ export default async function Home() {
       : user.membershipStatus === "pending"
         ? "pending"
         : "apply"; // none · rejected
-    return <HomeShowcase status={status} />;
+    // 자동 로그아웃으로 밀려온 경우(?logout=idle) — 왜 튕겼는지 말해주지 않으면
+    // 그냥 앱이 고장난 걸로 읽힌다.
+    const timedOut = (await searchParams)?.logout === "idle";
+    return (
+      <>
+        {timedOut && <SessionTimeoutNotice />}
+        <HomeShowcase status={status} />
+      </>
+    );
   }
 
   // 승인 후 최초 진입 1회 — 성격유형 고르기(/start)를 첫 화면으로 보여준다.

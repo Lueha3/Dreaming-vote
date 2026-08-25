@@ -56,7 +56,8 @@ export function SessionTimeoutGuard() {
       } catch {
         // 오프라인이어도 화면은 반드시 로그인으로 보낸다 — 다음 요청에서 미들웨어가 마무리한다.
       }
-      window.location.replace("/login?reason=idle");
+      // 미들웨어 만료 처리와 같은 목적지 — 로그인 폼이 아니라 방문자 홈.
+      window.location.replace("/?logout=idle");
     }
 
     function schedule() {
