@@ -39,6 +39,7 @@ ALTER TABLE "IcebreakerPrompt"   ENABLE ROW LEVEL SECURITY;  -- 주간 아이스
 ALTER TABLE "MonthlyRecap"       ENABLE ROW LEVEL SECURITY;  -- 월간 리캡 스냅샷(운영 조회 전용). add_monthly_recap_table 마이그레이션에서 이미 적용됨.
 ALTER TABLE "SupportTicket"      ENABLE ROW LEVEL SECURITY;  -- 고객센터 문의(익명·비밀글 가능). add_support_center_tables 마이그레이션에서 이미 적용됨.
 ALTER TABLE "SupportReply"       ENABLE ROW LEVEL SECURITY;  -- 고객센터 운영진 답글. 〃
+ALTER TABLE "PrayerCommentLike"  ENABLE ROW LEVEL SECURITY;  -- 광장 댓글 좋아요. add_prayer_comment_like 마이그레이션에서 적용됨.
 
 -- 정책은 의도적으로 생성하지 않습니다.
 -- (anon/authenticated 직접 접근 전면 차단; 서비스는 Prisma 소유자 연결로만 동작)
