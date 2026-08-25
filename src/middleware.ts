@@ -28,7 +28,7 @@ export async function middleware(request: NextRequest) {
     now,
   });
 
-  if (verdict.status === "timeout" && !isTimeoutExempt(request.nextUrl.pathname)) {
+  if (verdict.status === "timeout" && !isTimeoutExempt(request)) {
     return timeoutResponse(request);
   }
 
@@ -46,8 +46,13 @@ export async function middleware(request: NextRequest) {
  * 만료 처리에서 빼는 경로. /login으로 보내놓고 거기서 또 만료 판정을 하면 리다이렉트가
  * 맴돈다(응답에서 쿠키를 지우긴 하지만, 그 응답이 도달하기 전 경합을 만들 이유가 없다).
  */
-function isTimeoutExempt(pathname: string): boolean {
-  return pathname === "/login" || pathname.startsWith("/api/auth/");
+function isTimeoutExempt(request: NextRequest): boolean {
+  const { pathname, searchParams } = request.nextUrl;
+  if (pathname === "/login" || pathname.startsWith("/api/auth/")) return true;
+  // 만료 목적지에 이미 도착한 요청은 다시 돌려보내지 않는다. 보통은 만료 응답이 쿠키를
+  // 걷어내므로 다음 요청에서 아예 검사에 안 걸리지만, 쿠키가 남는 예외 상황에서
+  // 홈이 무한히 자기 자신으로 리다이렉트되는 것만은 막아야 한다.
+  return pathname === "/" && searchParams.get("logout") === "idle";
 }
 
 /** 만료 응답 — 인증 쿠키를 전부 걷어내고 로그인 화면(또는 API면 401)으로 보낸다. */
@@ -61,12 +66,12 @@ function timeoutResponse(request: NextRequest) {
       { status: 401 },
     );
   } else {
-    const login = new URL("/login", request.url);
-    login.searchParams.set("reason", "idle");
-    // 재로그인 후 보던 화면으로 되돌려준다. 같은 요청의 내부 경로라 오픈 리다이렉트가 아니다.
-    const back = request.nextUrl.pathname + request.nextUrl.search;
-    if (back !== "/") login.searchParams.set("next", back);
-    response = NextResponse.redirect(login);
+    // 만료되면 로그인 폼이 아니라 방문자 홈(랜딩)으로 보낸다 — 로그아웃된 사람이
+    // 처음 보는 화면은 앱의 첫인상이어야지, 맥락 없는 로그인 폼이면 안 된다.
+    // 보던 경로(next)는 일부러 넘기지 않는다: 홈이 목적지이지 경유지가 아니다.
+    const home = new URL("/", request.url);
+    home.searchParams.set("logout", "idle");
+    response = NextResponse.redirect(home);
   }
 
   for (const cookie of request.cookies.getAll()) {

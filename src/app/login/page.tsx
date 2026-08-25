@@ -4,8 +4,6 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-import { SESSION_TIMEOUT_MESSAGE } from "@/lib/sessionTimeout";
-
 export default function LoginPage() {
   return (
     <Suspense>
@@ -17,8 +15,6 @@ export default function LoginPage() {
 function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/";
-  // 자동 로그아웃으로 밀려온 경우 — 왜 튕겼는지 말해주지 않으면 그냥 고장으로 읽힌다.
-  const timedOut = searchParams.get("reason") === "idle";
 
   return (
     <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4">
@@ -34,15 +30,6 @@ function LoginForm() {
             </Link>
             <p className="mt-3 text-sm text-ink-soft">로그인하고 함께 시작해볼까요?</p>
           </div>
-
-          {timedOut && (
-            <p
-              role="status"
-              className="mb-6 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3 text-xs leading-relaxed text-gold-ink"
-            >
-              {SESSION_TIMEOUT_MESSAGE}
-            </p>
-          )}
 
           {/* Google 로그인 버튼 */}
           <a
