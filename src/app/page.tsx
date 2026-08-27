@@ -11,15 +11,39 @@ import { NICKNAME_RE } from "@/lib/membership";
 import { hasAtLeast } from "@/lib/roles";
 import { SESSION_TIMEOUT_MESSAGE } from "@/lib/sessionTimeout";
 
-/** 자동 로그아웃 안내 — 랜딩 히어로 위에 한 줄. 다시 이동하면 자연히 사라진다. */
-function SessionTimeoutNotice() {
+/**
+ * 자동 로그아웃 안내 — 랜딩 히어로 위에 한 줄. 다시 이동하면 자연히 사라진다.
+ *
+ * next가 있으면 '이어서 보기'를 함께 띄운다. 푸시 알림을 누르고 들어왔다가 만료로
+ * 튕긴 경우가 여기 해당하는데, 이 버튼이 없으면 알림이 가리키던 글로 돌아갈 길이 없다.
+ */
+function SessionTimeoutNotice({ next }: { next: string | null }) {
   return (
     <div className="px-4 pt-3" role="status">
-      <p className="glass-card mx-auto max-w-2xl px-4 py-3 text-center text-xs leading-relaxed text-gold-ink">
-        {SESSION_TIMEOUT_MESSAGE}
-      </p>
+      <div className="glass-card mx-auto flex max-w-2xl flex-col items-center gap-2.5 px-4 py-3 text-center">
+        <p className="text-xs leading-relaxed text-gold-ink">{SESSION_TIMEOUT_MESSAGE}</p>
+        {next && (
+          <a
+            href={`/api/auth/login?next=${encodeURIComponent(next)}`}
+            className="btn-gold rounded-full px-5 py-2 text-xs font-bold"
+          >
+            로그인하고 이어서 보기 →
+          </a>
+        )}
+      </div>
     </div>
   );
+}
+
+/**
+ * 만료 리다이렉트가 붙여준 next를 되돌아갈 경로로 받아들일지 — 내부 절대경로만 허용한다.
+ * 이 값은 결국 /api/auth/login?next=로 흘러가므로, 검사 없이 쓰면 로그인 직후 외부
+ * 사이트로 튕기는 오픈 리다이렉트가 된다(auth/callback의 safeNextPath와 같은 원칙).
+ */
+function safeNext(raw: string | string[] | undefined): string | null {
+  if (typeof raw !== "string" || !raw.startsWith("/")) return null;
+  if (raw.startsWith("//") || raw.startsWith("/\\")) return null;
+  return raw;
 }
 
 // 승인 멤버용 — 피드 데이터를 서버에서 채워 스트리밍(Suspense).
@@ -75,10 +99,11 @@ export default async function Home({
         : "apply"; // none · rejected
     // 자동 로그아웃으로 밀려온 경우(?logout=idle) — 왜 튕겼는지 말해주지 않으면
     // 그냥 앱이 고장난 걸로 읽힌다.
-    const timedOut = (await searchParams)?.logout === "idle";
+    const sp = await searchParams;
+    const timedOut = sp?.logout === "idle";
     return (
       <>
-        {timedOut && <SessionTimeoutNotice />}
+        {timedOut && <SessionTimeoutNotice next={safeNext(sp?.next)} />}
         <HomeShowcase status={status} />
       </>
     );

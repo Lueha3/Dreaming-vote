@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { rateLimitResponse, getClientIp } from "@/lib/rateLimit";
 import {
+  ELEVATED_IDLE_TIMEOUT_MS,
   IDLE_TIMEOUT_MS,
   LAST_ACTIVE_COOKIE,
   SESSION_TIMEOUT_CODE,
@@ -52,11 +53,18 @@ function handle(req: NextRequest, extend: boolean) {
   // 조회(GET)는 시계를 건드리지 않는다. 단, 쿠키가 아예 없던 세션(seed)은 지금을 기준으로
   // 심어줘야 이후 판정이 성립하므로 그때만 쓴다.
   if (verdict.status === "ok" && !extend) {
-    return NextResponse.json({ ok: true, idleDeadline: verdict.idleDeadline });
+    return NextResponse.json({
+      ok: true,
+      idleDeadline: verdict.idleDeadline,
+      elevatedDeadline: verdict.elevatedDeadline,
+    });
   }
 
-  const idleDeadline = now + IDLE_TIMEOUT_MS;
-  const res = NextResponse.json({ ok: true, idleDeadline });
+  const res = NextResponse.json({
+    ok: true,
+    idleDeadline: now + IDLE_TIMEOUT_MS,
+    elevatedDeadline: now + ELEVATED_IDLE_TIMEOUT_MS,
+  });
   res.cookies.set(LAST_ACTIVE_COOKIE, String(now), timestampCookieOptions());
   return res;
 }
