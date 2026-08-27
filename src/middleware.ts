@@ -3,9 +3,12 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import {
   LAST_ACTIVE_COOKIE,
+  REAUTH_REQUIRED_CODE,
+  REAUTH_REQUIRED_MESSAGE,
   SESSION_TIMEOUT_CODE,
   SESSION_TIMEOUT_MESSAGE,
   evaluateSessionTimeout,
+  isElevatedPath,
   timestampCookieOptions,
 } from "@/lib/sessionTimeout";
 
@@ -30,6 +33,16 @@ export async function middleware(request: NextRequest) {
 
   if (verdict.status === "timeout" && !isTimeoutExempt(request)) {
     return timeoutResponse(request);
+  }
+
+  // 운영 화면(PII)은 같은 시계를 30분 기준선에 대어 본다. 세션은 살아 있으므로 끊지 않고,
+  // 구글 재인증만 받아 시계를 되감는다(로그인에 성공하면 콜백이 dv-la를 새로 심는다).
+  if (
+    verdict.status === "ok" &&
+    now >= verdict.elevatedDeadline &&
+    isElevatedPath(request.nextUrl.pathname)
+  ) {
+    return reauthResponse(request);
   }
 
   const response = await refreshSession(request);
@@ -68,9 +81,13 @@ function timeoutResponse(request: NextRequest) {
   } else {
     // 만료되면 로그인 폼이 아니라 방문자 홈(랜딩)으로 보낸다 — 로그아웃된 사람이
     // 처음 보는 화면은 앱의 첫인상이어야지, 맥락 없는 로그인 폼이면 안 된다.
-    // 보던 경로(next)는 일부러 넘기지 않는다: 홈이 목적지이지 경유지가 아니다.
     const home = new URL("/", request.url);
     home.searchParams.set("logout", "idle");
+    // 첫 화면은 홈이되, 어디로 가려던 길이었는지는 기억한다. 이게 없으면 푸시 알림을
+    // 눌러 들어온 사람이 그 글 대신 랜딩만 보고 끝난다(알림 딥링크가 통째로 증발).
+    // 로그인 버튼이 이 값을 이어받아 /api/auth/login?next=... 로 넘긴다.
+    const back = request.nextUrl.pathname + request.nextUrl.search;
+    if (back !== "/") home.searchParams.set("next", back);
     response = NextResponse.redirect(home);
   }
 
@@ -79,6 +96,24 @@ function timeoutResponse(request: NextRequest) {
   }
   response.cookies.set(LAST_ACTIVE_COOKIE, "", { path: "/", maxAge: 0 });
   return response;
+}
+
+/**
+ * 운영 화면 재인증 — 세션은 그대로 두고 구글 로그인만 다시 태운다.
+ * 쿠키를 지우지 않는 게 핵심: 지키려는 건 "PII 화면이 자리 비운 사이 열려 있는 것"이지
+ * 세션 자체가 아니므로, 재인증만 통과하면 일반 화면은 끊김 없이 이어진다.
+ * (/api/auth/login은 prompt=select_account라 계정 선택이 실제 재인증으로 작동한다.)
+ */
+function reauthResponse(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.json(
+      { ok: false, code: REAUTH_REQUIRED_CODE, error: REAUTH_REQUIRED_MESSAGE },
+      { status: 401 },
+    );
+  }
+  const login = new URL("/api/auth/login", request.url);
+  login.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
+  return NextResponse.redirect(login);
 }
 
 async function refreshSession(request: NextRequest) {

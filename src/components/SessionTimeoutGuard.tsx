@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
-import { SESSION_TIMEOUT_CODE } from "@/lib/sessionTimeout";
+import { REAUTH_REQUIRED_CODE, SESSION_TIMEOUT_CODE, isElevatedPath } from "@/lib/sessionTimeout";
 
 /**
  * 자동 로그아웃의 클라이언트 절반 — 서버(미들웨어)는 '요청이 올 때' 끊지만, 그것만으로는
@@ -38,6 +38,7 @@ export function SessionTimeoutGuard() {
   // 로그인/로그아웃 직후 상태 변화를 알아채기 위해 경로 변화마다 다시 판정한다(탭바와 같은 방식).
   const pathname = usePathname();
   const deadlineRef = useRef(Number.POSITIVE_INFINITY);
+  const elevatedDeadlineRef = useRef(Number.POSITIVE_INFINITY);
   const lastSentRef = useRef(0);
   const loggingOutRef = useRef(false);
 
@@ -46,6 +47,11 @@ export function SessionTimeoutGuard() {
 
     let disposed = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    // 운영 화면(PII)은 30분 기준을 함께 본다 — 이 판정은 경로에 따라 달라지므로 매 실행마다 고정.
+    const elevated = isElevatedPath(window.location.pathname);
+    // 해시(#글ID)까지 포함 — 서버 리다이렉트는 해시를 볼 수 없지만(브라우저가 서버로 안 보냄)
+    // 클라이언트에서는 알 수 있으므로, 여기서만이라도 알림이 가리키던 글 위치를 지켜준다.
+    const here = () => window.location.pathname + window.location.search + window.location.hash;
 
     async function forceLogout() {
       if (loggingOutRef.current) return;
@@ -57,21 +63,36 @@ export function SessionTimeoutGuard() {
         // 오프라인이어도 화면은 반드시 로그인으로 보낸다 — 다음 요청에서 미들웨어가 마무리한다.
       }
       // 미들웨어 만료 처리와 같은 목적지 — 로그인 폼이 아니라 방문자 홈.
-      window.location.replace("/?logout=idle");
+      // 보던 경로는 next로 남겨, 재로그인하면 그 화면으로 돌아오게 한다.
+      const back = here();
+      const q = back === "/" ? "" : `&next=${encodeURIComponent(back)}`;
+      window.location.replace(`/?logout=idle${q}`);
+    }
+
+    /** 운영 화면 재인증 — 세션은 살아 있으므로 로그아웃시키지 않고 구글 로그인만 다시 태운다. */
+    function reauth() {
+      if (loggingOutRef.current) return;
+      loggingOutRef.current = true; // 이후 타이머·요청을 모두 멈추는 용도(로그아웃과 동일)
+      window.location.assign(`/api/auth/login?next=${encodeURIComponent(here())}`);
     }
 
     function schedule() {
       if (disposed || loggingOutRef.current) return;
-      if (!Number.isFinite(deadlineRef.current)) return;
-      const wait = Math.min(MAX_TIMER_MS, Math.max(1_000, deadlineRef.current - Date.now()));
+      const next = elevated
+        ? Math.min(deadlineRef.current, elevatedDeadlineRef.current)
+        : deadlineRef.current;
+      if (!Number.isFinite(next)) return;
+      const wait = Math.min(MAX_TIMER_MS, Math.max(1_000, next - Date.now()));
       clearTimeout(timer);
       timer = setTimeout(check, wait);
     }
 
     function check() {
       if (disposed || loggingOutRef.current) return;
-      if (Date.now() >= deadlineRef.current) void forceLogout();
-      else schedule();
+      const now = Date.now();
+      if (now >= deadlineRef.current) return void forceLogout();
+      if (elevated && now >= elevatedDeadlineRef.current) return void reauth();
+      schedule();
     }
 
     /** extend=true면 "사용자가 조작했다"는 신호(POST), false면 남은 시간만 읽는다(GET). */
@@ -89,9 +110,16 @@ export function SessionTimeoutGuard() {
           void forceLogout();
           return;
         }
+        if (res.status === 401 && data?.code === REAUTH_REQUIRED_CODE) {
+          reauth();
+          return;
+        }
         if (!data?.ok || typeof data.idleDeadline !== "number") return;
 
         deadlineRef.current = data.idleDeadline;
+        if (typeof data.elevatedDeadline === "number") {
+          elevatedDeadlineRef.current = data.elevatedDeadline;
+        }
         check();
       } catch {
         // 네트워크 실패 — 이미 받아둔 만료 시각은 그대로 유효하므로 타이머만 유지한다.
@@ -102,7 +130,7 @@ export function SessionTimeoutGuard() {
       if (disposed || loggingOutRef.current) return;
       const now = Date.now();
       // 이미 만료된 뒤의 조작은 되감기 신호가 아니라 만료 확인 신호다.
-      if (now >= deadlineRef.current) {
+      if (now >= deadlineRef.current || (elevated && now >= elevatedDeadlineRef.current)) {
         check();
         return;
       }
