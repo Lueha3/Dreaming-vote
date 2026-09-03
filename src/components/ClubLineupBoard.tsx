@@ -79,7 +79,7 @@ export function ClubLineupBoard({
                     {roleBadge(r)?.emoji}
                   </span>
                 ))}
-                <span className="truncate">{m.nickname ?? "익명"}</span>
+                <span className="truncate">{m.nickname ?? "탈퇴한 멤버"}</span>
               </div>
             </button>
           );
