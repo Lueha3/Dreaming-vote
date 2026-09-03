@@ -102,7 +102,11 @@ export async function GET(req: NextRequest) {
     // 수정은 본인 글만 — 운영진도 타인 글 내용은 못 고침
     canEdit: !!user && p.userId === user.dbUserId,
     authorId: p.isAnonymous ? null : p.userId,
-    authorName: p.isAnonymous ? "익명" : p.user?.nickname ?? "익명",
+    // 닉네임이 없는 건 '익명으로 올린 글'이 아니라 '작성자가 탈퇴한 글'이다(탈퇴 시 nickname을 비운다).
+    // 둘을 같은 '익명'으로 뭉뚱그리면, 실명으로 쓴 글이 익명 글처럼 보인다 —
+    // 새가족 환영 카드(systemType: welcome)는 본인 명의로 올라가므로 탈퇴 즉시 이 오해가 생겼다.
+    // 댓글·고객센터 라우트는 이미 '탈퇴한 멤버'로 구분하고 있어 표기도 그쪽에 맞춘다.
+    authorName: p.isAnonymous ? "익명" : p.user?.nickname ?? "탈퇴한 멤버",
     authorAvatar: p.isAnonymous ? null : p.user?.avatarUrl ?? null,
     // 익명 글은 작성자 배지도 숨긴다(관리자/운영진 신원 노출 방지)
     authorRole: p.isAnonymous ? null : p.user?.role ?? null,
