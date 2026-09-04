@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>굴다리 — 소형 무대 프로토타입</title>
+<style>
+  :root {
+    --mint: #7ff0d4; --amber: #ffb45f; --ink: #0a0e18;
+    --panel: rgba(12, 16, 28, 0.82);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; background: var(--ink); font-family: 'Apple SD Gothic Neo', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif; color: #eef2f8; }
+  #scene { position: fixed; inset: 0; }
+  #scene canvas { display: block; }
+
+  /* 입장 오버레이 */
+  #entryOverlay {
+    position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 18px; text-align: center;
+    background: radial-gradient(ellipse at 50% 60%, rgba(20,28,48,0.88), rgba(6,8,14,0.97));
+    transition: opacity 0.8s, visibility 0.8s;
+  }
+  #entryOverlay.hide { opacity: 0; visibility: hidden; }
+  .logo { font-size: 52px; font-weight: 800; letter-spacing: 0.12em; color: var(--mint); text-shadow: 0 0 24px rgba(127,240,212,0.55); }
+  .logo small { display: block; font-size: 13px; letter-spacing: 0.5em; color: #9fb2c8; margin-top: 6px; font-weight: 500; }
+  .mission { font-size: 15px; color: #c7d3e2; line-height: 1.7; }
+  .mission b { color: #fff; }
+  .ticket {
+    margin-top: 6px; padding: 14px 26px; border: 1px dashed rgba(255,255,255,0.25); border-radius: 12px;
+    font-size: 14px; color: #d8e0ec; background: rgba(255,255,255,0.03);
+  }
+  .ticket b { color: var(--amber); }
+  #enterBtn {
+    margin-top: 10px; padding: 14px 46px; font-size: 17px; font-weight: 700; color: #06231b;
+    background: var(--mint); border: none; border-radius: 999px; cursor: pointer;
+    box-shadow: 0 0 28px rgba(127,240,212,0.45); transition: transform 0.15s;
+  }
+  #enterBtn:hover { transform: scale(1.05); }
+  .hint { font-size: 12px; color: #7686a0; }
+
+  /* HUD */
+  #hud { position: fixed; inset: 0; z-index: 20; pointer-events: none; opacity: 0; transition: opacity 0.8s; }
+  #hud.show { opacity: 1; }
+  .card {
+    position: absolute; top: 16px; left: 16px; background: var(--panel); border-radius: 14px;
+    padding: 12px 16px; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08);
+  }
+  .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ff5964; margin-right: 6px; animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .card .artist { font-size: 16px; font-weight: 700; }
+  .card .song { font-size: 13px; color: #b9c6d8; margin-top: 3px; }
+  .card .place { font-size: 12px; color: #8aa; margin-top: 5px; }
+  #phaseLabel { font-size: 11px; font-weight: 700; color: #ff8f97; letter-spacing: 0.08em; }
+
+  .wallet {
+    position: absolute; top: 16px; right: 16px; background: var(--panel); border-radius: 14px;
+    padding: 12px 18px; text-align: right; border: 1px solid rgba(255,255,255,0.08);
+  }
+  .wallet b { font-size: 18px; color: var(--amber); }
+  .wallet span { font-size: 11px; color: #9aa8bc; display: block; margin-top: 2px; }
+
+  /* 앙코르 게이지 */
+  #gaugeWrap {
+    position: absolute; left: 50%; transform: translateX(-50%); bottom: 96px; width: min(420px, 72vw);
+    background: var(--panel); border-radius: 999px; padding: 8px 14px; border: 1px solid rgba(255,255,255,0.08);
+  }
+  #gaugeWrap .lbl { font-size: 11px; color: #a8b6c9; margin-bottom: 5px; display: flex; justify-content: space-between; }
+  .gauge-track { height: 8px; border-radius: 99px; background: rgba(255,255,255,0.1); overflow: hidden; }
+  #gaugeFill { height: 100%; width: 0%; border-radius: 99px; background: linear-gradient(90deg, var(--mint), #ffd76e); transition: width 0.4s; }
+
+  /* 하단 버튼 */
+  .actions {
+    position: absolute; left: 50%; transform: translateX(-50%); bottom: 22px; display: flex; gap: 10px;
+    pointer-events: auto;
+  }
+  .actions button {
+    padding: 12px 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14);
+    background: var(--panel); color: #eef2f8; font-size: 14px; font-weight: 600; cursor: pointer;
+    backdrop-filter: blur(8px); transition: transform 0.12s, background 0.2s;
+  }
+  .actions button:hover { transform: translateY(-2px); }
+  .actions button.on { background: rgba(127,240,212,0.22); border-color: var(--mint); color: var(--mint); }
+
+  /* 토스트 */
+  #toastWrap { position: absolute; top: 84px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; align-items: center; width: 100%; pointer-events: none; }
+  .toast {
+    background: var(--panel); border: 1px solid rgba(255,255,255,0.1); color: #e8eef7;
+    padding: 10px 20px; border-radius: 999px; font-size: 13.5px; opacity: 0; transform: translateY(-8px);
+    transition: opacity 0.35s, transform 0.35s; max-width: 86vw; text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* 별점 패널 */
+  #ratingPanel {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -46%) scale(0.96); z-index: 25;
+    background: var(--panel); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px;
+    padding: 26px 34px; text-align: center; opacity: 0; visibility: hidden;
+    transition: all 0.4s; backdrop-filter: blur(12px); pointer-events: auto;
+  }
+  #ratingPanel.show { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+  #ratingPanel h3 { font-size: 18px; margin-bottom: 4px; }
+  #ratingPanel p { font-size: 12.5px; color: #9db0c6; margin-bottom: 14px; }
+  #ratingPanel .stars { display: flex; gap: 8px; justify-content: center; }
+  #ratingPanel .star { font-size: 34px; background: none; border: none; cursor: pointer; filter: grayscale(1) brightness(0.7); transition: filter 0.15s, transform 0.15s; }
+  #ratingPanel .star.lit { filter: none; transform: scale(1.12); }
+
+  /* 종료 오버레이 */
+  #endOverlay {
+    position: fixed; inset: 0; z-index: 28; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+    background: rgba(6, 9, 16, 0.86); opacity: 0; visibility: hidden; transition: all 0.7s; text-align: center; backdrop-filter: blur(6px);
+  }
+  #endOverlay.show { opacity: 1; visibility: visible; }
+  #endOverlay h2 { font-size: 26px; }
+  #endOverlay h2 em { color: var(--mint); font-style: normal; }
+  #endStats { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  .stat { background: var(--panel); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 16px 22px; min-width: 108px; }
+  .stat b { font-size: 22px; color: var(--amber); display: block; }
+  .stat span { font-size: 11.5px; color: #9db0c6; line-height: 1.5; display: block; margin-top: 6px; }
+  #endOverlay .next { font-size: 13px; color: #b9c6d8; line-height: 1.8; }
+  #againBtn { padding: 12px 36px; font-size: 15px; font-weight: 700; color: #06231b; background: var(--mint); border: none; border-radius: 999px; cursor: pointer; }
+
+  /* ---------- 스튜디오 ---------- */
+  #studioOpenBtn {
+    margin-top: 2px; padding: 12px 34px; font-size: 15px; font-weight: 600; color: #dff6ee;
+    background: rgba(127,240,212,0.09); border: 1px solid rgba(127,240,212,0.42); border-radius: 999px; cursor: pointer;
+    transition: background 0.2s;
+  }
+  #studioOpenBtn:hover { background: rgba(127,240,212,0.18); }
+  #studio {
+    position: fixed; inset: 0; z-index: 40; overflow-y: auto; padding: 28px 20px 60px;
+    background: linear-gradient(180deg, #080c15 0%, #0b1220 100%);
+    opacity: 0; visibility: hidden; transition: opacity 0.4s, visibility 0.4s;
+  }
+  #studio.show { opacity: 1; visibility: visible; }
+  .st-wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+  .st-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .st-head h2 { font-size: 21px; letter-spacing: -0.01em; }
+  .st-head h2 span { color: var(--mint); }
+  .st-head p { font-size: 12.5px; color: #8fa0b6; margin-top: 5px; line-height: 1.6; }
+  #studioCloseBtn { background: none; border: 1px solid rgba(255,255,255,0.18); color: #b9c6d8; border-radius: 999px; padding: 7px 14px; font-size: 13px; cursor: pointer; flex-shrink: 0; }
+  .st-panel { background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.09); border-radius: 18px; padding: 20px; }
+  .st-panel > h3 { font-size: 14px; color: #cfdcec; margin-bottom: 4px; }
+  .st-panel > .sub { font-size: 12px; color: #7f90a6; margin-bottom: 14px; line-height: 1.6; }
+
+  #dropzone {
+    border: 1.5px dashed rgba(127,240,212,0.4); border-radius: 14px; padding: 30px 20px; text-align: center;
+    cursor: pointer; transition: background 0.2s, border-color 0.2s;
+  }
+  #dropzone:hover, #dropzone.over { background: rgba(127,240,212,0.07); border-color: var(--mint); }
+  #dropzone.disabled { opacity: 0.4; pointer-events: none; }
+  #dropzone .dz-big { font-size: 15px; font-weight: 600; color: #e6eef8; }
+  #dropzone .dz-sub { font-size: 12px; color: #8698ae; margin-top: 6px; }
+  .st-or { display: flex; align-items: center; gap: 12px; margin: 14px 0 0; color: #64758c; font-size: 11.5px; }
+  .st-or::before, .st-or::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.09); }
+  #demoBtn { width: 100%; margin-top: 12px; padding: 11px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.13); color: #d3dfec; font-size: 13.5px; cursor: pointer; }
+  #demoBtn:hover { background: rgba(255,255,255,0.09); }
+
+  #analyzing { display: none; align-items: center; gap: 11px; font-size: 13.5px; color: #b6c6da; padding: 16px 4px 2px; }
+  #analyzing.show { display: flex; }
+  .spinner { width: 15px; height: 15px; border: 2px solid rgba(127,240,212,0.25); border-top-color: var(--mint); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2s; } }
+
+  #songCard { display: none; }
+  #songCard.show { display: block; }
+  #songCard.approved .rights,
+  #songCard.approved #reviewBtn,
+  #songCard.approved #reviewSteps,
+  #songCard.approved > .sub { display: none; }
+  #songCard.approved #titleInput { pointer-events: none; opacity: 0.75; }
+  #waveCanvas { width: 100%; height: 78px; display: block; border-radius: 9px; background: rgba(0,0,0,0.28); }
+  #titleInput {
+    width: 100%; margin-top: 14px; padding: 11px 13px; border-radius: 10px; font-size: 15px; font-weight: 600;
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.14); color: #eef2f8;
+  }
+  #titleInput:focus, select:focus, input[type="text"]:focus { outline: 2px solid rgba(127,240,212,0.6); outline-offset: 1px; }
+  .meta-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .meta-row span { font-size: 11.5px; color: #a7b8cd; background: rgba(255,255,255,0.06); border-radius: 999px; padding: 5px 11px; font-variant-numeric: tabular-nums; }
+  #cuePreview { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .cue-title { font-size: 11.5px; color: #8fa0b6; margin-right: 2px; }
+  .cue-chip { font-size: 11px; border-radius: 6px; padding: 4px 9px; background: rgba(255,255,255,0.07); }
+  .cue-flare { color: #ffb45f; } .cue-color { color: #8fb8ff; } .cue-singalong { color: #ff9dbb; } .cue-dim { color: #94a3b8; }
+
+  .rights { margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 11px; }
+  .rights label { display: flex; gap: 9px; align-items: flex-start; font-size: 13px; color: #ccd8e6; line-height: 1.55; cursor: pointer; }
+  .rights input[type="checkbox"] { margin-top: 2px; width: 16px; height: 16px; accent-color: #7ff0d4; flex-shrink: 0; }
+  .rights .ai-row { display: flex; gap: 9px; align-items: center; font-size: 13px; color: #ccd8e6; flex-wrap: wrap; }
+  .rights select, .rights input[type="text"] {
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.14); color: #eef2f8;
+    border-radius: 8px; padding: 8px 10px; font-size: 13px;
+  }
+  #aiToolWrap { display: none; gap: 8px; align-items: center; }
+  #reviewBtn {
+    margin-top: 16px; width: 100%; padding: 13px; border-radius: 11px; border: none; cursor: pointer;
+    background: var(--mint); color: #06231b; font-size: 15px; font-weight: 700;
+  }
+  #reviewBtn:disabled { background: rgba(255,255,255,0.09); color: #6b7c92; cursor: not-allowed; }
+
+  #reviewSteps { display: flex; flex-direction: column; gap: 9px; margin-top: 14px; }
+  .rv-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: #9db0c6; }
+  .rv-ico { width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0; border: 2px solid rgba(127,240,212,0.3); }
+  .rv-row.running .rv-ico { border-top-color: var(--mint); animation: spin 0.8s linear infinite; }
+  .rv-row.done .rv-ico { border-color: var(--mint); background: var(--mint); }
+  .rv-row.done .rv-label { color: #dce6f2; }
+  .rv-note { font-size: 11.5px; color: #7f90a6; margin-left: auto; text-align: right; }
+  .rv-result { display: none; margin-top: 16px; padding: 15px 17px; border-radius: 13px; font-size: 13px; line-height: 1.65; }
+  .rv-result.show { display: block; }
+  .rv-result.ok { background: rgba(127,240,212,0.09); border: 1px solid rgba(127,240,212,0.32); }
+  .rv-result.warn { background: rgba(255,180,95,0.09); border: 1px solid rgba(255,180,95,0.35); }
+  .rv-result b { display: block; margin-bottom: 5px; font-size: 14px; color: #fff; }
+  .rv-result p { color: #c2d0e0; }
+  .rv-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .rv-actions .ghost { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.16); color: #d5e0ee; border-radius: 8px; padding: 7px 13px; font-size: 12px; cursor: pointer; }
+  .ai-badge { font-size: 10px; background: rgba(143,184,255,0.2); color: #a9c7ff; border-radius: 5px; padding: 2px 6px; vertical-align: middle; }
+
+  #setlistWrap { display: none; }
+  #setlistWrap.show { display: block; }
+  .sl-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .sl-head h3 { font-size: 14px; color: #cfdcec; }
+  #setlistCount { font-size: 12px; color: var(--mint); background: rgba(127,240,212,0.12); border-radius: 999px; padding: 4px 11px; font-variant-numeric: tabular-nums; }
+  #setlistCount.full { color: #ffb45f; background: rgba(255,180,95,0.14); }
+  #setlistTime { font-size: 11.5px; color: #7f90a6; margin-left: auto; font-variant-numeric: tabular-nums; }
+  #setlistItems { display: flex; flex-direction: column; gap: 7px; }
+  .sl-row { display: flex; align-items: center; gap: 11px; background: rgba(255,255,255,0.045); border-radius: 10px; padding: 10px 13px; }
+  .sl-no { font-size: 12px; color: var(--mint); width: 18px; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .sl-title { font-size: 13.5px; color: #e6eef8; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sl-meta { font-size: 11px; color: #7f90a6; margin-left: auto; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .sl-ctl { display: flex; gap: 3px; flex-shrink: 0; }
+  .sl-ctl button { background: rgba(255,255,255,0.07); border: none; color: #a8b8cb; width: 25px; height: 25px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  .sl-ctl button:hover { background: rgba(255,255,255,0.15); color: #fff; }
+  .sl-actions { display: flex; gap: 9px; margin-top: 16px; }
+  #addMoreBtn { flex: 1; padding: 12px; border-radius: 11px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); color: #d5e0ee; font-size: 14px; cursor: pointer; }
+  #goStageBtn { flex: 1.4; padding: 12px; border-radius: 11px; border: none; background: var(--mint); color: #06231b; font-size: 15px; font-weight: 700; cursor: pointer; }
+  #goStageBtn:disabled, #addMoreBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .st-foot { font-size: 11.5px; color: #64758c; line-height: 1.7; text-align: center; }
+
+  /* HUD 곡 진행 */
+  .song-prog { height: 3px; border-radius: 99px; background: rgba(255,255,255,0.13); margin-top: 8px; overflow: hidden; }
+  #songProgress { height: 100%; width: 0%; background: var(--mint); }
+  #songIndex { font-size: 11px; color: #8aa; margin-top: 5px; display: block; font-variant-numeric: tabular-nums; }
+
+  @media (max-width: 620px) {
+    .actions { flex-wrap: wrap; justify-content: center; max-width: 94vw; }
+    .actions button { font-size: 13px; padding: 10px 14px; }
+    .rv-note { display: none; }
+  }
+
+  /* ---------- 멀티플레이 ---------- */
+  .mp-join { display: flex; align-items: center; gap: 9px; margin-top: 4px; font-size: 12.5px; color: #9db0c6; }
+  .mp-join input {
+    width: 150px; padding: 7px 10px; border-radius: 8px; background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.16); color: #eef2f8; font-size: 13px;
+  }
+  .mp-status { font-size: 11.5px; color: #7f90a6; }
+  .mp-status.wait { color: #ffb45f; }
+  .mp-status.on { color: var(--mint); }
+  .mp-status.off { color: #94a3b8; }
+  #mpPanel { display: none; }
+  #mpPanel.show { display: block; }
+  .mp-title { font-size: 12.5px; color: #cfdcec; margin-bottom: 7px; }
+  .mp-title b { color: var(--mint); }
+  .mp-list { display: flex; flex-direction: column; gap: 5px; max-width: 160px; }
+  .mp-chip { font-size: 11.5px; color: #d8e2ee; background: rgba(127,240,212,0.1); border-radius: 999px; padding: 4px 10px; }
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<!-- 입장 -->
+<div id="entryOverlay">
+  <div class="logo">굴다리<small>GULDARI</small></div>
+  <div class="mission">음악을 만드는 일은 쉬워졌지만, 들려주는 일은 더 어려워졌습니다.<br><b>무대는 작아도, 박수는 진짜입니다.</b></div>
+  <div class="ticket">🎫 오늘 밤 21:40 · <b>굴다리 아래</b> · 미도(MIDO) 첫 공연 — 자작곡 ‘유성우’</div>
+  <button id="enterBtn">관객으로 입장하기</button>
+  <button id="studioOpenBtn">🎤 내 곡으로 데뷔하기 — 스튜디오</button>
+  <div class="mp-join">
+    <span>닉네임</span>
+    <input type="text" id="mpNick" maxlength="16">
+    <span id="mpStatus" class="mp-status">서버 연결은 입장 시 시도됩니다</span>
+  </div>
+  <div class="hint">🔊 사운드가 재생됩니다 · 드래그로 주변을 둘러보세요 · 웹 프로토타입 목업</div>
+</div>
+
+<!-- 스튜디오: 업로드 → 검수 → 셋리스트 → 무대 -->
+<div id="studio">
+  <div class="st-wrap">
+    <div class="st-head">
+      <div>
+        <h2>스튜디오 — <span>데뷔 예약</span></h2>
+        <p>Suno에 잠든 곡, 컴퓨터에 묻힌 데모. 파일 하나면 오늘 밤 굴다리 무대에 섭니다.</p>
+      </div>
+      <button id="studioCloseBtn">닫기</button>
+    </div>
+
+    <div class="st-panel">
+      <h3>1. 곡 올리기</h3>
+      <div class="sub">mp3 · wav · m4a — 파일은 이 브라우저 밖으로 나가지 않습니다(프로토타입)</div>
+      <div id="dropzone">
+        <div class="dz-big">🎵 곡 파일을 여기에 놓거나 클릭해 선택하세요</div>
+        <div class="dz-sub">업로드하면 파형·BPM·라우드니스를 분석하고 연출을 자동으로 짭니다</div>
+      </div>
+      <input type="file" id="fileInput" accept="audio/*" hidden>
+      <div class="st-or">또는</div>
+      <button id="demoBtn">가진 파일이 없다면 — 데모 곡으로 전체 흐름 체험하기</button>
+      <div id="analyzing"><span class="spinner"></span><span>곡을 분석하고 연출을 짜는 중…</span></div>
+    </div>
+
+    <div class="st-panel" id="songCard">
+      <h3>2. 곡 정보와 권리 확인</h3>
+      <div class="sub">플랫폼이 대신 책임지지 않습니다 — 업로더 본인이 권리를 보증하는 구조입니다</div>
+      <canvas id="waveCanvas"></canvas>
+      <input type="text" id="titleInput" placeholder="곡 제목" maxlength="40">
+      <div class="meta-row">
+        <span id="metaBpm"></span><span id="metaLen"></span><span id="metaLoud"></span>
+      </div>
+      <div id="cuePreview"></div>
+
+      <div class="rights">
+        <label><input type="checkbox" id="chkOwn"> 이 곡은 제가 직접 만들었거나, 상업적 이용 권리를 가지고 있습니다</label>
+        <label><input type="checkbox" id="chkThird"> 타인의 곡을 복제·커버하지 않았고, 제3자 권리를 침해하지 않습니다</label>
+        <div class="ai-row">
+          <span>AI 사용 여부</span>
+          <select id="aiUse">
+            <option value="none">사용 안 함 — 직접 작사·작곡</option>
+            <option value="partial">일부 사용 (편곡·보조)</option>
+            <option value="full">AI 생성곡</option>
+          </select>
+          <span id="aiToolWrap"><input type="text" id="aiTool" placeholder="사용 툴 (예: Suno Pro)"></span>
+        </div>
+      </div>
+      <button id="reviewBtn" disabled>검수 요청하기</button>
+      <div id="reviewSteps"></div>
+      <div id="reviewResult" class="rv-result"></div>
+    </div>
+
+    <div class="st-panel" id="setlistWrap">
+      <div class="sl-head">
+        <h3>3. 셋리스트</h3>
+        <span id="setlistCount">0 / 15곡</span>
+        <span id="setlistTime"></span>
+      </div>
+      <div id="setlistItems"></div>
+      <div class="sl-actions">
+        <button id="addMoreBtn">곡 더 올리기</button>
+        <button id="goStageBtn" disabled>🌉 무대에 오르기</button>
+      </div>
+    </div>
+
+    <div class="st-foot">
+      검수 단계는 시뮬레이션입니다 — 실제 제품에서는 ACRCloud 핑거프린트·커버 인식·AI 판별 API가 이 자리에 들어갑니다.<br>
+      파형 분석·BPM 감지·연출 자동 생성·터널 리버브 재생은 실제로 동작합니다.
+    </div>
+  </div>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="card">
+    <div><span class="live-dot"></span><span id="phaseLabel">LIVE</span></div>
+    <div class="artist" id="artistName">미도 <span style="font-weight:400;color:#8aa">MIDO</span></div>
+    <div class="song" id="songTitle">‘유성우’ — 직접 만든 첫 곡</div>
+    <div class="place">🌉 굴다리 아래 · 관객 <b id="audVal">9</b>명</div>
+    <div class="song-prog"><div id="songProgress"></div></div>
+    <span id="songIndex">1 / 1곡</span>
+  </div>
+  <div class="wallet"><b id="spVal">120</b> SP<span>관람·평가로 모으는 무료 재화</span></div>
+
+  <div class="card" id="mpPanel" style="top:auto; bottom:16px; left:16px;">
+    <div class="mp-title">🧑‍🤝‍🧑 함께 보는 사람 <b id="mpCount">0</b>명</div>
+    <div id="mpList" class="mp-list"></div>
+  </div>
+
+  <div id="gaugeWrap">
+    <div class="lbl"><span>앙코르 게이지</span><span>박수·플래시·동전으로 채워요</span></div>
+    <div class="gauge-track"><div id="gaugeFill"></div></div>
+  </div>
+
+  <div class="actions">
+    <button id="clapBtn">👏 박수</button>
+    <button id="flashBtn">🔦 플래시</button>
+    <button id="coinBtn">🪙 동전 던지기 <span style="opacity:0.65">-5 SP</span></button>
+    <button id="reverbBtn" class="on">🌉 터널 리버브 ON</button>
+  </div>
+
+  <div id="toastWrap"></div>
+</div>
+
+<!-- 별점 -->
+<div id="ratingPanel">
+  <h3>오늘 무대, 어땠나요?</h3>
+  <p>리워드는 별점 값과 무관하게 관람 완료 기준으로 지급됩니다</p>
+  <div class="stars">
+    <button class="star" data-v="1">⭐</button>
+    <button class="star" data-v="2">⭐</button>
+    <button class="star" data-v="3">⭐</button>
+    <button class="star" data-v="4">⭐</button>
+    <button class="star" data-v="5">⭐</button>
+  </div>
+</div>
+
+<!-- 종료 -->
+<div id="endOverlay">
+  <h2>오늘, 한 곡이 <em>처음으로 관객</em>을 만났습니다</h2>
+  <div id="endStats"></div>
+  <div class="next" id="endNext">미도의 다음 목표 — <b>동네 스팟 · 옥상 루프탑 (800 SP)</b><br>당신의 다음 목표 — 계속 모으면 <b>당신도 이 무대에 설 수 있어요</b></div>
+  <button id="againBtn">다시 입장하기</button>
+</div>
+
+<script src="./three.min.js"></script>
+<script src="./colyseus.js"></script>
+<script src="./app.js"></script>
+<script src="./studio.js"></script>
+<script src="./multiplayer.js"></script>
+</body>
+</html>

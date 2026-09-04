@@ -1,0 +1,17 @@
+{
+  "name": "guldari-room-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "굴다리 소형 무대 룸 서버 — 로컬 개발/시연용 Colyseus 서버",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@colyseus/schema": "3.0.76",
+    "colyseus": "0.16.5",
+    "cors": "^2.8.6",
+    "express": "^4.22.2"
+  }
+}
