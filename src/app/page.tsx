@@ -10,6 +10,7 @@ import { getFeedData } from "@/lib/feed";
 import { NICKNAME_RE } from "@/lib/membership";
 import { hasAtLeast } from "@/lib/roles";
 import { SESSION_TIMEOUT_MESSAGE } from "@/lib/sessionTimeout";
+import { FEATURES } from "@/lib/features";
 
 /**
  * 자동 로그아웃 안내 — 랜딩 히어로 위에 한 줄. 다시 이동하면 자연히 사라진다.
@@ -112,7 +113,8 @@ export default async function Home({
   // 승인 후 최초 진입 1회 — 성격유형 고르기(/start)를 첫 화면으로 보여준다.
   // 표시 완료 기록은 /start가 실제 마운트될 때 클라이언트가 남긴다(StartWelcome).
   // 여기(RSC)에서 기록하면 링크 프리페치 렌더가 플래그를 소모해 실제 화면 노출 없이 끝나버린다.
-  if (!user.startPromptSeenAt) {
+  // 성격유형 기능이 꺼져 있으면 /start 자체가 막혀 있으므로 보내지 않는다(홈이 바로 첫 화면).
+  if (FEATURES.archetype && !user.startPromptSeenAt) {
     redirect("/start?welcome=1");
   }
 

@@ -13,10 +13,10 @@ import { STARTUP_IMAGES, startupImageMedia, startupImageUrl } from "@/lib/startu
 export const metadata: Metadata = {
   title: "동아리드림 — 꿈꾸는교회 청년부",
   description:
-    "새 소식, 모임, 기도제목, 생일까지. 우리 청년부 이야기가 매일 여기 올라와요.",
+    "동아리, 모임, 새 소식까지. 우리 청년부 이야기가 여기 모여요.",
   openGraph: {
     title: "오늘의, 청년부 — 동아리드림",
-    description: "새 소식, 모임, 기도제목, 생일까지. 우리 청년부 이야기가 매일 여기 올라와요.",
+    description: "동아리, 모임, 새 소식까지. 우리 청년부 이야기가 여기 모여요.",
     siteName: "동아리드림",
   },
   // iOS "홈 화면에 추가" 시 아이콘 아래 표시되는 이름 — 미설정 시 <title>이 길게 잘려 노출됨.

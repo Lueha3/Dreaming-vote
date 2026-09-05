@@ -34,11 +34,6 @@ const ICON: Record<string, string> = {
   admin_member_withdrawn: "🚪",
   admin_club_created: "🏛️",
   admin_content_reported: "🚨",
-  buddy_request: "🤝",
-  buddy_accepted: "🤝",
-  buddy_ended: "🫂",
-  buddy_assigned: "🤝",
-  buddy_matched: "🤝",
   admin_support_ticket_created: "🎧",
   support_reply: "🎧",
 };
