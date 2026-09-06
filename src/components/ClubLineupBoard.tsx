@@ -94,7 +94,9 @@ export function ClubLineupBoard({
                   </div>
                 </>
               ) : (
-                <div className="mt-1 truncate text-[12px] font-bold text-ink">{m.nickname ?? "탈퇴한 멤버"}</div>
+                <div className="mt-1 break-words text-[11px] font-bold leading-tight text-ink [overflow-wrap:anywhere]">
+                  {m.nickname ?? "탈퇴한 멤버"}
+                </div>
               )}
               <div className="mt-1 flex items-center justify-center gap-0.5 truncate text-[9.5px] text-ink-soft">
                 {displayRoles(m.role, { isClubLeader: m.isOwner }).map((r) => (
