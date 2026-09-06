@@ -27,9 +27,6 @@ export async function withdrawUser(userId: string): Promise<void> {
     prisma.pushSubscription.deleteMany({ where: { userId } }),
     prisma.notification.deleteMany({ where: { userId } }),
     prisma.clubRecommendation.deleteMany({ where: { userId } }),
-    prisma.buddyMatch.deleteMany({
-      where: { OR: [{ requesterId: userId }, { recipientId: userId }] },
-    }),
 
     // 소유 동아리 비공개 처리 (탈퇴자 동아리 자동 숨김)
     prisma.club.updateMany({ where: { ownerUserId: userId }, data: { isActive: false } }),

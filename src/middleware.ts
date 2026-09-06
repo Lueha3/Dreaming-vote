@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { isHiddenPath } from "@/lib/features";
 import {
   LAST_ACTIVE_COOKIE,
   REAUTH_REQUIRED_CODE,
@@ -13,6 +14,15 @@ import {
 } from "@/lib/sessionTimeout";
 
 export async function middleware(request: NextRequest) {
+  // 감춘 기능(광장·성격유형)의 경로는 로그인 여부와 무관하게 여기서 끊는다 — 페이지 파일은
+  // 그대로 두되 URL로 직접 들어오는 길을 막는 단일 지점(lib/features.ts).
+  if (isHiddenPath(request.nextUrl.pathname)) {
+    if (request.nextUrl.pathname.startsWith("/api/")) {
+      return NextResponse.json({ ok: false, error: "지원하지 않는 기능입니다." }, { status: 404 });
+    }
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
   const supabaseResponse = NextResponse.next({ request });
 
   // 인증 쿠키가 전혀 없으면(비로그인·외부 첫 유입) 갱신할 세션도, 검증할 토큰도 없다.

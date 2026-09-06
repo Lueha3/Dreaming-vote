@@ -475,14 +475,13 @@ const FLOW = [
     title: "청년부 가입 신청",
     desc: "메뉴의 청년부 가입 신청을 눌러 이름·나이·연락처를 적어요. 운영진이 확인하면 승인돼요.",
   },
-  { title: "성격유형 고르기", desc: "메뉴의 🧭 성격유형 고르기로 나에게 잘 맞는 동아리를 추천받아요." },
   { title: "동아리 둘러보고 참여", desc: "👥 동아리 목록에서 마음에 드는 동아리를 찾아 가입 신청해요." },
 ];
 
 function StartOrderSection() {
   return (
     <section id="start-order" className="glass-card scroll-mt-4 p-5 sm:p-6">
-      <SectionHead icon="🧭" title="처음 오셨다면 이 순서로" desc="딱 4단계면 모든 기능을 쓸 수 있어요" />
+      <SectionHead icon="🧭" title="처음 오셨다면 이 순서로" desc="딱 3단계면 모든 기능을 쓸 수 있어요" />
       <div>
         {FLOW.map((step, i) => (
           <div key={step.title} className="flex gap-3.5">
@@ -515,10 +514,6 @@ const GLOSSARY = [
   {
     name: "👥 3개 나이 집단",
     desc: "러비아(20~26세) · 유디코(27~33세) · 엘리온(34세~), 나이에 따라 자동으로 나뉘어요.",
-  },
-  {
-    name: "🗣 광장 3가지 글",
-    desc: "일상(사는 얘기) · 기도해주세요(기도 부탁) · 동아리광고(동아리 홍보), 글 쓸 때 하나를 골라요.",
   },
   { name: "🙋 동아리 가입", desc: "동아리도 신청 후 개설자(동아리장)가 승인해야 정식 멤버가 돼요." },
   { name: "🚨 신고하기", desc: "불편한 글이나 동아리를 보면 신고할 수 있어요. 운영진에게만 조용히 전달돼요." },

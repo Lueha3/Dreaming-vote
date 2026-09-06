@@ -63,8 +63,6 @@ model User {
   contentReports      ContentReport[]      @relation("ReportReporter")
   resolvedReports     ContentReport[]      @relation("ReportResolver")
   pushSubscriptions   PushSubscription[]
-  buddyRequestsSent     BuddyMatch[]       @relation("BuddyRequester")
-  buddyRequestsReceived BuddyMatch[]       @relation("BuddyRecipient")
   icebreakerPrompts   IcebreakerPrompt[]
   supportTickets      SupportTicket[]
   supportReplies      SupportReply[]       @relation("SupportStaff")
@@ -486,21 +484,8 @@ model MetricSnapshot {
 // 연애 앱화 방지를 위해 같은 성별끼리만 신청 가능하고, 꿈터 경계는 넘어도 된다(공동체 전체 교류가 앱의 취지).
 // 한 사람당 활성(active) 짝꿍은 최대 1명 — API 트랜잭션에서 강제한다(대칭 유니크는 DB로 표현 불가).
 // status: pending(수락 대기) | active(성사) | declined(거절) | ended(해제/취소). 채팅 등 인앱 대화는 만들지 않는다.
-model BuddyMatch {
-  id          String    @id @default(cuid())
-  requesterId String // 짝꿍을 신청한 사람
-  recipientId String // 신청을 받은 사람
-  status      String    @default("pending")
-  createdAt   DateTime  @default(now())
-  respondedAt DateTime? // 수락/거절 시각
-  endedAt     DateTime? // 해제/취소 시각
-
-  requester User @relation("BuddyRequester", fields: [requesterId], references: [id], onDelete: Cascade)
-  recipient User @relation("BuddyRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
-
-  @@index([requesterId, status])
-  @@index([recipientId, status])
-}
+// 짝꿍(BuddyMatch) 기능은 v2에서 제거됐다. DB 테이블 "BuddyMatch"는 원본 앱과 DB를 공유하므로
+// 남겨두며(이 스키마에서만 빠짐), `prisma db push`를 돌리면 Prisma가 그 테이블을 지우려 하니 주의.
 
 // 주간 아이스브레이커 질문 — 운영진이 /manage에서 등록하거나, 없으면 cron이 프리셋 풀에서
 // 자동 선택한다. 광장 상단에 고정 카드로 노출되고, "답변하기"로 작성한 일상 글이 Prayer.promptId로 연결된다.
