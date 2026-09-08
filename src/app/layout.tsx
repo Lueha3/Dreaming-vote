@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/Header";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
 import { AutoPushPrompt } from "@/components/AutoPushPrompt";
+import { PrivacyConsentPrompt } from "@/components/PrivacyConsentPrompt";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { SessionTimeoutGuard } from "@/components/SessionTimeoutGuard";
 import { ProfilePeekProvider } from "@/components/ProfilePeek";
@@ -139,6 +140,7 @@ export default function RootLayout({
         <ProfilePeekProvider>
           <Header />
           {children}
+          <PrivacyConsentPrompt />
           <AutoPushPrompt />
           <BottomTabBar />
         </ProfilePeekProvider>

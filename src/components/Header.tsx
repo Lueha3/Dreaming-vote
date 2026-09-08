@@ -179,6 +179,7 @@ export function Header() {
                   <MobileNavLink href="/guide" onClick={() => setMenuOpen(false)}>📖 설명서</MobileNavLink>
                   <MobileNavLink href="/my" onClick={() => setMenuOpen(false)}>🪪 내 정보</MobileNavLink>
                   <MobileNavLink href="/support" onClick={() => setMenuOpen(false)}>🎧 고객센터</MobileNavLink>
+                  <MobileNavLink href="/privacy" onClick={() => setMenuOpen(false)}>🔒 개인정보처리방침</MobileNavLink>
                   {canManage(role) && (
                     <MobileNavLink href="/manage" onClick={() => setMenuOpen(false)}>
                       🛠 운영 관리

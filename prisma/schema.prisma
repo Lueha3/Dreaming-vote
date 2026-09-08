@@ -46,6 +46,9 @@ model User {
   // 생일 축하 카드 발송용 — 연도는 받지 않는다(개인정보 최소화, 나이는 age로 이미 별도 수집).
   birthMonth          Int?
   birthDay            Int?
+  // 개인정보 수집·이용 동의 시각 — 가입 신청 시 체크박스 동의로 세팅.
+  // 이 필드 추가 이전 가입자는 null이며, PrivacyConsentPrompt가 최초 접속 시 동의를 받아 채운다.
+  privacyAgreedAt     DateTime?
 
   ownedClubs          Club[]               @relation("OwnedClubs")
   clubApplications    ClubApplication[]

@@ -15,6 +15,7 @@ type Membership = {
   phone: string | null;
   membershipAppliedAt: string | null;
   membershipNote: string | null;
+  privacyAgreedAt: string | null;
 };
 
 export default function JoinPage() {
@@ -42,6 +43,7 @@ function JoinForm() {
   const [gender, setGender] = useState<"남" | "여" | null>(null);
   const [dreamGroup, setDreamGroup] = useState("");
   const [phone, setPhone] = useState("");
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,6 +71,7 @@ function JoinForm() {
           if (m.gender === "남" || m.gender === "여") setGender(m.gender);
           if (m.dreamGroup) setDreamGroup(m.dreamGroup);
           if (m.phone) setPhone(m.phone);
+          if (m.privacyAgreedAt) setAgreePrivacy(true);
         }
       })
       .catch(() => {
@@ -91,6 +94,7 @@ function JoinForm() {
           gender,
           dreamGroup: dreamGroup.trim(),
           phone: phone.trim(),
+          agreePrivacy,
         }),
       });
       const json = await res.json();
@@ -106,6 +110,7 @@ function JoinForm() {
           phone: normalizePhone(phone.trim()) ?? phone.trim(),
           membershipAppliedAt: m?.membershipAppliedAt ?? new Date().toISOString(),
           membershipNote: null,
+          privacyAgreedAt: m?.privacyAgreedAt ?? new Date().toISOString(),
         }));
         setEditing(false);
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -374,6 +379,22 @@ function JoinForm() {
             </p>
           </div>
 
+          {/* 개인정보 수집·이용 동의 */}
+          <label className="flex items-start gap-2.5 rounded-xl border border-sky-line bg-white/55 px-4 py-3.5 text-xs text-ink-soft">
+            <input
+              type="checkbox"
+              checked={agreePrivacy}
+              onChange={(e) => setAgreePrivacy(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-teal"
+            />
+            <span>
+              (필수) 가입 신청·멤버 확인을 위한 개인정보 수집·이용에 동의합니다.{" "}
+              <Link href="/privacy" target="_blank" className="font-semibold text-teal-ink underline underline-offset-2">
+                자세히 보기
+              </Link>
+            </span>
+          </label>
+
           {error && (
             <p className="rounded-xl border border-red-300/60 bg-red-500/[0.08] px-4 py-3 text-xs text-red-500">
               {error}
@@ -383,7 +404,13 @@ function JoinForm() {
           <button
             type="submit"
             disabled={
-              submitting || !realName.trim() || !group || !gender || !dreamGroup.trim() || !phone.trim()
+              submitting ||
+              !realName.trim() ||
+              !group ||
+              !gender ||
+              !dreamGroup.trim() ||
+              !phone.trim() ||
+              !agreePrivacy
             }
             className="btn-gold w-full rounded-xl py-3 text-sm font-semibold disabled:opacity-40 btn-glow"
           >

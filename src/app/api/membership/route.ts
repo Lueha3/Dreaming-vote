@@ -35,6 +35,7 @@ export async function GET(req: Request) {
         nickname: user.nickname,
         role: user.role,
         isClubLeader: ownedActiveClubs > 0,
+        privacyAgreedAt: user.privacyAgreedAt,
       },
     });
   }
@@ -53,6 +54,7 @@ export async function GET(req: Request) {
         phone: true,
         membershipAppliedAt: true,
         membershipNote: true,
+        privacyAgreedAt: true,
       },
     }),
     prisma.club.count({ where: { ownerUserId: user.dbUserId, isActive: true } }),

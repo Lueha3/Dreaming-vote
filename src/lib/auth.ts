@@ -17,6 +17,7 @@ const AUTH_USER_SELECT = {
   role: true,
   deletedAt: true,
   startPromptSeenAt: true,
+  privacyAgreedAt: true,
 } as const;
 
 export type AuthUser = {
@@ -30,6 +31,7 @@ export type AuthUser = {
   approvedAge: number | null; // 승인 시점 고정 나이 — 집단(러비아/유디코/엘리온) 판정의 불변 근거
   role: Role; // 전역 등급. 동아리장은 여기 없음(소유 동아리에서 파생). superadmin은 env로 승격
   startPromptSeenAt: Date | null; // 승인 후 첫 진입의 /start 안내 완료 시각 — null이면 홈에서 1회 안내
+  privacyAgreedAt: Date | null; // 개인정보 수집·이용 동의 시각 — null이면 PrivacyConsentPrompt가 동의를 받는다
 };
 
 /**
@@ -97,6 +99,7 @@ export const getAuthUser = cache(async (): Promise<AuthUser | null> => {
       age: dbUser.age,
       approvedAge: dbUser.approvedAge,
       startPromptSeenAt: dbUser.startPromptSeenAt,
+      privacyAgreedAt: dbUser.privacyAgreedAt,
       // 슈퍼관리자 이메일은 DB 값과 무관하게 항상 superadmin으로 승격(첫 로그인 부트스트랩 포함).
       role: isSuperadminEmail(email) ? "superadmin" : (dbUser.role as Role),
     };

@@ -25,6 +25,7 @@ const applySchema = z.object({
     .min(1, "소속 꿈터 이름을 입력해주세요.")
     .max(30, "꿈터 이름이 너무 깁니다."),
   phone: z.string().trim().min(9, "전화번호를 입력해주세요.").max(20),
+  agreePrivacy: z.boolean().refine((v) => v === true, "개인정보 수집·이용에 동의해주세요."),
 });
 
 /**
@@ -89,6 +90,8 @@ export async function POST(req: NextRequest) {
       membershipAppliedAt: new Date(),
       membershipDecidedAt: null,
       membershipNote: null,
+      // 재신청이어도 동의 시각은 최초 동의 시점을 유지 — 이미 동의했다면 덮어쓰지 않는다.
+      ...(user.privacyAgreedAt ? {} : { privacyAgreedAt: new Date() }),
     },
   });
 
