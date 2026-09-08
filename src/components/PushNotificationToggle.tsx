@@ -1,14 +1,27 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { usePushSubscription } from "@/lib/usePushSubscription";
 
 /**
  * 휴대폰 푸시 알림 켜기/끄기 토글 — /my/profile에 배치.
  * 아이폰은 "홈 화면에 추가"(standalone) 상태가 아니면 웹 푸시 자체가 불가하므로
  * 그 경우 구독 UI 대신 설치 안내만 보여준다(iOS 16.4+ 제약).
+ * 기본값은 "켜짐"이어야 하므로 아직 권한을 묻지 않은 상태(permission === "default")라면
+ * 페이지 진입 시 자동으로 구독을 시도한다(브라우저 정책상 서버가 대신 켤 수는 없어
+ * 결국 권한 팝업은 뜨지만, 사용자가 별도로 "켜기"를 누르지 않아도 되게 한다).
  */
 export function PushNotificationToggle() {
   const { support, permission, subscribed, loading, error, enable, disable } = usePushSubscription();
+  const autoTried = useRef(false);
+
+  useEffect(() => {
+    if (autoTried.current) return;
+    if (support === "supported" && permission === "default" && !subscribed && !loading) {
+      autoTried.current = true;
+      enable();
+    }
+  }, [support, permission, subscribed, loading, enable]);
 
   if (support === "ios-needs-install") {
     return (
