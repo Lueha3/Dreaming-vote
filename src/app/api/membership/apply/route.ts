@@ -101,7 +101,8 @@ export async function POST(req: NextRequest) {
       type: "admin_membership_applied",
       title: "새 가입 신청이 도착했어요",
       body: `${user.nickname ?? "새 신청자"}님이 가입을 신청했어요.`,
-      link: "/manage/membership",
+      // 신청자를 지목하는 딥링크 — 이미 처리된 뒤에 눌러도 전체 내역에서 그 사람을 찾아 보여준다.
+      link: `/manage/membership?user=${user.dbUserId}`,
     });
   } catch {
     /* best-effort */

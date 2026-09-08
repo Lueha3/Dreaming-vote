@@ -124,24 +124,32 @@ export function NotificationBell() {
     }
   }
 
-  async function handleClick(n: Notice) {
+  function handleClick(n: Notice) {
     setOpen(false);
+
+    // 이동을 먼저 — 읽음 처리 왕복(await)을 기다리면 느린 회선에서 클릭이 먹통처럼 보인다.
+    // 링크가 지금 보고 있는 URL과 같으면 push가 no-op이라 아무 반응이 없으므로 refresh로 대체.
+    if (n.link) {
+      const here = window.location.pathname + window.location.search;
+      if (n.link === here) router.refresh();
+      else router.push(n.link);
+    }
+
     if (!n.isRead) {
       setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)));
       setUnread((u) => Math.max(0, u - 1));
-      try {
-        await fetch("/api/notifications/read", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ids: [n.id] }),
+      fetch("/api/notifications/read", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [n.id] }),
+      })
+        .catch(() => {
+          /* best-effort — 실패해도 다음 방문 시 다시 미읽음으로 보일 뿐 */
+        })
+        .finally(() => {
+          window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED_EVENT));
         });
-      } catch {
-        /* best-effort */
-      } finally {
-        window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED_EVENT));
-      }
     }
-    if (n.link) router.push(n.link);
   }
 
   if (!hasCookie) return null;

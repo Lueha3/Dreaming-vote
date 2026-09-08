@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { fetchJson } from "@/lib/http";
 
 type MembershipUser = {
@@ -42,6 +43,16 @@ function fmtDate(iso: string | null) {
 }
 
 export default function ManageMembershipPage() {
+  return (
+    <Suspense fallback={null}>
+      <ManageMembership />
+    </Suspense>
+  );
+}
+
+function ManageMembership() {
+  // 알림("○○님이 가입을 신청했어요")에서 넘어온 신청자 id — 목록에서 찾아 강조·스크롤한다.
+  const focusId = useSearchParams().get("user");
   const [items, setItems] = useState<MembershipUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"pending" | "all">("pending");
@@ -56,13 +67,29 @@ export default function ManageMembershipPage() {
     load();
   }, [filter]);
 
+  // 목록이 그려진 뒤 지목된 신청자 카드로 스크롤 — 전체 내역은 길어서 화면 밖일 수 있다.
+  useEffect(() => {
+    if (!focusId || loading) return;
+    document.getElementById(`member-${focusId}`)?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }, [focusId, loading]);
+
   async function load() {
     setLoading(true);
     try {
       const data = await fetchJson<{ ok: true; items: MembershipUser[] }>(
         `/api/manage/membership?status=${filter}`,
       );
-      setItems(data.items ?? []);
+      const list = data.items ?? [];
+      // 알림에서 지목된 신청자가 대기 목록에 없으면 이미 처리된 건이므로 전체 내역으로 전환한다.
+      // (그대로 두면 "승인 대기 중인 가입 신청이 없어요" 빈 화면에 떨어져 헛걸음이 된다)
+      if (focusId && filter === "pending" && !list.some((u) => u.id === focusId)) {
+        setFilter("all"); // filter 변경이 이 함수를 재호출 — loading은 그때까지 유지
+        return;
+      }
+      setItems(list);
       setSelected(new Set());
       setError(null);
     } catch (e) {
@@ -243,8 +270,13 @@ export default function ManageMembershipPage() {
           {visible.map((u) => (
             <li
               key={u.id}
+              id={`member-${u.id}`}
               className={`glass-card p-5 transition-all ${
-                u.membershipStatus === "pending" ? "ring-1 ring-gold/30" : ""
+                u.id === focusId
+                  ? "ring-2 ring-skyx/60"
+                  : u.membershipStatus === "pending"
+                    ? "ring-1 ring-gold/30"
+                    : ""
               }`}
             >
               <div className="flex items-start justify-between gap-4">
