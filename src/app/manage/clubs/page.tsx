@@ -36,6 +36,7 @@ export default function ManageClubsPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"pending" | "all">("pending");
+  const [deleteTarget, setDeleteTarget] = useState<ManageClub | null>(null);
 
   const [eventBoard, setEventBoard] = useState<EventBoardStatus | null>(null);
   const [eventBoardBusy, setEventBoardBusy] = useState(false);
@@ -88,8 +89,23 @@ export default function ManageClubsPage() {
     setBusyId(null);
   }
 
-  const pendingCount = items.filter((i) => !i.isApproved).length;
-  const visible = filter === "pending" ? items.filter((i) => !i.isApproved) : items;
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setBusyId(deleteTarget.id);
+    try {
+      await fetchJson(`/api/admin/clubs/${deleteTarget.id}`, { method: "DELETE" });
+      setDeleteTarget(null);
+      await load();
+    } catch {
+      /* ignore */
+    }
+    setBusyId(null);
+  }
+
+  // '승인 대기'는 아직 한 번도 검토되지 않은(반려되지 않은) 건만 — 반려된 건은 isActive도
+  // false가 되므로 여기서 제외돼야 반려 클릭 시 목록에서 눈에 띄게 사라진다.
+  const pendingCount = items.filter((i) => !i.isApproved && i.isActive).length;
+  const visible = filter === "pending" ? items.filter((i) => !i.isApproved && i.isActive) : items;
 
   return (
     <div>
@@ -186,15 +202,15 @@ export default function ManageClubsPage() {
         </div>
       ) : (
         <ul className="space-y-3">
-          {visible.map((club) => (
+          {visible.map((club) => {
+            const isLive = club.isApproved && club.isActive;
+            const isPending = !club.isApproved && club.isActive;
+            const isRejected = !club.isApproved && !club.isActive;
+            return (
             <li
               key={club.id}
               className={`glass-card p-5 transition-all ${
-                !club.isApproved
-                  ? "ring-1 ring-gold/30"
-                  : club.isActive
-                    ? ""
-                    : "opacity-70"
+                isPending ? "ring-1 ring-gold/30" : isLive ? "" : "opacity-70"
               }`}
             >
               <div className="flex items-start justify-between gap-4">
@@ -207,11 +223,15 @@ export default function ManageClubsPage() {
                     <span className="rounded-full border border-sky-line bg-white/60 px-2 py-0.5 text-xs text-ink-soft">
                       {club.category}
                     </span>
-                    {!club.isApproved ? (
+                    {isPending ? (
                       <span className="rounded-full border border-gold/35 bg-gold/10 px-2 py-0.5 text-xs font-medium text-gold-ink">
                         승인 대기
                       </span>
-                    ) : club.isActive ? (
+                    ) : isRejected ? (
+                      <span className="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">
+                        반려됨
+                      </span>
+                    ) : isLive ? (
                       <span className="rounded-full border border-teal/35 bg-teal/10 px-2 py-0.5 text-xs font-medium text-teal-ink">
                         노출 중
                       </span>
@@ -266,7 +286,7 @@ export default function ManageClubsPage() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  {!club.isApproved || !club.isActive ? (
+                  {!isLive && (
                     <button
                       onClick={() => act(club.id, "approve")}
                       disabled={busyId === club.id}
@@ -274,29 +294,64 @@ export default function ManageClubsPage() {
                     >
                       {busyId === club.id ? "처리 중…" : "승인"}
                     </button>
-                  ) : null}
-                  {club.isApproved && club.isActive ? (
+                  )}
+                  {!isRejected && (
                     <button
                       onClick={() => act(club.id, "reject")}
                       disabled={busyId === club.id}
-                      className="glass-soft rounded-full px-3 py-1.5 text-xs font-medium text-ink-soft transition-all hover:text-red-600 disabled:opacity-50"
+                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all hover:text-red-600 disabled:opacity-50 ${
+                        isLive ? "glass-soft text-ink-soft" : "glass-soft text-ink-faint"
+                      }`}
                     >
-                      {busyId === club.id ? "처리 중…" : "숨김"}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => act(club.id, "reject")}
-                      disabled={busyId === club.id}
-                      className="glass-soft rounded-full px-3 py-1.5 text-xs font-medium text-ink-faint transition-all hover:text-red-600 disabled:opacity-50"
-                    >
-                      반려
+                      {busyId === club.id ? "처리 중…" : isLive ? "숨김" : "반려"}
                     </button>
                   )}
+                  <button
+                    onClick={() => setDeleteTarget(club)}
+                    disabled={busyId === club.id}
+                    className="rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition-all hover:bg-red-100 disabled:opacity-50"
+                  >
+                    삭제
+                  </button>
                 </div>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
+      )}
+
+      {/* 동아리 삭제 확인 */}
+      {deleteTarget && (
+        <div className="modal-fade-in fixed inset-0 z-[60] flex items-center justify-center bg-ink/30 px-4 backdrop-blur-[2px]">
+          <div
+            className="modal-pop-in glass-card w-full max-w-xs p-6 text-center"
+            style={{ background: "rgba(255,255,255,.95)" }}
+          >
+            <p className="mb-1 text-sm font-bold text-ink">
+              &apos;{deleteTarget.name}&apos; 동아리를 삭제할까요?
+            </p>
+            <p className="mb-5 text-xs text-ink-soft">
+              멤버 신청·모임·후기·사진이 모두 함께 사라지고 되돌릴 수 없어요.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={busyId === deleteTarget.id}
+                className="glass-soft flex-1 rounded-xl py-2.5 text-sm font-medium text-ink-soft disabled:opacity-50"
+              >
+                취소
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={busyId === deleteTarget.id}
+                className="flex-1 rounded-xl border border-red-300 bg-red-50 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50"
+              >
+                {busyId === deleteTarget.id ? "삭제 중…" : "삭제"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
