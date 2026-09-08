@@ -66,8 +66,10 @@ export default function AdminClubsPage() {
     setBusyId(null);
   }
 
-  const pendingCount = items.filter((i) => !i.isApproved).length;
-  const visible = filter === "pending" ? items.filter((i) => !i.isApproved) : items;
+  // '승인 대기'는 아직 한 번도 검토되지 않은(반려되지 않은) 건만 — 반려된 건은 isActive도
+  // false가 되므로 여기서 제외돼야 반려 클릭 시 목록에서 눈에 띄게 사라진다.
+  const pendingCount = items.filter((i) => !i.isApproved && i.isActive).length;
+  const visible = filter === "pending" ? items.filter((i) => !i.isApproved && i.isActive) : items;
 
   return (
     <div>
@@ -130,13 +132,17 @@ export default function AdminClubsPage() {
         </div>
       ) : (
         <ul className="space-y-3">
-          {visible.map((club) => (
+          {visible.map((club) => {
+            const isLive = club.isApproved && club.isActive;
+            const isPending = !club.isApproved && club.isActive;
+            const isRejected = !club.isApproved && !club.isActive;
+            return (
             <li
               key={club.id}
               className={`rounded-2xl border bg-[#111111] p-5 transition-all ${
-                !club.isApproved
+                isPending
                   ? "border-amber-500/30 bg-amber-500/[0.03]"
-                  : club.isActive
+                  : isLive
                     ? "border-emerald-500/25"
                     : "border-white/[0.07] opacity-70"
               }`}
@@ -152,11 +158,15 @@ export default function AdminClubsPage() {
                     <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-zinc-400">
                       {club.category}
                     </span>
-                    {!club.isApproved ? (
+                    {isPending ? (
                       <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">
                         승인 대기
                       </span>
-                    ) : club.isActive ? (
+                    ) : isRejected ? (
+                      <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-400">
+                        반려됨
+                      </span>
+                    ) : isLive ? (
                       <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-400">
                         노출 중
                       </span>
@@ -218,7 +228,7 @@ export default function AdminClubsPage() {
 
                 {/* 액션 버튼 */}
                 <div className="flex flex-col gap-2">
-                  {!club.isApproved || !club.isActive ? (
+                  {!isLive && (
                     <button
                       onClick={() => act(club.id, "approve")}
                       disabled={busyId === club.id}
@@ -226,22 +236,16 @@ export default function AdminClubsPage() {
                     >
                       {busyId === club.id ? "처리 중..." : "승인"}
                     </button>
-                  ) : null}
-                  {club.isApproved && club.isActive ? (
+                  )}
+                  {!isRejected && (
                     <button
                       onClick={() => act(club.id, "reject")}
                       disabled={busyId === club.id}
-                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-400 transition-all hover:border-red-500/30 hover:text-red-400 disabled:opacity-40"
+                      className={`rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium transition-all hover:border-red-500/30 hover:text-red-400 disabled:opacity-40 ${
+                        isLive ? "text-zinc-400" : "text-zinc-500"
+                      }`}
                     >
-                      {busyId === club.id ? "처리 중..." : "숨김"}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => act(club.id, "reject")}
-                      disabled={busyId === club.id}
-                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-500 transition-all hover:border-red-500/30 hover:text-red-400 disabled:opacity-40"
-                    >
-                      반려
+                      {busyId === club.id ? "처리 중..." : isLive ? "숨김" : "반려"}
                     </button>
                   )}
                   <button
@@ -254,7 +258,8 @@ export default function AdminClubsPage() {
                 </div>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
 
