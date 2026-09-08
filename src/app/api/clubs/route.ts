@@ -128,7 +128,8 @@ export async function POST(req: NextRequest) {
       type: "admin_club_created",
       title: "동아리 승인 요청이 도착했어요",
       body: `${user.nickname ?? "누군가"}님이 '${name}' 동아리를 개설했어요.`,
-      link: "/manage/clubs",
+      // 동아리를 지목하는 딥링크 — 이미 승인·반려된 뒤에 눌러도 전체 목록에서 찾아 보여준다.
+      link: `/manage/clubs?club=${club.id}`,
     });
   } catch {
     /* best-effort */

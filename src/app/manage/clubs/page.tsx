@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { fetchJson } from "@/lib/http";
 import { ClubCategoryIcon } from "@/components/icons";
 
@@ -32,6 +33,16 @@ function fmtDate(iso: string) {
 type EventBoardStatus = { exists: boolean; clubId: string | null; name: string | null; memberCount: number };
 
 export default function ManageClubsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ManageClubs />
+    </Suspense>
+  );
+}
+
+function ManageClubs() {
+  // 알림("○○님이 '△△' 동아리를 개설했어요")에서 넘어온 동아리 id — 목록에서 찾아 강조·스크롤한다.
+  const focusId = useSearchParams().get("club");
   const [items, setItems] = useState<ManageClub[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -45,6 +56,15 @@ export default function ManageClubsPage() {
     load();
     loadEventBoard();
   }, []);
+
+  // 목록이 그려진 뒤 지목된 동아리 카드로 스크롤 — 전체 목록은 길어서 화면 밖일 수 있다.
+  useEffect(() => {
+    if (!focusId || loading) return;
+    document.getElementById(`club-${focusId}`)?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }, [focusId, loading]);
 
   async function loadEventBoard() {
     try {
@@ -71,7 +91,12 @@ export default function ManageClubsPage() {
     setLoading(true);
     try {
       const data = await fetchJson<{ ok: true; items: ManageClub[] }>("/api/admin/clubs");
-      setItems(data.items ?? []);
+      const list = data.items ?? [];
+      setItems(list);
+      // 알림에서 지목된 동아리가 이미 승인·반려돼 대기 목록에 없으면 전체 목록으로 전환한다.
+      // (그대로 두면 "승인 대기 중인 동아리가 없어요" 빈 화면에 떨어져 헛걸음이 된다)
+      const focused = focusId ? list.find((c) => c.id === focusId) : null;
+      if (focused && !(!focused.isApproved && focused.isActive)) setFilter("all");
     } catch {
       /* ignore */
     }
@@ -209,8 +234,15 @@ export default function ManageClubsPage() {
             return (
             <li
               key={club.id}
+              id={`club-${club.id}`}
               className={`glass-card p-5 transition-all ${
-                isPending ? "ring-1 ring-gold/30" : isLive ? "" : "opacity-70"
+                club.id === focusId
+                  ? "ring-2 ring-skyx/60"
+                  : isPending
+                    ? "ring-1 ring-gold/30"
+                    : isLive
+                      ? ""
+                      : "opacity-70"
               }`}
             >
               <div className="flex items-start justify-between gap-4">
