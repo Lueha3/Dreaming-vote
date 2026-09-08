@@ -8,6 +8,7 @@ export type AuditAction =
   | "membership_force_withdraw"
   | "club_approve"
   | "club_reject"
+  | "club_delete"
   | "club_update"
   | "club_transfer"
   | "club_member_remove"

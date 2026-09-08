@@ -25,6 +25,7 @@ export default function AdminClubsPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"pending" | "all">("pending");
+  const [deleteTarget, setDeleteTarget] = useState<AdminClub | null>(null);
 
   useEffect(() => {
     load();
@@ -45,6 +46,19 @@ export default function AdminClubsPage() {
     setBusyId(id);
     try {
       await fetchJson(`/api/admin/clubs/${id}/${action}`, { method: "POST" });
+      await load();
+    } catch {
+      /* ignore */
+    }
+    setBusyId(null);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setBusyId(deleteTarget.id);
+    try {
+      await fetchJson(`/api/admin/clubs/${deleteTarget.id}`, { method: "DELETE" });
+      setDeleteTarget(null);
       await load();
     } catch {
       /* ignore */
@@ -230,11 +244,48 @@ export default function AdminClubsPage() {
                       반려
                     </button>
                   )}
+                  <button
+                    onClick={() => setDeleteTarget(club)}
+                    disabled={busyId === club.id}
+                    className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition-all hover:bg-red-500/20 disabled:opacity-40"
+                  >
+                    삭제
+                  </button>
                 </div>
               </div>
             </li>
           ))}
         </ul>
+      )}
+
+      {/* 동아리 삭제 확인 */}
+      {deleteTarget && (
+        <div className="modal-fade-in fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4 backdrop-blur-[2px]">
+          <div className="modal-pop-in w-full max-w-xs rounded-2xl border border-white/[0.07] bg-[#111111] p-6 text-center">
+            <p className="mb-1 text-sm font-bold text-white">
+              &apos;{deleteTarget.name}&apos; 동아리를 삭제할까요?
+            </p>
+            <p className="mb-5 text-xs text-zinc-400">
+              멤버 신청·모임·후기·사진이 모두 함께 사라지고 되돌릴 수 없어요.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={busyId === deleteTarget.id}
+                className="flex-1 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-medium text-zinc-300 disabled:opacity-50"
+              >
+                취소
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={busyId === deleteTarget.id}
+                className="flex-1 rounded-xl border border-red-500/30 bg-red-500/10 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-500/20 disabled:opacity-50"
+              >
+                {busyId === deleteTarget.id ? "삭제 중..." : "삭제"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
