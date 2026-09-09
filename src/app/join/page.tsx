@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { buildNickname, getGroup, normalizePhone } from "@/lib/membership";
+import { buildNickname, normalizePhone, JOIN_MIN_AGE, JOIN_MAX_AGE } from "@/lib/membership";
 
 type Membership = {
   membershipStatus: "none" | "pending" | "approved" | "rejected";
@@ -48,10 +48,14 @@ function JoinForm() {
   const [error, setError] = useState<string | null>(null);
 
   const ageNum = parseInt(age, 10);
-  const group = !isNaN(ageNum) ? getGroup(ageNum) : null;
+  // 신규 가입은 유디코(26~33세) 전용 — getGroup의 일반 나이대 분류가 아니라 이 범위로만 판정한다.
+  // (getGroup은 이미 다른 나이대로 승인된 기존 멤버의 닉네임을 계속 인식시키기 위한 것이라
+  //  범위 밖 나이에도 집단을 돌려줄 수 있어, 신규 신청 가능 여부 판정에는 쓰면 안 된다.)
+  const eligible = !isNaN(ageNum) && ageNum >= JOIN_MIN_AGE && ageNum <= JOIN_MAX_AGE;
+  const group = eligible ? "유디코" : null;
   // 신청한 이름·나이로 자동 생성될 활동 닉네임 (집단-나이-이름)
   const nicknamePreview =
-    group && realName.trim() ? buildNickname(ageNum, realName) : null;
+    eligible && realName.trim() ? buildNickname(ageNum, realName) : null;
 
   useEffect(() => {
     fetch("/api/membership", { cache: "no-store" })

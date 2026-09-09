@@ -4,34 +4,47 @@ import {
   getGroup,
   buildNickname,
   normalizePhone,
+  JOIN_MIN_AGE,
+  JOIN_MAX_AGE,
 } from "@/lib/membership";
 
-describe("getGroup — 나이→집단 (유디코 26~33세 전용)", () => {
+describe("getGroup — 나이→집단", () => {
+  it("러비아 20~25", () => {
+    expect(getGroup(20)).toBe("러비아");
+    expect(getGroup(25)).toBe("러비아");
+  });
   it("유디코 26~33", () => {
     expect(getGroup(26)).toBe("유디코");
-    expect(getGroup(30)).toBe("유디코");
     expect(getGroup(33)).toBe("유디코");
   });
-  it("범위 밖(레거시 러비아·엘리온 나이대 포함)은 null", () => {
-    expect(getGroup(25)).toBeNull();
-    expect(getGroup(20)).toBeNull();
-    expect(getGroup(34)).toBeNull();
+  it("엘리온 34세~ (예: 기존 승인된 목사님 등 예외 멤버)", () => {
+    expect(getGroup(34)).toBe("엘리온");
+    expect(getGroup(46)).toBe("엘리온");
+  });
+  it("범위 밖은 null", () => {
+    expect(getGroup(19)).toBeNull();
     expect(getGroup(0)).toBeNull();
+  });
+});
+
+describe("JOIN_MIN_AGE/JOIN_MAX_AGE — 신규 가입 가능 나이(유디코 전용)", () => {
+  it("26~33세만 신규 가입 가능", () => {
+    expect(JOIN_MIN_AGE).toBe(26);
+    expect(JOIN_MAX_AGE).toBe(33);
   });
 });
 
 describe("buildNickname — 집단-나이-이름", () => {
   it("정상 생성", () => {
-    expect(buildNickname(26, "홍길동")).toBe("유디코-26-홍길동");
+    expect(buildNickname(25, "홍길동")).toBe("러비아-25-홍길동");
     expect(buildNickname(30, "김철수")).toBe("유디코-30-김철수");
-    expect(buildNickname(33, "박엘리")).toBe("유디코-33-박엘리");
+    expect(buildNickname(40, "박엘리")).toBe("엘리온-40-박엘리");
   });
   it("이름 공백 트림", () => {
     expect(buildNickname(28, "  이영희  ")).toBe("유디코-28-이영희");
   });
   it("나이 범위 밖·빈 이름은 null", () => {
-    expect(buildNickname(25, "홍길동")).toBeNull();
-    expect(buildNickname(34, "홍길동")).toBeNull();
+    expect(buildNickname(19, "홍길동")).toBeNull();
     expect(buildNickname(30, "")).toBeNull();
     expect(buildNickname(30, "   ")).toBeNull();
   });

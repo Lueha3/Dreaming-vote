@@ -4,7 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
-import { GENDERS, normalizePhone } from "@/lib/membership";
+import { GENDERS, normalizePhone, JOIN_MIN_AGE, JOIN_MAX_AGE } from "@/lib/membership";
 import { createAdminNotification } from "@/lib/notifications";
 
 const applySchema = z.object({
@@ -13,12 +13,13 @@ const applySchema = z.object({
     .trim()
     .min(2, "이름을 입력해주세요.")
     .max(20, "이름이 너무 깁니다."),
-  // 앱이 유디코(26~33세) 전용으로 재편되어(2026-09) 이 범위만 신청 가능 — lib/membership.ts getGroup과 동일 기준.
+  // 앱이 유디코 전용으로 재편되어(2026-09) 신규 가입은 이 범위만 받는다.
+  // 기존에 다른 나이대로 승인된 멤버(예외 허용)는 이 게이트와 무관 — getGroup 참고.
   age: z
     .number()
     .int()
-    .min(26, "유디코(26~33세) 전용으로 운영돼요. 나이를 다시 확인해주세요.")
-    .max(33, "유디코(26~33세) 전용으로 운영돼요. 나이를 다시 확인해주세요."),
+    .min(JOIN_MIN_AGE, `유디코(${JOIN_MIN_AGE}~${JOIN_MAX_AGE}세) 전용으로 운영돼요. 나이를 다시 확인해주세요.`)
+    .max(JOIN_MAX_AGE, `유디코(${JOIN_MIN_AGE}~${JOIN_MAX_AGE}세) 전용으로 운영돼요. 나이를 다시 확인해주세요.`),
   gender: z.enum(GENDERS),
   dreamGroup: z
     .string()
