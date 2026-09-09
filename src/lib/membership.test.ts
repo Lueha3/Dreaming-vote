@@ -6,38 +6,34 @@ import {
   normalizePhone,
 } from "@/lib/membership";
 
-describe("getGroup — 나이→집단", () => {
-  it("러비아 20~26", () => {
-    expect(getGroup(20)).toBe("러비아");
-    expect(getGroup(26)).toBe("러비아");
-  });
-  it("유디코 27~33", () => {
-    expect(getGroup(27)).toBe("유디코");
+describe("getGroup — 나이→집단 (유디코 26~33세 전용)", () => {
+  it("유디코 26~33", () => {
+    expect(getGroup(26)).toBe("유디코");
+    expect(getGroup(30)).toBe("유디코");
     expect(getGroup(33)).toBe("유디코");
   });
-  it("엘리온 34세~", () => {
-    expect(getGroup(34)).toBe("엘리온");
-    expect(getGroup(60)).toBe("엘리온");
-  });
-  it("범위 밖은 null", () => {
-    expect(getGroup(19)).toBeNull();
+  it("범위 밖(레거시 러비아·엘리온 나이대 포함)은 null", () => {
+    expect(getGroup(25)).toBeNull();
+    expect(getGroup(20)).toBeNull();
+    expect(getGroup(34)).toBeNull();
     expect(getGroup(0)).toBeNull();
   });
 });
 
 describe("buildNickname — 집단-나이-이름", () => {
   it("정상 생성", () => {
-    expect(buildNickname(25, "홍길동")).toBe("러비아-25-홍길동");
+    expect(buildNickname(26, "홍길동")).toBe("유디코-26-홍길동");
     expect(buildNickname(30, "김철수")).toBe("유디코-30-김철수");
-    expect(buildNickname(40, "박엘리")).toBe("엘리온-40-박엘리");
+    expect(buildNickname(33, "박엘리")).toBe("유디코-33-박엘리");
   });
   it("이름 공백 트림", () => {
-    expect(buildNickname(22, "  이영희  ")).toBe("러비아-22-이영희");
+    expect(buildNickname(28, "  이영희  ")).toBe("유디코-28-이영희");
   });
   it("나이 범위 밖·빈 이름은 null", () => {
-    expect(buildNickname(19, "홍길동")).toBeNull();
-    expect(buildNickname(25, "")).toBeNull();
-    expect(buildNickname(25, "   ")).toBeNull();
+    expect(buildNickname(25, "홍길동")).toBeNull();
+    expect(buildNickname(34, "홍길동")).toBeNull();
+    expect(buildNickname(30, "")).toBeNull();
+    expect(buildNickname(30, "   ")).toBeNull();
   });
 });
 

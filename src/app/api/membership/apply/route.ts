@@ -13,11 +13,12 @@ const applySchema = z.object({
     .trim()
     .min(2, "이름을 입력해주세요.")
     .max(20, "이름이 너무 깁니다."),
+  // 앱이 유디코(26~33세) 전용으로 재편되어(2026-09) 이 범위만 신청 가능 — lib/membership.ts getGroup과 동일 기준.
   age: z
     .number()
     .int()
-    .min(20, "청년부는 20세 이상부터 신청할 수 있어요.")
-    .max(99, "나이를 다시 확인해주세요."),
+    .min(26, "유디코(26~33세) 전용으로 운영돼요. 나이를 다시 확인해주세요.")
+    .max(33, "유디코(26~33세) 전용으로 운영돼요. 나이를 다시 확인해주세요."),
   gender: z.enum(GENDERS),
   dreamGroup: z
     .string()

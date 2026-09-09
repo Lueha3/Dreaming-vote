@@ -51,7 +51,7 @@ export async function PATCH(req: NextRequest) {
     const match = parsed.data.nickname.match(NICKNAME_RE);
     if (!match) {
       return NextResponse.json(
-        { ok: false, error: "닉네임은 '집단-나이-이름' 형식이어야 해요. (예: 러비아-23-홍길동)" },
+        { ok: false, error: "닉네임은 '집단-나이-이름' 형식이어야 해요. (예: 유디코-28-홍길동)" },
         { status: 400 },
       );
     }

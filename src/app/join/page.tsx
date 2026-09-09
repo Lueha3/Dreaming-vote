@@ -272,36 +272,30 @@ function JoinForm() {
               />
             </div>
 
-            {/* 나이 */}
+            {/* 나이 — 유디코(26~33세) 전용 재편(2026-09) 이후 이 범위만 신청 가능 */}
             <div>
               <label className="mb-1.5 block text-xs text-ink-soft">
-                나이 <span className="text-ink-faint">(20세 이상)</span>
+                나이 <span className="text-ink-faint">(26~33세, 유디코 전용)</span>
               </label>
               <input
                 type="number"
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
-                min={20}
-                max={99}
-                placeholder="예: 26"
+                min={26}
+                max={33}
+                placeholder="예: 28"
                 className="w-full rounded-xl border border-white/95 bg-white/70 px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-teal focus:outline-none"
               />
               {age && (
                 <div className="mt-2">
                   {group ? (
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${
-                        group === "러비아"
-                          ? "border-skyx/40 bg-skyx/20 text-skyx-ink"
-                          : group === "유디코"
-                            ? "border-teal/35 bg-teal/15 text-teal-ink"
-                            : "border-gold/40 bg-gold/15 text-gold-ink"
-                      }`}
-                    >
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-teal/35 bg-teal/15 px-3 py-1 text-xs font-semibold text-teal-ink">
                       ✓ {group} 소속
                     </span>
                   ) : (
-                    <span className="text-xs text-red-500">청년부는 20세 이상부터 신청할 수 있어요.</span>
+                    <span className="text-xs text-red-500">
+                      현재 유디코(26~33세)만 가입 신청할 수 있어요. 나이를 다시 확인해서 입력해주세요.
+                    </span>
                   )}
                 </div>
               )}
