@@ -25,7 +25,9 @@ const EMPTY_DRAFT: Draft = {
   title: "",
   body: "",
   isPublished: true,
-  isPinned: false,
+  // 기본 고정 — 게시했는데 홈 배너에 안 뜨는 실수(고정 토글을 깜빡함)를 막기 위해
+  // 새 공지는 기본으로 고정하고, 필요할 때만 운영진이 직접 해제한다.
+  isPinned: true,
   broadcast: false,
 };
 
