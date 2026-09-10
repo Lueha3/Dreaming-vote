@@ -246,9 +246,17 @@ export function ProfileForm({
             </p>
             <p className="mt-2.5 border-t border-sky-line pt-2.5 text-xs leading-relaxed text-ink-soft">
               닉네임은 청년부 가입 신청서의 이름·나이로 자동 설정되고, 변경이 까다로워요.
-              {nickname
-                ? " 수정이 필요하면 관리자에게 문의해주세요."
-                : " 신청서를 작성할 때 이름과 나이를 정확히 입력해주세요!"}
+              {nickname ? (
+                <>
+                  {" 수정이 필요하면 "}
+                  <Link href="/support" className="font-semibold text-teal-ink underline underline-offset-2">
+                    고객센터에 문의
+                  </Link>
+                  해주세요.
+                </>
+              ) : (
+                " 신청서를 작성할 때 이름과 나이를 정확히 입력해주세요!"
+              )}
             </p>
             {membershipStatus !== "approved" && (
               <Link
