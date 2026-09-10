@@ -26,6 +26,8 @@ export default function AdminClubsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"pending" | "all">("pending");
   const [deleteTarget, setDeleteTarget] = useState<AdminClub | null>(null);
+  // 소개글이 2줄로 잘려 승인 판단이 안 되던 문제 — 클릭하면 전체를 펼쳐 보여준다.
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     load();
@@ -196,7 +198,24 @@ export default function AdminClubsPage() {
                     </div>
                   )}
 
-                  <p className="mb-2 line-clamp-2 text-sm text-zinc-400">{club.description}</p>
+                  {club.description.length > 80 ? (
+                    <button
+                      type="button"
+                      onClick={() => setExpandedId((id) => (id === club.id ? null : club.id))}
+                      className="mb-2 block text-left"
+                    >
+                      <p
+                        className={`text-sm text-zinc-400 ${expandedId === club.id ? "whitespace-pre-wrap" : "line-clamp-2"}`}
+                      >
+                        {club.description}
+                      </p>
+                      <span className="text-xs font-medium text-violet-300 hover:underline">
+                        {expandedId === club.id ? "접기" : "전체 보기"}
+                      </span>
+                    </button>
+                  ) : (
+                    <p className="mb-2 whitespace-pre-wrap text-sm text-zinc-400">{club.description}</p>
+                  )}
 
                   {/* 키워드 */}
                   <div className="mb-2 flex flex-wrap gap-1.5">
