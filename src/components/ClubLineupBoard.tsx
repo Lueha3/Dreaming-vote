@@ -44,7 +44,7 @@ export function ClubLineupBoard({
           함께 세워가요
         </span>
       </div>
-      <p className="mb-5 text-xs text-ink-faint">서로 다른 우리지만, 한 팀이 되어볼까요?</p>
+      <p className="mb-5 text-xs text-ink-faint">두둥~</p>
 
       <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
         {lineup.map((m, i) => {
@@ -130,7 +130,7 @@ export function ClubLineupBoard({
           ? "라인업이 가득 찼어요 — 모두가 한 몸으로 세워가는 중이에요."
           : FEATURES.archetype
             ? "당신이 어떤 유형이든 상관 없어요. 이 빈자리는 모두의 자리예요."
-            : "누구든 환영이에요. 이 빈자리는 모두의 자리예요."}
+            : "누구든 환영입니다. 빨리 와서 앉아요!!"}
       </div>
 
       {open && <ArchetypeModal archetype={open} onClose={() => setOpen(null)} />}
