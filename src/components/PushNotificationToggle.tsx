@@ -28,7 +28,7 @@ export function PushNotificationToggle() {
       <div className="glass-card p-5">
         <p className="mb-1.5 text-xs font-semibold text-ink">📲 휴대폰 알림</p>
         <p className="text-xs leading-relaxed text-ink-soft">
-          아이폰에서 알림을 받으려면 먼저 Safari 공유 버튼 →{" "}
+          아이폰에서 알림을 받으려면 먼저 크롬 공유 버튼 →{" "}
           <strong className="text-ink">홈 화면에 추가</strong>로 앱을 설치해주세요. 설치한 아이콘으로
           열면 알림을 켤 수 있어요.
         </p>

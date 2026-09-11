@@ -4,8 +4,6 @@ import { useRef, useState, useSyncExternalStore } from "react";
 import { AppIconMark, APP_ICON_BG } from "@/lib/appIcon";
 import { StepCarousel, type CarouselStep } from "./StepCarousel";
 
-type Device = "ios" | "android";
-
 /**
  * 사용 설명서 — 홈 화면 추가·인앱 브라우저 탈출·알림 켜기 등
  * 어려운 기능을 쉬운 말로 설명하는 공개 페이지. 로그인 없이도 접근 가능
@@ -97,25 +95,6 @@ function SectionHead({ icon, title, desc }: { icon: string; title: string; desc:
   );
 }
 
-function DeviceTabs({ value, onChange }: { value: Device; onChange: (d: Device) => void }) {
-  return (
-    <div className="glass-soft mb-4 flex gap-1 rounded-2xl p-1">
-      {(["ios", "android"] as const).map((d) => (
-        <button
-          key={d}
-          type="button"
-          onClick={() => onChange(d)}
-          className={`flex-1 rounded-xl py-2 text-sm font-bold transition-all ${
-            value === d ? "bg-white text-ink shadow-sm" : "text-ink-soft hover:text-ink"
-          }`}
-        >
-          {d === "ios" ? "iPhone (아이폰)" : "Android (안드로이드)"}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function Steps({ items }: { items: { text: React.ReactNode; sub?: string }[] }) {
   return (
     <ol className="space-y-3.5">
@@ -155,7 +134,7 @@ function Callout({ children, warn }: { children: React.ReactNode; warn?: boolean
 }
 
 /**
- * 앱 주소 한 줄 + 복사 버튼. 아이폰 1단계가 "사파리 주소창에 링크 붙여넣기"인데,
+ * 앱 주소 한 줄 + 복사 버튼. 크롬 1단계가 "크롬 주소창에 링크 붙여넣기"인데,
  * 초보자에게 제일 큰 벽은 '주소를 어디서 구하나'다. 여기서 한 번에 복사해 가게 한다.
  * 주소는 하드코딩하지 않고 지금 열려 있는 origin을 쓴다 — 도메인이 바뀌어도 설명서가 안 낡는다.
  * SSR 시점엔 window가 없으므로 useSyncExternalStore로 읽는다: 서버 스냅샷은 null(자리표시 문구),
@@ -207,91 +186,63 @@ function AppLinkBox() {
         <span role="status" className="sr-only">{copied ? "앱 주소가 복사되었어요" : ""}</span>
       </div>
       <p className="mt-1.5 text-[11px] leading-relaxed text-ink-faint">
-        복사한 뒤 사파리 주소창을 길게 누르면 <b>붙여넣기</b>가 떠요. 복사 버튼이 안 되면 주소를 길게 눌러 직접 복사해도 돼요.
+        복사한 뒤 크롬 주소창을 길게 누르면 <b>붙여넣기</b>가 떠요. 복사 버튼이 안 되면 주소를 길게 눌러 직접 복사해도 돼요.
       </p>
     </div>
   );
 }
 
 /**
- * 완성 모습 — 홈 화면에 생긴 우리 앱 아이콘. 사진 대신 실제 아이콘 컴포넌트로 그린다.
- * 예전 예시 사진은 앱 이름이 바뀌기 전('꿈꾸는동아리')에 찍은 것이라 지금 화면과 달랐다.
- * 이렇게 그리면 아이콘·이름이 바뀌어도 설명서가 저절로 따라온다.
+ * 크롬으로 홈 화면에 추가하는 단계 — 슬라이드 하나가 한 단계, 사진은 실제 화면을 그대로 찍은 것.
+ * 아이폰·안드로이드 모두 크롬 하나로 통일해서 더는 기기별로 나누지 않는다(2026-09).
+ * 1번 사진(주소 복사)의 방문 기록·6번 사진(완성 모습)의 다른 앱 아이콘은 실제 사용자 화면이라
+ * 공개 설명서에 남기지 않으려고 잘라냈다 — 원본 스크린샷을 그대로 올린 게 아니다.
  */
-function FinishedTile() {
-  return (
-    // 트랙 높이(440px)를 다 채우지 않고 내용만큼만 — 아래가 텅 빈 파란 판이 되지 않게(트랙이 세로 가운데 정렬해 준다).
-    <div className="flex w-full max-w-[300px] flex-col items-center justify-center rounded-2xl bg-gradient-to-b from-[#7FBDE4] to-[#4A90C2] px-5 py-7 shadow-[0_10px_30px_-14px_rgba(74,144,194,.6)]">
-      <div className="grid grid-cols-3 gap-4" aria-hidden>
-        {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} className="flex flex-col items-center gap-1.5">
-            <div className="h-14 w-14 rounded-2xl bg-white/25" />
-            <div className="h-2 w-10 rounded bg-white/35" />
-          </div>
-        ))}
-        <div className="flex flex-col items-center gap-1.5">
-          <div
-            className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-md ring-[3px] ring-gold"
-            style={{ background: APP_ICON_BG }}
-          >
-            <AppIconMark px={44} />
-          </div>
-          <span className="text-[11px] font-semibold text-white drop-shadow">동아리드림</span>
-        </div>
-      </div>
-      <p className="mt-6 rounded-full bg-white/90 px-3.5 py-1.5 text-xs font-bold text-ink">
-        👆 이렇게 우리 앱 아이콘이 생겨요
-      </p>
-    </div>
-  );
-}
-
-/**
- * 아이폰 단계 — 슬라이드 하나가 한 단계. 사진은 실제 아이폰 화면을 그대로 찍은 것.
- * 배지 번호는 사진 안에 찍힌 "1.클릭" "2. 클릭"과 맞춘다: 주소 붙여넣기는 '준비',
- * ··· 누르기(→ 메뉴의 공유)가 1, 홈 화면에 추가가 2, 마지막 '추가'가 3.
- * 사진 2는 ··· 버튼, 사진 3은 공유 시트다. iOS 26 콤팩트 툴바에선 ···가 텍스트 메뉴를 띄우고
- * 그 안의 '공유'를 눌러야 시트가 뜨므로 그 탭을 문구에 넣는다(사진은 그 사이 화면이 없다).
- * 예전 레이아웃의 가운데 ⬆️ 버튼은 시트를 바로 띄운다.
- */
-const IOS_STEPS: CarouselStep[] = [
-  {
-    badge: "준비",
-    src: "/guide/ios-add-1-paste-link.webp",
-    alt: "사파리 주소창에 앱 주소를 붙여넣은 화면. 키보드의 파란 이동 버튼이 보인다",
-    title: (
-      <>
-        <b>사파리(Safari)</b>를 열고 주소창에 위에서 복사한 주소를 <b>붙여넣기</b> 한 뒤, 키보드의
-        파란 <Kbd>→</Kbd> 버튼을 눌러요.
-      </>
-    ),
-    sub: (
-      <>
-        카카오톡 안에서 누른 링크는 안 돼요 — 꼭 <b>사파리 앱</b>이어야 해요. (아래 &apos;🚪 카톡에서 열었다면&apos; 참고)
-      </>
-    ),
-  },
+const CHROME_ADD_STEPS: CarouselStep[] = [
   {
     badge: "1",
-    src: "/guide/ios-add-2-tap-more.webp",
-    alt: "우리 앱이 열린 사파리 화면. 오른쪽 아래의 점 세 개(···) 버튼에 빨간 동그라미가 그려져 있다",
-    title: (
-      <>
-        앱이 열리면 화면 <b>오른쪽 아래</b>의 <Kbd>···</Kbd> 버튼을 누르고, 메뉴가 뜨면 그 안의{" "}
-        <Kbd>공유</Kbd>를 눌러요.
-      </>
-    ),
-    sub: (
-      <>
-        <Kbd>···</Kbd>가 안 보이고 가운데에 <Kbd>⬆️</Kbd> 모양 버튼이 있다면(아이폰 버전에 따라 달라요) 그걸 한 번만
-        누르면 바로 다음 화면이 떠요.
-      </>
-    ),
+    src: "/guide/chrome-add-1-copy-link.webp",
+    alt: "주소창에 앱 주소가 선택되어 있고, '주소 복사'라는 손글씨와 화살표가 그려져 있다",
+    title: <>지금 열려 있는 화면의 주소창을 눌러 앱 주소를 복사해요.</>,
+    sub: "위 📎 상자의 '복사' 버튼으로 이미 복사하셨다면 이 단계는 건너뛰어도 돼요.",
   },
   {
     badge: "2",
-    src: "/guide/ios-add-3-add-to-home.webp",
-    alt: "메뉴 목록 중간의 '홈 화면에 추가' 항목에 빨간 동그라미가 그려져 있다",
+    src: "/guide/chrome-add-2-open-chrome.webp",
+    alt: "홈 화면의 브라우저 폴더. Chrome 아이콘에 손글씨 화살표와 '크롬 접속'이라고 적혀 있다",
+    title: (
+      <>
+        휴대폰 홈 화면에서 <b>크롬(Chrome)</b> 앱을 열어요.
+      </>
+    ),
+    sub: "크롬이 없다면 아이폰은 앱스토어, 안드로이드는 플레이스토어에서 먼저 설치해주세요.",
+  },
+  {
+    badge: "3",
+    src: "/guide/chrome-add-3-paste-link.webp",
+    alt: "크롬 주소창에 앱 주소를 붙여넣은 화면. '주소 붙여넣기'라는 손글씨가 적혀 있다",
+    title: (
+      <>
+        크롬 주소창에 복사한 주소를 <b>붙여넣기</b> 한 뒤 이동해요.
+      </>
+    ),
+    sub: "주소창을 길게 누르면 붙여넣기가 떠요.",
+  },
+  {
+    badge: "4",
+    src: "/guide/chrome-add-4-tap-share.webp",
+    alt: "우리 앱이 열린 크롬 화면. 오른쪽 위 공유(내보내기) 아이콘에 빨간 동그라미가 그려져 있다",
+    title: (
+      <>
+        앱이 열리면 화면 <b>오른쪽 위</b>의 공유 아이콘(<Kbd>⬆️</Kbd>)을 눌러요.
+      </>
+    ),
+    sub: "네모 안에 위쪽 화살표 모양이에요.",
+  },
+  {
+    badge: "5",
+    src: "/guide/chrome-add-5-add-to-home.webp",
+    alt: "공유 메뉴 목록 중 '홈 화면에 추가' 항목에 빨간 동그라미가 그려져 있다",
     title: (
       <>
         메뉴를 아래로 조금 내려서 <Kbd>홈 화면에 추가</Kbd>를 눌러요.
@@ -300,19 +251,15 @@ const IOS_STEPS: CarouselStep[] = [
     sub: "목록 중간쯤에 있어요. 안 보이면 살짝 더 내려보세요.",
   },
   {
-    badge: "3",
-    content: <FinishedTile />,
-    title: (
-      <>
-        오른쪽 위 <Kbd>추가</Kbd>를 누르면 끝! 홈 화면에 이런 아이콘이 생겨요.
-      </>
-    ),
+    badge: "6",
+    src: "/guide/chrome-add-6-done.webp",
+    alt: "홈 화면에 생긴 우리 앱 아이콘. '완성' 글자와 별 이모지가 적혀 있다",
+    title: <>추가를 누르면 끝! 홈 화면에 이런 아이콘이 생겨요.</>,
     sub: "이제부터는 이 아이콘을 눌러 들어오세요. 진짜 앱처럼 주소창 없이 깔끔하게 열려요.",
   },
 ];
 
 function HomeScreenSection() {
-  const [device, setDevice] = useState<Device>("ios");
   return (
     <section id="home-screen" className="glass-card scroll-mt-4 p-5 sm:p-6">
       <SectionHead
@@ -320,49 +267,11 @@ function HomeScreenSection() {
         title="홈 화면에 앱처럼 추가하기"
         desc="한 번만 해두면 앱 아이콘을 눌러 바로 들어올 수 있어요"
       />
-      <DeviceTabs value={device} onChange={setDevice} />
-      {device === "ios" ? (
-        <>
-          <AppLinkBox />
-          <p className="mb-2.5 text-xs font-semibold text-ink-soft">
-            👇 사진을 옆으로 넘기면서 그대로 따라 하세요
-          </p>
-          <StepCarousel steps={IOS_STEPS} label="아이폰 홈 화면에 추가하는 방법" />
-        </>
-      ) : (
-        <Steps
-          items={[
-            {
-              text: (
-                <>
-                  <b>크롬(Chrome)</b> 앱으로 우리 앱 주소를 열어요.
-                </>
-              ),
-            },
-            {
-              text: (
-                <>
-                  오른쪽 위 점 3개 <Kbd>⋮</Kbd> 메뉴를 눌러요.
-                </>
-              ),
-            },
-            {
-              text: (
-                <>
-                  <Kbd>홈 화면에 추가</Kbd> 또는 <Kbd>앱 설치</Kbd>를 눌러요.
-                </>
-              ),
-            },
-            {
-              text: (
-                <>
-                  <Kbd>추가</Kbd>를 누르면 끝! 홈 화면에 아이콘이 생겨요.
-                </>
-              ),
-            },
-          ]}
-        />
-      )}
+      <AppLinkBox />
+      <p className="mb-2.5 text-xs font-semibold text-ink-soft">
+        👇 사진을 옆으로 넘기면서 그대로 따라 하세요 (아이폰·안드로이드 모두 크롬 기준으로 똑같아요)
+      </p>
+      <StepCarousel steps={CHROME_ADD_STEPS} label="크롬으로 홈 화면에 추가하는 방법" />
       <Callout>
         <b className="text-skyx-ink">왜 해야 하나요?</b> 아이콘을 눌러 바로 열리고, 진짜 앱처럼 주소창
         없이 깔끔하게 보여요. 아이폰은 이렇게 추가해야만 알림도 받을 수 있어요.
@@ -372,61 +281,37 @@ function HomeScreenSection() {
 }
 
 function EscapeSection() {
-  const [device, setDevice] = useState<Device>("ios");
   return (
     <section id="escape" className="glass-card scroll-mt-4 p-5 sm:p-6">
       <SectionHead
         icon="🚪"
         title="카톡·인스타에서 열었다면?"
-        desc="꼭 사파리·크롬 같은 정식 브라우저로 다시 열어주세요"
+        desc="꼭 크롬 같은 정식 브라우저로 다시 열어주세요"
       />
       <Callout warn>
         <b className="text-gold-ink">왜 그래야 하나요?</b> 카카오톡·인스타그램 안에서 여는 화면은
         &apos;미리보기 창&apos;이에요. 로그인이 안 되거나, 사진이 안 올라가거나, 알림 설정이 안 될 수 있어요.
       </Callout>
       <div className="mt-5">
-        <DeviceTabs value={device} onChange={setDevice} />
-        {device === "ios" ? (
-          <Steps
-            items={[
-              {
-                text: (
-                  <>
-                    화면 오른쪽 아래(또는 위)에서 점 3개 <Kbd>•••</Kbd> 버튼을 찾아요.
-                  </>
-                ),
-              },
-              {
-                text: (
-                  <>
-                    <Kbd>Safari로 열기</Kbd> 또는 <Kbd>다른 브라우저로 열기</Kbd>를 눌러요.
-                  </>
-                ),
-              },
-              { text: "사파리가 열리면 준비 끝! 이제 위 '홈 화면에 추가'를 진행하세요." },
-            ]}
-          />
-        ) : (
-          <Steps
-            items={[
-              {
-                text: (
-                  <>
-                    화면 오른쪽 위(또는 아래)에서 점 3개 <Kbd>⋮</Kbd> 버튼을 찾아요.
-                  </>
-                ),
-              },
-              {
-                text: (
-                  <>
-                    <Kbd>다른 브라우저로 열기</Kbd> 또는 <Kbd>Chrome으로 열기</Kbd>를 눌러요.
-                  </>
-                ),
-              },
-              { text: "크롬이 열리면 준비 끝! 이제 위 '홈 화면에 추가'를 진행하세요." },
-            ]}
-          />
-        )}
+        <Steps
+          items={[
+            {
+              text: (
+                <>
+                  화면 위나 아래에서 점 3개(<Kbd>•••</Kbd> 또는 <Kbd>⋮</Kbd>) 버튼을 찾아요.
+                </>
+              ),
+            },
+            {
+              text: (
+                <>
+                  <Kbd>다른 브라우저로 열기</Kbd> 또는 <Kbd>Chrome으로 열기</Kbd>를 눌러요.
+                </>
+              ),
+            },
+            { text: "크롬이 열리면 준비 끝! 이제 위 '홈 화면에 추가'를 진행하세요." },
+          ]}
+        />
       </div>
     </section>
   );
@@ -538,11 +423,11 @@ function GlossarySection() {
 const FAQ = [
   {
     q: "사진이 안 올라가요",
-    a: "카카오톡 등 인앱 브라우저에서 열었을 가능성이 커요. 위 '🚪 카톡에서 열었다면'을 따라 사파리·크롬으로 다시 열어보세요.",
+    a: "카카오톡 등 인앱 브라우저에서 열었을 가능성이 커요. 위 '🚪 카톡에서 열었다면'을 따라 크롬으로 다시 열어보세요.",
   },
   {
     q: "로그인이 안 돼요",
-    a: "인앱 브라우저에서는 로그인이 막힐 수 있어요. 사파리(아이폰)나 크롬(안드로이드)으로 열어서 다시 시도해주세요.",
+    a: "인앱 브라우저에서는 로그인이 막힐 수 있어요. 크롬으로 열어서 다시 시도해주세요.",
   },
   {
     q: "아이폰인데 알림이 안 와요",
