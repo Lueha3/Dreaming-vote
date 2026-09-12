@@ -61,6 +61,7 @@ export async function GET() {
       id: c.id,
       nickname: c.nickname,
       avatarUrl: c.avatarUrl,
+      age: c.approvedAge,
       group: c.approvedAge != null ? getGroup(c.approvedAge) : null,
       dreamGroup: c.dreamGroup,
       isNewcomer: isNewcomer(c.membershipDecidedAt),
@@ -70,8 +71,15 @@ export async function GET() {
     };
   });
 
-  // 닉네임 오름차순 — 닉네임이 없는(승인 전·탈퇴) 행은 목록에 없지만, 방어적으로 뒤로 보낸다.
-  items.sort((a, b) => (a.nickname ?? "￿").localeCompare(b.nickname ?? "￿", "ko"));
+  // 나이 오름차순(어린 나이 먼저) — 나이가 없는(승인 전·탈퇴) 행은 목록에 없지만,
+  // 방어적으로 맨 뒤로 보낸다. 나이가 같으면 닉네임 가나다순으로 묶는다.
+  items.sort((a, b) => {
+    if (a.age == null && b.age == null) return 0;
+    if (a.age == null) return 1;
+    if (b.age == null) return -1;
+    if (a.age !== b.age) return a.age - b.age;
+    return (a.nickname ?? "￿").localeCompare(b.nickname ?? "￿", "ko");
+  });
 
   const publicItems = items;
 
