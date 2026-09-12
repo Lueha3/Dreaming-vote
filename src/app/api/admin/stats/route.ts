@@ -13,6 +13,7 @@ export async function GET() {
 
   const [
     users,
+    homeScreenInstalls,
     reports,
     clubsTotal,
     clubsPending,
@@ -23,6 +24,7 @@ export async function GET() {
     recommendations,
   ] = await Promise.all([
     prisma.user.count(),
+    prisma.user.count({ where: { homeScreenAddedAt: { not: null } } }),
     prisma.report.count(),
     prisma.club.count(),
     prisma.club.count({ where: { isApproved: false } }),
@@ -37,6 +39,7 @@ export async function GET() {
     ok: true,
     stats: {
       users,
+      homeScreenInstalls,
       reports,
       clubsTotal,
       clubsPending,

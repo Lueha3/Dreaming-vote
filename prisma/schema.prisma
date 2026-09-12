@@ -49,6 +49,10 @@ model User {
   // 개인정보 수집·이용 동의 시각 — 가입 신청 시 체크박스 동의로 세팅.
   // 이 필드 추가 이전 가입자는 null이며, PrivacyConsentPrompt가 최초 접속 시 동의를 받아 채운다.
   privacyAgreedAt     DateTime?
+  // 홈 화면에 추가한 아이콘(standalone)으로 처음 들어온 시각 — 운영 지표 "홈 화면 설치" 집계용.
+  // 브라우저 감지(display-mode: standalone)라 서버가 알 방법이 없어 클라이언트가 최초 1회 기록한다.
+  // 이 필드 추가 이전에 이미 설치해 쓰던 사람은 소급 집계가 안 된다(과거 방문 기록이 없어서).
+  homeScreenAddedAt   DateTime?
 
   ownedClubs          Club[]               @relation("OwnedClubs")
   clubApplications    ClubApplication[]

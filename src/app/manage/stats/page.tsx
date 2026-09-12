@@ -6,6 +6,7 @@ import { FEATURES } from "@/lib/features";
 
 type Stats = {
   users: number;
+  homeScreenInstalls: number;
   reports: number;
   clubsTotal: number;
   clubsPending: number;
@@ -101,6 +102,12 @@ export default function ManageStatsPage() {
 
       <Group title="서비스">
         <StatCard label="가입 유저" value={stats.users} accent="skyx" />
+        <StatCard
+          label="홈 화면 설치"
+          value={stats.homeScreenInstalls}
+          accent="teal"
+          note="2026-09-12 도입 이후 접속자만 집계돼요."
+        />
         {FEATURES.archetype && (
           <>
             <StatCard label="생성된 성향 카드" value={stats.reports} accent="teal" />
@@ -154,15 +161,18 @@ function StatCard({
   label,
   value,
   accent,
+  note,
 }: {
   label: string;
   value: number;
   accent: "gold" | "teal" | "skyx" | "muted";
+  note?: string;
 }) {
   return (
     <div className="glass-card p-5">
       <p className="text-xs text-ink-soft">{label}</p>
       <p className={`mt-1.5 text-3xl font-bold ${ACCENT[accent]}`}>{value.toLocaleString()}</p>
+      {note && <p className="mt-1 text-[11px] leading-relaxed text-ink-faint">{note}</p>}
     </div>
   );
 }
