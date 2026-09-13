@@ -246,6 +246,9 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
             ? "glass-card rounded-none border-t-0 border-x-0 shadow-sm"
             : "pointer-events-none bg-transparent border-transparent"
         }`}
+        // iOS Safari에서 스크롤 중 fixed 요소가 위치를 잃고 본문과 함께 흘러가는 버그 방지 —
+        // 자체 컴포지팅 레이어로 강제 승격한다.
+        style={{ transform: "translateZ(0)" }}
       >
         <div className="mx-auto flex h-14 max-w-2xl items-center px-4">
           <div
@@ -492,7 +495,9 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
       {/* ⑨ 하단 고정 CTA — 모바일 하단 탭바(64px) 위에 뜨도록 오프셋 */}
       <div
         className="fixed bottom-16 left-0 right-0 z-30 border-t border-white/40 bg-white/60 shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.05)] backdrop-blur-xl sm:bottom-0"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        // iOS Safari에서 스크롤 중 fixed 요소가 위치를 잃고 본문과 함께 흘러가는 버그 방지 —
+        // 자체 컴포지팅 레이어로 강제 승격한다.
+        style={{ paddingBottom: "env(safe-area-inset-bottom)", transform: "translateZ(0)" }}
       >
         <div className="mx-auto max-w-2xl px-4 py-3">{renderCta()}</div>
       </div>

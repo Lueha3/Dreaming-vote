@@ -95,6 +95,9 @@ export function BottomTabBar() {
       className="fixed inset-x-0 bottom-0 z-40 flex sm:hidden"
       style={{
         paddingBottom: "env(safe-area-inset-bottom)",
+        // iOS Safari에서 스크롤 중 fixed 요소가 위치를 잃고 본문과 함께 흘러가는 버그 방지 —
+        // 자체 컴포지팅 레이어로 강제 승격한다(globals.css의 background-attachment 제거와 함께).
+        transform: "translateZ(0)",
         background: "rgba(255,255,255,.75)",
         backdropFilter: "blur(16px) saturate(1.4)",
         WebkitBackdropFilter: "blur(16px) saturate(1.4)",

@@ -51,8 +51,11 @@ html {
 }
 
 body {
+  /* background-attachment: fixed는 쓰지 않는다 — iOS Safari가 제대로 지원하지 않고,
+     특히 주소창이 스크롤에 따라 접히고 펴지는 애니메이션과 맞물리면 같은 화면의
+     position: fixed 요소(하단 탭바 등)가 스크롤 중간에 위치를 잃고 본문과 함께
+     흘러가버리는 버그를 유발한다(2026-09 실기기에서 재현됨). */
   background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 58%, var(--bg-low) 100%);
-  background-attachment: fixed;
   color: var(--fg);
   font-family: "Pretendard Variable", Pretendard, -apple-system, "Segoe UI", Arial, sans-serif;
   word-break: keep-all; /* 한글 단어 단위 줄바꿈 */
