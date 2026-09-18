@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { ClubCategoryIcon } from "@/components/icons";
 import { OwnedClubCard, type OwnedClub } from "./OwnedClubCard";
 import { LeaveClubButton } from "./LeaveClubButton";
+import { CancelApplicationButton } from "./CancelApplicationButton";
 
 // getAuthUser가 쿠키를 읽으므로 동적.
 export const dynamic = "force-dynamic";
@@ -122,12 +123,13 @@ export default async function MyClubsPage() {
   }));
 
   const applied: AppliedClub[] = appliedRaw
-    // 나간/내보내진 신청은 '신청한 동아리'에서 숨긴다(다시 신청은 동아리 페이지에서 가능).
+    // 나간/내보내진/취소한 신청은 '신청한 동아리'에서 숨긴다(다시 신청은 동아리 페이지에서 가능).
     .filter(
       (a) =>
         a.club.ownerUserId !== user.dbUserId &&
         a.status !== "left" &&
-        a.status !== "removed",
+        a.status !== "removed" &&
+        a.status !== "cancelled",
     )
     .map((a) => ({
       applicationId: a.id,
@@ -263,6 +265,11 @@ export default async function MyClubsPage() {
                   {a.status === "accepted" && (
                     <div className="mt-1.5 flex justify-end px-1">
                       <LeaveClubButton clubId={a.clubId} clubName={a.clubName} />
+                    </div>
+                  )}
+                  {a.status === "pending" && (
+                    <div className="mt-1.5 flex justify-end px-1">
+                      <CancelApplicationButton clubId={a.clubId} clubName={a.clubName} />
                     </div>
                   )}
                 </li>

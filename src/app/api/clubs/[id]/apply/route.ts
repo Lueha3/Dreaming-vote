@@ -112,3 +112,29 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   return NextResponse.json({ ok: true });
 }
+
+/**
+ * DELETE /api/clubs/[id]/apply
+ * 대기 중인(pending) 가입 신청을 신청자 스스로 취소 — status="cancelled".
+ * 이미 수락/거절된 신청은 대상이 아니다(수락은 나가기로, 거절 후엔 다시 신청하면 된다).
+ */
+export async function DELETE(_req: NextRequest, { params }: Params) {
+  const { id } = params instanceof Promise ? await params : params;
+
+  const user = await getAuthUser();
+  if (!user) {
+    return NextResponse.json({ ok: false, error: "로그인이 필요합니다." }, { status: 401 });
+  }
+
+  const app = await prisma.clubApplication.findUnique({
+    where: { clubId_userId: { clubId: id, userId: user.dbUserId } },
+    select: { id: true, status: true },
+  });
+  if (!app || app.status !== "pending") {
+    return NextResponse.json({ ok: false, error: "취소할 신청이 없어요." }, { status: 400 });
+  }
+
+  await prisma.clubApplication.update({ where: { id: app.id }, data: { status: "cancelled" } });
+
+  return NextResponse.json({ ok: true });
+}

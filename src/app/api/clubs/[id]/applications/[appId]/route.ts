@@ -108,6 +108,12 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   /* ── 수락 / 반려 (개설자) ─────────────────────────────────── */
+  // 신청자가 이미 취소했거나(cancelled) 나갔거나 강퇴된 신청을 뒤늦게 수락/반려하면
+  // 그 상태를 덮어써버리므로 막는다. 이미 accepted/rejected인 건 그대로 허용해
+  // 아래 멱등 처리(중복 클릭 시 무한 알림 방지)가 계속 동작하게 한다.
+  if (app.status === "cancelled" || app.status === "left" || app.status === "removed") {
+    return NextResponse.json({ ok: false, error: "처리할 수 없는 신청이에요." }, { status: 409 });
+  }
   const targetStatus = action === "accept" ? "accepted" : "rejected";
   // 멱등 처리: 이미 같은 상태면 아무것도 안 한다.
   // (안 그러면 개설자가 수락/반려를 반복 POST할 때마다 신청자에게 알림이 무한 생성된다)

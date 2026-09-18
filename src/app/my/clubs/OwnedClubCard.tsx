@@ -227,6 +227,8 @@ export function OwnedClubCard({ club }: { club: OwnedClub }) {
                         <span className="text-xs font-medium text-ink-faint">나감</span>
                       ) : a.status === "removed" ? (
                         <span className="text-xs font-medium text-ink-faint">내보냄</span>
+                      ) : a.status === "cancelled" ? (
+                        <span className="text-xs font-medium text-ink-faint">신청 취소함</span>
                       ) : (
                         <span className="text-xs font-medium text-ink-faint">거절됨</span>
                       )}
