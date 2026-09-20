@@ -113,15 +113,15 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
             내가 개설한 동아리예요 · 신청 관리하기 →
           </Link>
           {!pending && (
-            <Link
-              href="/prank"
-              className="glass-card shrink-0 bg-white/80 px-4 py-3.5 text-center text-sm font-medium text-gold-ink transition-all hover:border-gold/40"
-            >
-              📣 광고하기
-              <span className="mt-0.5 block text-[10px] font-normal text-ink-faint/70">
-                눌러보세요
-              </span>
-            </Link>
+            <div className="flex shrink-0 flex-col items-center gap-1">
+              <Link
+                href="/prank"
+                className="glass-card bg-white/80 px-4 py-3.5 text-center text-sm font-medium text-gold-ink transition-all hover:border-gold/40"
+              >
+                📣 광고하기
+              </Link>
+              <span className="text-[10px] text-ink-faint/70">눌러보세요</span>
+            </div>
           )}
         </div>
       );
@@ -157,15 +157,15 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
             ✓ 함께하고 있는 동아리예요!
           </div>
           {!pending && (
-            <Link
-              href="/prank"
-              className="shrink-0 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3.5 text-center text-sm font-medium text-gold-ink transition-all hover:bg-gold/20"
-            >
-              📣 광고하기
-              <span className="mt-0.5 block text-[10px] font-normal text-ink-faint/70">
-                눌러보세요
-              </span>
-            </Link>
+            <div className="flex shrink-0 flex-col items-center gap-1">
+              <Link
+                href="/prank"
+                className="rounded-xl border border-gold/40 bg-gold/10 px-4 py-3.5 text-center text-sm font-medium text-gold-ink transition-all hover:bg-gold/20"
+              >
+                📣 광고하기
+              </Link>
+              <span className="text-[10px] text-ink-faint/70">눌러보세요</span>
+            </div>
           )}
         </div>
       );
