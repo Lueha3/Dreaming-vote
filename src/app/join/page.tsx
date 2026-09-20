@@ -240,6 +240,14 @@ function JoinForm() {
           관리자 승인 후 모든 활동에 참여할 수 있어요.
         </p>
 
+        <div className="mb-6 rounded-xl border border-gold/40 bg-gold/[0.08] px-4 py-3 text-sm text-gold-ink">
+          ⚠️ 반드시 <b>실명</b>과 <b>실제 나이</b>로 신청해주세요.
+          <span className="mt-1 block text-xs text-ink-soft">
+            멤버 확인·활동 닉네임 생성에 쓰이는 정보라, 허위로 기재하면 승인이 거절되거나 이후
+            제재될 수 있어요.
+          </span>
+        </div>
+
         {status === "rejected" && (
           <div className="mb-6 rounded-xl border border-red-300/60 bg-red-500/[0.07] px-4 py-3 text-sm text-red-500">
             이전 신청이 승인되지 않았어요.
@@ -274,6 +282,7 @@ function JoinForm() {
                 maxLength={20}
                 className="w-full rounded-xl border border-white/95 bg-white/70 px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-teal focus:outline-none"
               />
+              <p className="mt-1.5 text-[11px] text-ink-faint">별명이 아닌 실명을 입력해주세요.</p>
             </div>
 
             {/* 나이 — 유디코(26~33세) 전용 재편(2026-09) 이후 이 범위만 신청 가능 */}
@@ -290,6 +299,7 @@ function JoinForm() {
                 placeholder="예: 28"
                 className="w-full rounded-xl border border-white/95 bg-white/70 px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-teal focus:outline-none"
               />
+              <p className="mt-1.5 text-[11px] text-ink-faint">실제 만 나이를 입력해주세요.</p>
               {age && (
                 <div className="mt-2">
                   {group ? (
