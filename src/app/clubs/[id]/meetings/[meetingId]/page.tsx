@@ -823,6 +823,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 /** 참석 응답별 아바타 줄 — 라벨을 달아 "가요"/"아마도" 목록을 명확히 구분한다. */
+/**
+ * 참석 응답별 명단 — 아바타만으론 누가 누군지 알 수 없어(이름은 hover/long-press로만
+ * 보임) 이름을 항상 함께 보여주는 리스트로 바꿨다. 닉네임이 "집단-나이-이름" 형식이라
+ * 길어서 한 줄에 하나씩 세로로 나열하지 않고 2~3열 그리드로 압축한다.
+ */
 function RsvpAvatarRow({
   label,
   count,
@@ -834,30 +839,31 @@ function RsvpAvatarRow({
 }) {
   if (count === 0) return null;
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-1.5">
-      <span className="mr-1 text-xs font-medium text-ink-faint">{label}</span>
-      {people.map((p, i) =>
-        p.avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img loading="lazy" decoding="async" key={i}
-            src={p.avatarUrl}
-            alt=""
-            title={p.nickname ?? ""}
-            className="h-7 w-7 rounded-full object-cover ring-2 ring-white"
-          />
-        ) : (
-          <div
-            key={i}
-            title={p.nickname ?? ""}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-skyx/25 text-[11px] text-skyx-ink ring-2 ring-white"
-          >
-            {(p.nickname ?? "?")[0]}
-          </div>
-        ),
-      )}
-      {count > people.length && (
-        <span className="text-xs text-ink-faint">+{count - people.length}</span>
-      )}
+    <div className="mt-3">
+      <p className="mb-1.5 text-xs font-medium text-ink-faint">
+        {label} {count}명
+      </p>
+      <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 sm:grid-cols-3">
+        {people.map((p, i) => (
+          <li key={i} className="flex min-w-0 items-center gap-1.5">
+            {p.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img loading="lazy" decoding="async" src={p.avatarUrl}
+                alt=""
+                className="h-6 w-6 shrink-0 rounded-full object-cover ring-1 ring-white"
+              />
+            ) : (
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-skyx/25 text-[10px] text-skyx-ink ring-1 ring-white">
+                {(p.nickname ?? "?")[0]}
+              </div>
+            )}
+            <span className="truncate text-xs text-ink">{p.nickname ?? "탈퇴한 멤버"}</span>
+          </li>
+        ))}
+        {count > people.length && (
+          <li className="text-xs text-ink-faint">외 {count - people.length}명</li>
+        )}
+      </ul>
     </div>
   );
 }
