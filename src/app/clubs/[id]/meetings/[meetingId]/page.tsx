@@ -42,6 +42,7 @@ type RsvpData = {
   goingCount: number;
   maybeCount: number;
   going: { nickname: string | null; avatarUrl: string | null }[];
+  maybe: { nickname: string | null; avatarUrl: string | null }[];
 };
 
 type DetailResponse = {
@@ -567,34 +568,10 @@ export default function MeetingDetailPage({ params }: PageProps) {
                 );
               })}
             </div>
-            {data.rsvp.going.length > 0 && (
-              <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                {data.rsvp.going.map((g, i) =>
-                  g.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img loading="lazy" decoding="async" key={i}
-                      src={g.avatarUrl}
-                      alt=""
-                      title={g.nickname ?? ""}
-                      className="h-7 w-7 rounded-full object-cover ring-2 ring-white"
-                    />
-                  ) : (
-                    <div
-                      key={i}
-                      title={g.nickname ?? ""}
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-skyx/25 text-[11px] text-skyx-ink ring-2 ring-white"
-                    >
-                      {(g.nickname ?? "?")[0]}
-                    </div>
-                  ),
-                )}
-                {data.rsvp.goingCount > data.rsvp.going.length && (
-                  <span className="text-xs text-ink-faint">
-                    +{data.rsvp.goingCount - data.rsvp.going.length}
-                  </span>
-                )}
-              </div>
-            )}
+            {/* 가요/아마도 아바타 줄 — 라벨 없이 하나만 두면 지금 누른 버튼에 따라
+                바뀌는 목록처럼 오해할 수 있어 각 줄에 라벨을 붙여 구분한다. */}
+            <RsvpAvatarRow label="🙌 가요" count={data.rsvp.goingCount} people={data.rsvp.going} />
+            <RsvpAvatarRow label="🤔 아마도" count={data.rsvp.maybeCount} people={data.rsvp.maybe} />
             {rsvpErr && <p className="mt-2 text-xs text-red-500">{rsvpErr}</p>}
           </section>
         )}
@@ -841,6 +818,46 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div>
       <label className="mb-1 block text-[11px] text-ink-soft">{label}</label>
       {children}
+    </div>
+  );
+}
+
+/** 참석 응답별 아바타 줄 — 라벨을 달아 "가요"/"아마도" 목록을 명확히 구분한다. */
+function RsvpAvatarRow({
+  label,
+  count,
+  people,
+}: {
+  label: string;
+  count: number;
+  people: { nickname: string | null; avatarUrl: string | null }[];
+}) {
+  if (count === 0) return null;
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+      <span className="mr-1 text-xs font-medium text-ink-faint">{label}</span>
+      {people.map((p, i) =>
+        p.avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img loading="lazy" decoding="async" key={i}
+            src={p.avatarUrl}
+            alt=""
+            title={p.nickname ?? ""}
+            className="h-7 w-7 rounded-full object-cover ring-2 ring-white"
+          />
+        ) : (
+          <div
+            key={i}
+            title={p.nickname ?? ""}
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-skyx/25 text-[11px] text-skyx-ink ring-2 ring-white"
+          >
+            {(p.nickname ?? "?")[0]}
+          </div>
+        ),
+      )}
+      {count > people.length && (
+        <span className="text-xs text-ink-faint">+{count - people.length}</span>
+      )}
     </div>
   );
 }

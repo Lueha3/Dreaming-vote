@@ -115,8 +115,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
       myStatus,
       goingCount: going.length,
       maybeCount: maybe.length,
-      // 참석자 아바타 줄 — 너무 길지 않게 going 우선 최대 12명 표시.
+      // 참석자 아바타 줄 — 너무 길지 않게 각각 최대 12명 표시.
       going: going.slice(0, 12).map((r) => ({
+        nickname: r.user?.nickname ?? null,
+        avatarUrl: r.user?.avatarUrl ?? null,
+      })),
+      maybe: maybe.slice(0, 12).map((r) => ({
         nickname: r.user?.nickname ?? null,
         avatarUrl: r.user?.avatarUrl ?? null,
       })),
