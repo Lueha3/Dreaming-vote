@@ -114,7 +114,7 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
           </Link>
           {!pending && (
             <Link
-              href={`/prayer?category=${encodeURIComponent("동아리광고")}&club=${club.id}`}
+              href="/prank"
               className="glass-card shrink-0 bg-white/80 px-4 py-3.5 text-center text-sm font-medium text-gold-ink transition-all hover:border-gold/40"
             >
               📣 광고하기
@@ -155,7 +155,7 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
           </div>
           {!pending && (
             <Link
-              href={`/prayer?category=${encodeURIComponent("동아리광고")}&club=${club.id}`}
+              href="/prank"
               className="shrink-0 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3.5 text-center text-sm font-medium text-gold-ink transition-all hover:bg-gold/20"
             >
               📣 광고하기
