@@ -17,6 +17,22 @@ export type ClubMeeting = {
   coverImage?: string | null;
 };
 
+/** 비멤버 공개 하이라이트 — 일시·장소 없이 후기·사진 내용만. */
+export type MeetingHighlight = {
+  id: string;
+  title: string;
+  reviewCount: number;
+  imageCount: number;
+  images: { url: string; caption: string }[];
+  reviews: {
+    id: string;
+    content: string;
+    createdAt: string;
+    authorNickname: string | null;
+    authorAvatarUrl: string | null;
+  }[];
+};
+
 type Props = {
   clubId: string;
   isMember: boolean;
@@ -44,6 +60,8 @@ export function ClubMeetingCalendar({ clubId, isMember, isOwner, membershipStatu
   const router = useRouter();
   const [meetings, setMeetings] = useState<ClubMeeting[]>([]);
   const [loading, setLoading] = useState(isMember);
+  const [highlights, setHighlights] = useState<MeetingHighlight[]>([]);
+  const [highlightsLoading, setHighlightsLoading] = useState(!isMember);
   const today = useMemo(() => new Date(), []);
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth()); // 0-based
@@ -72,8 +90,21 @@ export function ClubMeetingCalendar({ clubId, isMember, isOwner, membershipStatu
     setLoading(false);
   }
 
+  // 비멤버: 일정 대신 공개 하이라이트(후기·사진)를 불러온다.
+  async function loadHighlights() {
+    try {
+      const res = await fetch(`/api/clubs/${clubId}/meetings`, { cache: "no-store" });
+      const json = await res.json();
+      if (json.ok) setHighlights(json.highlights ?? []);
+    } catch {
+      /* 조용히 무시 — 하이라이트는 부가 기능 */
+    }
+    setHighlightsLoading(false);
+  }
+
   useEffect(() => {
     if (isMember) load();
+    else loadHighlights();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clubId, isMember]);
 
@@ -86,15 +117,60 @@ export function ClubMeetingCalendar({ clubId, isMember, isOwner, membershipStatu
     return () => document.removeEventListener("mousedown", onDown);
   }, [previewKey]);
 
-  /* ── 비멤버: 잠금 티저 ─────────────────────────────────── */
+  /* ── 비멤버: 잠금 티저 + 공개 후기·사진 하이라이트 ─────────────────── */
   if (!isMember) {
     return (
-      <div className="glass-card p-6 text-center">
-        <div className="mb-2 text-2xl">🗓️</div>
-        <p className="text-sm font-semibold text-ink">모임 일정은 멤버에게 공개돼요</p>
-        <p className="mt-1 text-xs text-ink-faint">
-          가입하면 모임 시간·장소·후기·사진을 함께 볼 수 있어요.
-        </p>
+      <div className="space-y-4">
+        <div className="glass-card p-6 text-center">
+          <div className="mb-2 text-2xl">🗓️</div>
+          <p className="text-sm font-semibold text-ink">모임 일정은 멤버에게 공개돼요</p>
+          <p className="mt-1 text-xs text-ink-faint">가입하면 모임 시간·장소도 함께 볼 수 있어요.</p>
+        </div>
+
+        {highlightsLoading ? (
+          <div className="glass-card h-32 animate-pulse p-6" />
+        ) : highlights.length > 0 ? (
+          <div className="glass-card p-5 sm:p-6">
+            <h2 className="mb-3 text-sm font-bold text-ink">💬 모임 후기 &amp; 사진</h2>
+            <div className="space-y-4">
+              {highlights.map((h) => (
+                <Link
+                  key={h.id}
+                  href={`/clubs/${clubId}/meetings/${h.id}#reviews`}
+                  className="glass-soft block rounded-xl p-4 transition-colors hover:bg-white/85"
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-sm font-semibold text-ink">{h.title}</p>
+                    <span className="shrink-0 text-[11px] text-ink-faint">
+                      💬 {h.reviewCount} · 📸 {h.imageCount}
+                    </span>
+                  </div>
+                  {h.images.length > 0 && (
+                    <div className="mb-2 flex gap-1.5 overflow-x-auto">
+                      {h.images.map((img, i) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={i}
+                          loading="lazy"
+                          decoding="async"
+                          src={img.url}
+                          alt={img.caption || ""}
+                          className="h-16 w-16 shrink-0 rounded-lg border border-sky-line object-cover"
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {h.reviews.slice(0, 2).map((r) => (
+                    <p key={r.id} className="mt-1 truncate text-xs text-ink-soft">
+                      <span className="font-medium text-ink">{r.authorNickname ?? "탈퇴한 멤버"}</span>{" "}
+                      {r.content}
+                    </p>
+                  ))}
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   }

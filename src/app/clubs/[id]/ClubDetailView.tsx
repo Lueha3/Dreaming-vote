@@ -30,6 +30,7 @@ function togetherLabel(createdAt: string): string {
  * 동아리 상세 뷰 — 클라이언트(스크롤 헤더·신청 폼·갤러리 모달).
  * 데이터는 서버 컴포넌트(page)가 getClubDetail로 SSR해 props로 주입 → 클라 페치 워터폴 제거.
  * 모임 캘린더(ClubMeetingCalendar)는 멤버 게이팅·하단 위치라 기존대로 자체 로드(무변경 원칙).
+ * (비멤버에게는 캘린더 대신 공개 후기·사진 하이라이트를 자체 로드해 보여준다.)
  */
 export function ClubDetailView({ initialData }: { initialData: ClubDetailData }) {
   const data = initialData;

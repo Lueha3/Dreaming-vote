@@ -4,7 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getAuthUser, membershipGate } from "@/lib/auth";
 import { getClubMembership } from "@/lib/clubAccess";
-import type { Role } from "@/lib/roles";
+import { hasAtLeast, type Role } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
 import { removeStorageObjects } from "@/lib/storage";
 
@@ -14,23 +14,23 @@ type Params = {
 
 /**
  * GET /api/clubs/[id]/meetings/[meetingId]
- * 모임 상세(일정 + 후기 + 갤러리) — 동아리 멤버에게만 공개.
+ * 모임 후기·사진은 누구나 열람 가능(전체공개). 단, 일시·장소 등 민감 정보와 참석(RSVP) 명단은
+ * 여전히 동아리 멤버에게만 공개 — meeting/rsvp를 멤버가 아니면 null로 내려보낸다.
+ * 미승인/숨김 동아리는 개설자·운영진 외에는 공개 리소스도 노출하지 않는다(상세 페이지와 동일 규칙).
  * 각 후기/사진의 canDelete는 작성자/업로더 또는 개설자 여부로 서버에서 판정(PII 미노출).
  */
 export async function GET(_req: NextRequest, { params }: Params) {
   const { id, meetingId } = params instanceof Promise ? await params : params;
 
   const user = await getAuthUser();
-  const { club, isOwner, isMember } = await getClubMembership(id, user?.dbUserId ?? null);
+  const { club, isOwner, isMember, isHidden } = await getClubMembership(id, user?.dbUserId ?? null);
 
   if (!club) {
     return NextResponse.json({ ok: false, error: "동아리를 찾을 수 없습니다." }, { status: 404 });
   }
-  if (!isMember) {
-    return NextResponse.json(
-      { ok: false, code: "member_only", error: "모임 상세는 동아리 멤버에게만 공개돼요." },
-      { status: 403 },
-    );
+  const isStaff = hasAtLeast(user?.role, "staff");
+  if (isHidden && !isOwner && !isStaff) {
+    return NextResponse.json({ ok: false, error: "모임을 찾을 수 없습니다." }, { status: 404 });
   }
 
   const meeting = await prisma.clubMeeting.findUnique({
@@ -87,12 +87,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
     meeting: {
       id: meeting.id,
       title: meeting.title,
-      meetsAt: meeting.meetsAt,
-      place: meeting.place,
-      items: meeting.items,
-      fee: meeting.fee,
-      note: meeting.note,
+      // 일시·장소·준비물·회비·안내는 민감 정보라 멤버에게만 공개 — 비멤버는 null.
+      meetsAt: isMember ? meeting.meetsAt : null,
+      place: isMember ? meeting.place : null,
+      items: isMember ? meeting.items : null,
+      fee: isMember ? meeting.fee : null,
+      note: isMember ? meeting.note : null,
     },
+    // 후기·사진은 전체공개 — 멤버 여부와 무관하게 항상 내려준다.
     reviews: meeting.reviews.map((r) => ({
       id: r.id,
       content: r.content,
@@ -111,20 +113,23 @@ export async function GET(_req: NextRequest, { params }: Params) {
       caption: img.caption,
       canDelete: isOwner || (!!me && img.userId === me),
     })),
-    rsvp: {
-      myStatus,
-      goingCount: going.length,
-      maybeCount: maybe.length,
-      // 참석자 아바타 줄 — 너무 길지 않게 각각 최대 12명 표시.
-      going: going.slice(0, 12).map((r) => ({
-        nickname: r.user?.nickname ?? null,
-        avatarUrl: r.user?.avatarUrl ?? null,
-      })),
-      maybe: maybe.slice(0, 12).map((r) => ({
-        nickname: r.user?.nickname ?? null,
-        avatarUrl: r.user?.avatarUrl ?? null,
-      })),
-    },
+    // 참석(RSVP) 명단은 실명급 닉네임을 포함해 멤버 전용 — 비멤버는 null.
+    rsvp: isMember
+      ? {
+          myStatus,
+          goingCount: going.length,
+          maybeCount: maybe.length,
+          // 참석자 아바타 줄 — 너무 길지 않게 각각 최대 12명 표시.
+          going: going.slice(0, 12).map((r) => ({
+            nickname: r.user?.nickname ?? null,
+            avatarUrl: r.user?.avatarUrl ?? null,
+          })),
+          maybe: maybe.slice(0, 12).map((r) => ({
+            nickname: r.user?.nickname ?? null,
+            avatarUrl: r.user?.avatarUrl ?? null,
+          })),
+        }
+      : null,
   });
 }
 

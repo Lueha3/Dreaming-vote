@@ -3,6 +3,8 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/db";
 import { getAuthUser, membershipGate } from "@/lib/auth";
+import { getClubMembership } from "@/lib/clubAccess";
+import { hasAtLeast } from "@/lib/roles";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { createNotifications } from "@/lib/notifications";
 
@@ -17,76 +19,94 @@ const createSchema = z.object({
   note: z.string().trim().max(1000).nullable().optional(),
 });
 
-/** 이 동아리의 멤버(개설자 or accepted)인지 판정 */
-async function getMembershipInfo(clubId: string, dbUserId: string | null) {
-  const club = await prisma.club.findUnique({
-    where: { id: clubId },
-    select: { id: true, ownerUserId: true },
-  });
-  if (!club) return { club: null, isOwner: false, isMember: false };
-  if (!dbUserId) return { club, isOwner: false, isMember: false };
-
-  const isOwner = club.ownerUserId === dbUserId;
-  if (isOwner) return { club, isOwner: true, isMember: true };
-
-  const app = await prisma.clubApplication.findUnique({
-    where: { clubId_userId: { clubId, userId: dbUserId } },
-    select: { status: true },
-  });
-  return { club, isOwner: false, isMember: app?.status === "accepted" };
-}
-
 /**
  * GET /api/clubs/[id]/meetings
- * 모임 공지 목록 — 동아리 멤버(개설자+가입 멤버)에게만 공개.
- * 모임 장소·시간은 민감 정보라 비멤버에겐 403 (code: member_only).
+ * 멤버: 모임 일정(일시·장소 포함) 전체 목록.
+ * 비멤버: 일정은 민감 정보라 계속 비공개지만, 후기·사진이 있는 지난 모임은 "하이라이트"로
+ * 전체공개 — 일시·장소·준비물·회비·안내는 빼고 후기·사진 내용만 내려준다.
+ * 미승인/숨김 동아리는 개설자·운영진 외에는 하이라이트도 노출하지 않는다.
  */
 export async function GET(req: NextRequest, { params }: Params) {
   const { id } = params instanceof Promise ? await params : params;
 
   const user = await getAuthUser();
-  const { club, isOwner, isMember } = await getMembershipInfo(id, user?.dbUserId ?? null);
+  const { club, isOwner, isMember, isHidden } = await getClubMembership(id, user?.dbUserId ?? null);
 
   if (!club) {
     return NextResponse.json({ ok: false, error: "동아리를 찾을 수 없습니다." }, { status: 404 });
   }
-  if (!isMember) {
-    return NextResponse.json(
-      { ok: false, code: "member_only", error: "모임 일정은 동아리 멤버에게만 공개돼요." },
-      { status: 403 },
-    );
+
+  if (isMember) {
+    const rows = await prisma.clubMeeting.findMany({
+      where: { clubId: id },
+      orderBy: { meetsAt: "asc" },
+      select: {
+        id: true,
+        title: true,
+        meetsAt: true,
+        place: true,
+        items: true,
+        fee: true,
+        note: true,
+        _count: { select: { reviews: true, images: true } },
+        images: { take: 1, orderBy: [{ order: "asc" }, { createdAt: "asc" }], select: { url: true } },
+      },
+    });
+
+    const meetings = rows.map((m) => ({
+      id: m.id,
+      title: m.title,
+      meetsAt: m.meetsAt,
+      place: m.place,
+      items: m.items,
+      fee: m.fee,
+      note: m.note,
+      reviewCount: m._count.reviews,
+      imageCount: m._count.images,
+      coverImage: m.images[0]?.url ?? null,
+    }));
+
+    return NextResponse.json({ ok: true, isMember: true, isOwner, meetings });
+  }
+
+  const isStaff = hasAtLeast(user?.role, "staff");
+  if (isHidden && !isOwner && !isStaff) {
+    return NextResponse.json({ ok: true, isMember: false, isOwner, highlights: [] });
   }
 
   const rows = await prisma.clubMeeting.findMany({
-    where: { clubId: id },
-    orderBy: { meetsAt: "asc" },
+    where: { clubId: id, OR: [{ reviews: { some: {} } }, { images: { some: {} } }] },
+    orderBy: { meetsAt: "desc" },
+    take: 30,
     select: {
       id: true,
       title: true,
-      meetsAt: true,
-      place: true,
-      items: true,
-      fee: true,
-      note: true,
       _count: { select: { reviews: true, images: true } },
-      images: { take: 1, orderBy: [{ order: "asc" }, { createdAt: "asc" }], select: { url: true } },
+      images: { take: 4, orderBy: [{ order: "asc" }, { createdAt: "asc" }], select: { url: true, caption: true } },
+      reviews: {
+        take: 3,
+        orderBy: { createdAt: "desc" },
+        select: { id: true, content: true, createdAt: true, user: { select: { nickname: true, avatarUrl: true } } },
+      },
     },
   });
 
-  const meetings = rows.map((m) => ({
+  const highlights = rows.map((m) => ({
     id: m.id,
     title: m.title,
-    meetsAt: m.meetsAt,
-    place: m.place,
-    items: m.items,
-    fee: m.fee,
-    note: m.note,
     reviewCount: m._count.reviews,
     imageCount: m._count.images,
-    coverImage: m.images[0]?.url ?? null,
+    images: m.images.map((img) => ({ url: img.url, caption: img.caption })),
+    reviews: m.reviews.map((r) => ({
+      id: r.id,
+      content: r.content,
+      createdAt: r.createdAt,
+      authorNickname: r.user?.nickname ?? null,
+      authorAvatarUrl: r.user?.avatarUrl ?? null,
+    })),
   }));
 
-  return NextResponse.json({ ok: true, isOwner, meetings });
+  return NextResponse.json({ ok: true, isMember: false, isOwner, highlights });
 }
 
 /**

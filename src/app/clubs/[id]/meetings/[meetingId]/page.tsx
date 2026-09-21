@@ -16,8 +16,9 @@ type PageProps = {
 type MeetingDetail = {
   id: string;
   title: string;
-  meetsAt: string;
-  place: string;
+  // 일시·장소 등은 민감 정보라 멤버가 아니면 서버가 null로 내려준다.
+  meetsAt: string | null;
+  place: string | null;
   items: string | null;
   fee: string | null;
   note: string | null;
@@ -52,7 +53,8 @@ type DetailResponse = {
   meeting: MeetingDetail;
   reviews: ReviewItem[];
   images: ImageItem[];
-  rsvp: RsvpData;
+  // 참석(RSVP) 명단은 멤버 전용 — 비멤버는 null.
+  rsvp: RsvpData | null;
 };
 
 function fmtFull(iso: string): string {
@@ -88,7 +90,7 @@ export default function MeetingDetailPage({ params }: PageProps) {
   const [ids, setIds] = useState<{ id: string; meetingId: string } | null>(null);
   const [data, setData] = useState<DetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [errState, setErrState] = useState<"notfound" | "member_only" | null>(null);
+  const [errState, setErrState] = useState<"notfound" | null>(null);
 
   // 후기 작성
   const [reviewText, setReviewText] = useState("");
@@ -133,8 +135,6 @@ export default function MeetingDetailPage({ params }: PageProps) {
       if (json.ok) {
         setData(json);
         setErrState(null);
-      } else if (json.code === "member_only") {
-        setErrState("member_only");
       } else if (!opts?.silent) {
         // 이미 로드된 화면에서의 갱신(silent) 실패는 전체를 not-found로 갈아엎지 않는다.
         setErrState("notfound");
@@ -296,10 +296,11 @@ export default function MeetingDetailPage({ params }: PageProps) {
   function openEdit() {
     if (!data) return;
     const m = data.meeting;
+    // 수정 폼은 개설자 전용이고 개설자는 항상 멤버라 meetsAt·place가 채워져 있다.
     setEf({
       title: m.title,
-      meetsAt: toLocalInput(m.meetsAt),
-      place: m.place,
+      meetsAt: m.meetsAt ? toLocalInput(m.meetsAt) : "",
+      place: m.place ?? "",
       items: m.items ?? "",
       fee: m.fee ?? "",
       note: m.note ?? "",
@@ -369,23 +370,6 @@ export default function MeetingDetailPage({ params }: PageProps) {
     );
   }
 
-  if (errState === "member_only") {
-    return (
-      <div className="relative flex min-h-screen items-center justify-center overflow-hidden">
-        <div className="relative px-6 text-center">
-          <div className="mb-5 text-5xl">🔒</div>
-          <h2 className="mb-2 text-xl font-bold text-ink">멤버에게만 공개돼요</h2>
-          <p className="mb-7 text-sm text-ink-soft">
-            모임 일정·후기·사진은 동아리 멤버만 볼 수 있어요.
-          </p>
-          <Link href={backHref} className="btn-gold inline-block rounded-full px-6 py-3 text-sm">
-            동아리로 돌아가기
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   if (errState === "notfound" || !data) {
     return (
       <div className="relative flex min-h-screen items-center justify-center overflow-hidden">
@@ -401,8 +385,8 @@ export default function MeetingDetailPage({ params }: PageProps) {
     );
   }
 
-  const { meeting, reviews, images, isOwner } = data;
-  const isPast = new Date(meeting.meetsAt).getTime() < Date.now();
+  const { meeting, reviews, images, isOwner, isMember } = data;
+  const isPast = meeting.meetsAt ? new Date(meeting.meetsAt).getTime() < Date.now() : null;
 
   return (
     <div className="relative min-h-screen overflow-hidden pb-16">
@@ -511,81 +495,99 @@ export default function MeetingDetailPage({ params }: PageProps) {
           </div>
         ) : (
           <div className="glass-card glass-ribbon relative mb-6 overflow-hidden p-6 sm:p-7">
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              <span
-                className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                  isPast
-                    ? "glass-soft text-ink-faint"
-                    : "border border-teal/35 bg-teal/10 text-teal-ink"
-                }`}
-              >
-                {isPast ? "지난 모임" : "예정된 모임"}
-              </span>
-            </div>
+            {isPast !== null && (
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                    isPast
+                      ? "glass-soft text-ink-faint"
+                      : "border border-teal/35 bg-teal/10 text-teal-ink"
+                  }`}
+                >
+                  {isPast ? "지난 모임" : "예정된 모임"}
+                </span>
+              </div>
+            )}
             <h1 className="mb-4 text-xl font-bold text-ink sm:text-2xl">{meeting.title}</h1>
-            <dl className="space-y-2.5 text-sm">
-              <InfoRow icon="🗓️" label="일시" value={fmtFull(meeting.meetsAt)} />
-              <InfoRow icon="📍" label="장소" value={meeting.place} />
-              {meeting.items && <InfoRow icon="🎒" label="준비물" value={meeting.items} />}
-              {meeting.fee && <InfoRow icon="💰" label="회비" value={meeting.fee} />}
-            </dl>
-            {meeting.note && (
-              <p className="mt-4 whitespace-pre-wrap border-t border-sky-line pt-4 text-sm leading-relaxed text-ink-soft">
-                {meeting.note}
+            {isMember ? (
+              <>
+                <dl className="space-y-2.5 text-sm">
+                  <InfoRow icon="🗓️" label="일시" value={fmtFull(meeting.meetsAt!)} />
+                  <InfoRow icon="📍" label="장소" value={meeting.place!} />
+                  {meeting.items && <InfoRow icon="🎒" label="준비물" value={meeting.items} />}
+                  {meeting.fee && <InfoRow icon="💰" label="회비" value={meeting.fee} />}
+                </dl>
+                {meeting.note && (
+                  <p className="mt-4 whitespace-pre-wrap border-t border-sky-line pt-4 text-sm leading-relaxed text-ink-soft">
+                    {meeting.note}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-ink-faint">
+                🔒 일시·장소는 동아리 멤버에게만 공개돼요.{" "}
+                <Link href={backHref} className="font-medium text-skyx-ink hover:underline">
+                  가입하러 가기
+                </Link>
               </p>
             )}
           </div>
         )}
 
-        {/* ①-b 참석 표시(RSVP) — 예정된 모임에서만 */}
-        {!editing && !isPast && (
-          <section className="glass-card mb-6 bg-white/80 p-5 sm:p-6">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-base font-bold text-ink">🙋 참석</h2>
-              <span className="text-xs text-ink-faint">
-                가요 {data.rsvp.goingCount}
-                {data.rsvp.maybeCount > 0 ? ` · 아마도 ${data.rsvp.maybeCount}` : ""}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              {(["going", "maybe", "none"] as const).map((s) => {
-                // myStatus는 going|maybe|null만 — "none"과 절대 일치하지 않아 미응답 시 어떤 버튼도 강조 안 됨.
-                const active = data.rsvp.myStatus === s;
-                const label = s === "going" ? "🙌 가요" : s === "maybe" ? "🤔 아마도" : "🙅 안 가요";
-                return (
-                  <button
-                    key={s}
-                    onClick={() => setRsvp(s)}
-                    disabled={rsvpBusy}
-                    className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all disabled:opacity-50 ${
-                      active
-                        ? "border-teal/50 bg-teal/15 text-teal-ink"
-                        : "border-white/90 bg-white/60 text-ink-soft hover:bg-white/90 hover:text-ink"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-            {/* 가요/아마도 아바타 줄 — 라벨 없이 하나만 두면 지금 누른 버튼에 따라
-                바뀌는 목록처럼 오해할 수 있어 각 줄에 라벨을 붙여 구분한다. */}
-            <RsvpAvatarRow label="🙌 가요" count={data.rsvp.goingCount} people={data.rsvp.going} />
-            <RsvpAvatarRow label="🤔 아마도" count={data.rsvp.maybeCount} people={data.rsvp.maybe} />
-            {rsvpErr && <p className="mt-2 text-xs text-red-500">{rsvpErr}</p>}
-          </section>
-        )}
+        {/* ①-b 참석 표시(RSVP) — 멤버 + 예정된 모임에서만 */}
+        {!editing && data.rsvp && isPast === false && (() => {
+          const rsvp = data.rsvp!;
+          return (
+            <section className="glass-card mb-6 bg-white/80 p-5 sm:p-6">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-base font-bold text-ink">🙋 참석</h2>
+                <span className="text-xs text-ink-faint">
+                  가요 {rsvp.goingCount}
+                  {rsvp.maybeCount > 0 ? ` · 아마도 ${rsvp.maybeCount}` : ""}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                {(["going", "maybe", "none"] as const).map((s) => {
+                  // myStatus는 going|maybe|null만 — "none"과 절대 일치하지 않아 미응답 시 어떤 버튼도 강조 안 됨.
+                  const active = rsvp.myStatus === s;
+                  const label = s === "going" ? "🙌 가요" : s === "maybe" ? "🤔 아마도" : "🙅 안 가요";
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => setRsvp(s)}
+                      disabled={rsvpBusy}
+                      className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all disabled:opacity-50 ${
+                        active
+                          ? "border-teal/50 bg-teal/15 text-teal-ink"
+                          : "border-white/90 bg-white/60 text-ink-soft hover:bg-white/90 hover:text-ink"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              {/* 가요/아마도 아바타 줄 — 라벨 없이 하나만 두면 지금 누른 버튼에 따라
+                  바뀌는 목록처럼 오해할 수 있어 각 줄에 라벨을 붙여 구분한다. */}
+              <RsvpAvatarRow label="🙌 가요" count={rsvp.goingCount} people={rsvp.going} />
+              <RsvpAvatarRow label="🤔 아마도" count={rsvp.maybeCount} people={rsvp.maybe} />
+              {rsvpErr && <p className="mt-2 text-xs text-red-500">{rsvpErr}</p>}
+            </section>
+          );
+        })()}
 
         {/* ② 갤러리 */}
         <section className="glass-card mb-6 bg-white/80 p-5 sm:p-6">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-base font-bold text-ink">📸 함께한 사진</h2>
-            <button
-              onClick={() => setUploaderOpen((o) => !o)}
-              className="glass-soft rounded-full px-3 py-1 text-xs font-medium text-ink-soft transition-colors hover:text-ink"
-            >
-              {uploaderOpen ? "닫기" : "+ 사진 올리기"}
-            </button>
+            {isMember && (
+              <button
+                onClick={() => setUploaderOpen((o) => !o)}
+                className="glass-soft rounded-full px-3 py-1 text-xs font-medium text-ink-soft transition-colors hover:text-ink"
+              >
+                {uploaderOpen ? "닫기" : "+ 사진 올리기"}
+              </button>
+            )}
           </div>
 
           {uploaderOpen && (
@@ -631,27 +633,37 @@ export default function MeetingDetailPage({ params }: PageProps) {
             💬 모임 후기 <span className="text-sm font-medium text-ink-faint">{reviews.length}</span>
           </h2>
 
-          {/* 작성 */}
-          <div className="mb-5 space-y-2">
-            <textarea
-              value={reviewText}
-              onChange={(e) => setReviewText(e.target.value)}
-              rows={2}
-              maxLength={1000}
-              placeholder="모임은 어땠나요? 함께한 소감을 남겨보세요."
-              className="w-full resize-y rounded-xl border border-sky-line bg-white/80 px-3.5 py-2.5 text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:border-teal focus:outline-none"
-            />
-            {reviewErr && <p className="text-xs text-red-500">{reviewErr}</p>}
-            <div className="flex justify-end">
-              <button
-                onClick={submitReview}
-                disabled={postingReview || !reviewText.trim()}
-                className="btn-gold rounded-full px-5 py-2 text-xs font-bold disabled:opacity-40"
-              >
-                {postingReview ? "남기는 중…" : "후기 남기기"}
-              </button>
+          {/* 작성 — 멤버만 가능 */}
+          {isMember ? (
+            <div className="mb-5 space-y-2">
+              <textarea
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                rows={2}
+                maxLength={1000}
+                placeholder="모임은 어땠나요? 함께한 소감을 남겨보세요."
+                className="w-full resize-y rounded-xl border border-sky-line bg-white/80 px-3.5 py-2.5 text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:border-teal focus:outline-none"
+              />
+              {reviewErr && <p className="text-xs text-red-500">{reviewErr}</p>}
+              <div className="flex justify-end">
+                <button
+                  onClick={submitReview}
+                  disabled={postingReview || !reviewText.trim()}
+                  className="btn-gold rounded-full px-5 py-2 text-xs font-bold disabled:opacity-40"
+                >
+                  {postingReview ? "남기는 중…" : "후기 남기기"}
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <p className="mb-5 text-xs text-ink-faint">
+              🔒{" "}
+              <Link href={backHref} className="font-medium text-skyx-ink hover:underline">
+                가입하면
+              </Link>{" "}
+              후기를 남길 수 있어요.
+            </p>
+          )}
 
           {/* 목록 */}
           {reviews.length === 0 ? (
