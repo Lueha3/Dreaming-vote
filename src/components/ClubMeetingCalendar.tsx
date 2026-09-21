@@ -83,7 +83,9 @@ export function ClubMeetingCalendar({ clubId, isMember, isOwner, membershipStatu
     try {
       const res = await fetch(`/api/clubs/${clubId}/meetings`, { cache: "no-store" });
       const json = await res.json();
-      if (json.ok) setMeetings(json.meetings);
+      // isMember prop은 SSR(getClubDetail) 기준이라, 숨김 동아리 등 드문 경우
+      // API의 실시간 판정(getClubMembership)과 어긋나 meetings가 없을 수 있다 — 방어적으로 빈 배열.
+      if (json.ok) setMeetings(json.meetings ?? []);
     } catch {
       /* 조용히 무시 — 캘린더는 부가 기능 */
     }
