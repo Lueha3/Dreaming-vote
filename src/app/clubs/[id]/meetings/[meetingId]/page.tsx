@@ -626,7 +626,7 @@ export default function MeetingDetailPage({ params }: PageProps) {
         </section>
 
         {/* ③ 후기 댓글 */}
-        <section className="glass-card bg-white/85 p-6 sm:p-7">
+        <section id="reviews" className="glass-card scroll-mt-4 bg-white/85 p-6 sm:p-7">
           <h2 className="mb-4 text-base font-bold text-ink">
             💬 모임 후기 <span className="text-sm font-medium text-ink-faint">{reviews.length}</span>
           </h2>

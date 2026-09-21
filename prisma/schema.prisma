@@ -253,6 +253,8 @@ model ClubMeeting {
   updatedAt      DateTime  @updatedAt
   // 24h 전 리마인더 발송 시점 — cron이 중복 발송을 막는 플래그(null이면 미발송).
   reminderSentAt DateTime?
+  // 모임 다음날 오전 8시(KST) 후기 작성 독려 알림 발송 시점 — cron이 중복 발송을 막는 플래그.
+  reviewReminderSentAt DateTime?
 
   club    Club                @relation(fields: [clubId], references: [id], onDelete: Cascade)
   reviews ClubMeetingReview[]
@@ -261,6 +263,7 @@ model ClubMeeting {
 
   @@index([clubId, meetsAt])
   @@index([meetsAt, reminderSentAt])
+  @@index([meetsAt, reviewReminderSentAt])
 }
 
 // 모임 참석 표시(RSVP) — 멤버가 going(가요)/maybe(아마도)로 토글. 한 모임당 1행.

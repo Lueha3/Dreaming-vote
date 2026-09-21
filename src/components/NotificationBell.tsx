@@ -23,6 +23,7 @@ const ICON: Record<string, string> = {
   club_application_rejected: "💌",
   club_meeting_created: "📅",
   club_meeting_reminder: "⏰",
+  club_meeting_review_reminder: "📝",
   club_member_removed: "🚪",
   club_member_left: "👋",
   club_ownership_received: "👑",
