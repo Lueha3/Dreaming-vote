@@ -39,6 +39,12 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 # PUBLIC은 브라우저에 노출(구독 시 사용), PRIVATE은 서버 전용(발송 서명).
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=BJ...
 VAPID_PRIVATE_KEY=9w...
+
+# 굴다리(Guldari) 콘서트 앱 — 위 DATABASE_URL/DIRECT_URL과는 다른 별도 Supabase
+# 프로젝트(guldari, drwrrabpcfixpvzwmlii)를 쓴다. prototype/guldari/db/README.md 참고.
+# 비밀번호는 Supabase 대시보드 → 이 프로젝트 → Settings → Database에서 재설정해 받는다.
+GULDARI_DATABASE_URL=postgresql://postgres.drwrrabpcfixpvzwmlii:[PASSWORD]@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true
+GULDARI_DIRECT_URL=postgresql://postgres:[PASSWORD]@db.drwrrabpcfixpvzwmlii.supabase.co:5432/postgres
 ```
 
 ### `.env` (선택사항, Git에 커밋하지 않음)
@@ -95,6 +101,18 @@ VAPID_PRIVATE_KEY=9w...
 - **위치**: `.env.local` (로컬), Vercel 환경 변수 (프로덕션)
 - **필수**: 아니오 (없으면 인앱 알림 벨만 동작, 휴대폰 푸시는 조용히 비활성화)
 - **설명**: `npx web-push generate-vapid-keys`로 한 번 생성해 두 값을 모두 저장하세요. PUBLIC은 브라우저 구독(`pushManager.subscribe`)에, PRIVATE은 서버 발송 서명(`src/lib/push.ts`)에 사용됩니다. PRIVATE은 절대 `NEXT_PUBLIC_` 접두사를 붙이지 마세요.
+
+### `GULDARI_DATABASE_URL` / `GULDARI_DIRECT_URL`
+- **용도**: 굴다리(콘서트 앱) 전용 Prisma 연결 — 위 `DATABASE_URL`/`DIRECT_URL`(Blue-Humanity)과
+  물리적으로 분리된 별도 Supabase 프로젝트
+- **위치**: `.env.local` (로컬), Vercel 환경 변수 (프로덕션)
+- **필수**: 굴다리 기능(`/api/guldari/*`)을 쓸 때만
+- **설명**: `prototype/guldari/db/schema.prisma`가 이 값을 읽는다. 스키마 동기화는
+  `prisma db push`가 아니라 Supabase MCP `apply_migration`으로 직접 적용한다(트리거·
+  advisory lock이 SQL로만 표현 가능). 자세한 내용은 `prototype/guldari/db/README.md` 참고.
+  pooler 호스트의 `aws-N` 번호는 프로젝트마다 다르게 배정되니(이 프로젝트는 `aws-1`) 직접
+  값을 만들지 말고 Supabase 대시보드 → 이 프로젝트 → Connect에서 그대로 복사할 것. 비밀번호에
+  특수문자가 있으면 반드시 percent-encode(예: `*` → `%2A`)할 것.
 
 ### `NODE_ENV`
 - **용도**: 실행 환경 구분 (development/production)
