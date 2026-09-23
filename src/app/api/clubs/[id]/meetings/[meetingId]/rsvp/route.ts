@@ -15,7 +15,7 @@ const schema = z.object({ status: z.enum(["going", "maybe", "none"]) });
 /**
  * POST /api/clubs/[id]/meetings/[meetingId]/rsvp
  * 모임 참석 표시 토글 — 동아리 멤버만. body: { status: "going" | "maybe" | "none" }
- * none이면 RSVP 삭제, going/maybe면 upsert.
+ * none(안 가요)도 응답을 안 한 것과 구분해 집계할 수 있도록 행을 남긴다(삭제하지 않음) — upsert.
  */
 export async function POST(req: NextRequest, { params }: Params) {
   const { id, meetingId } = params instanceof Promise ? await params : params;
@@ -57,30 +57,28 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
   const { status } = parsed.data;
 
-  // 지난 모임엔 새 참석 표시 불가(이전 표시 취소는 허용).
+  // 지난 모임엔 새 참석 표시 불가(불참으로 바꾸는 것만 허용).
   if (status !== "none" && meeting.meetsAt < new Date()) {
     return NextResponse.json({ ok: false, error: "이미 지난 모임이에요." }, { status: 409 });
   }
 
-  if (status === "none") {
-    await prisma.clubMeetingRsvp.deleteMany({ where: { meetingId, userId: user.dbUserId } });
-  } else {
-    await prisma.clubMeetingRsvp.upsert({
-      where: { meetingId_userId: { meetingId, userId: user.dbUserId } },
-      update: { status },
-      create: { meetingId, userId: user.dbUserId, status },
-    });
-  }
+  await prisma.clubMeetingRsvp.upsert({
+    where: { meetingId_userId: { meetingId, userId: user.dbUserId } },
+    update: { status },
+    create: { meetingId, userId: user.dbUserId, status },
+  });
 
-  const [goingCount, maybeCount] = await Promise.all([
+  const [goingCount, maybeCount, noneCount] = await Promise.all([
     prisma.clubMeetingRsvp.count({ where: { meetingId, status: "going" } }),
     prisma.clubMeetingRsvp.count({ where: { meetingId, status: "maybe" } }),
+    prisma.clubMeetingRsvp.count({ where: { meetingId, status: "none" } }),
   ]);
 
   return NextResponse.json({
     ok: true,
-    myStatus: status === "none" ? null : status,
+    myStatus: status,
     goingCount,
     maybeCount,
+    noneCount,
   });
 }

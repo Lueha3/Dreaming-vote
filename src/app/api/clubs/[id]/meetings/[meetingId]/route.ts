@@ -78,6 +78,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   const going = meeting.rsvps.filter((r) => r.status === "going");
   const maybe = meeting.rsvps.filter((r) => r.status === "maybe");
+  const none = meeting.rsvps.filter((r) => r.status === "none");
   const myStatus = me ? meeting.rsvps.find((r) => r.userId === me)?.status ?? null : null;
 
   return NextResponse.json({
@@ -119,12 +120,17 @@ export async function GET(_req: NextRequest, { params }: Params) {
           myStatus,
           goingCount: going.length,
           maybeCount: maybe.length,
+          noneCount: none.length,
           // 참석자 아바타 줄 — 너무 길지 않게 각각 최대 12명 표시.
           going: going.slice(0, 12).map((r) => ({
             nickname: r.user?.nickname ?? null,
             avatarUrl: r.user?.avatarUrl ?? null,
           })),
           maybe: maybe.slice(0, 12).map((r) => ({
+            nickname: r.user?.nickname ?? null,
+            avatarUrl: r.user?.avatarUrl ?? null,
+          })),
+          none: none.slice(0, 12).map((r) => ({
             nickname: r.user?.nickname ?? null,
             avatarUrl: r.user?.avatarUrl ?? null,
           })),

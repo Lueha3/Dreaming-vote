@@ -266,12 +266,13 @@ model ClubMeeting {
   @@index([meetsAt, reviewReminderSentAt])
 }
 
-// 모임 참석 표시(RSVP) — 멤버가 going(가요)/maybe(아마도)로 토글. 한 모임당 1행.
+// 모임 참석 표시(RSVP) — 멤버가 going(가요)/maybe(아마도)/none(안 가요)으로 토글. 한 모임당 1행.
+// none도 행을 남겨(삭제 X) 불참 의사를 집계할 수 있게 한다 — 응답 자체를 안 한 것과 구분.
 model ClubMeetingRsvp {
   id        String   @id @default(cuid())
   meetingId String
   userId    String
-  status    String   @default("going") // going | maybe
+  status    String   @default("going") // going | maybe | none
   createdAt DateTime @default(now())
 
   meeting ClubMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)

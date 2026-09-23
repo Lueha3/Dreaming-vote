@@ -39,11 +39,13 @@ type ReviewItem = {
 type ImageItem = { id: string; url: string; caption: string; canDelete: boolean };
 
 type RsvpData = {
-  myStatus: "going" | "maybe" | null;
+  myStatus: "going" | "maybe" | "none" | null;
   goingCount: number;
   maybeCount: number;
+  noneCount: number;
   going: { nickname: string | null; avatarUrl: string | null }[];
   maybe: { nickname: string | null; avatarUrl: string | null }[];
+  none: { nickname: string | null; avatarUrl: string | null }[];
 };
 
 type DetailResponse = {
@@ -544,11 +546,12 @@ export default function MeetingDetailPage({ params }: PageProps) {
                 <span className="text-xs text-ink-faint">
                   가요 {rsvp.goingCount}
                   {rsvp.maybeCount > 0 ? ` · 아마도 ${rsvp.maybeCount}` : ""}
+                  {rsvp.noneCount > 0 ? ` · 안 가요 ${rsvp.noneCount}` : ""}
                 </span>
               </div>
               <div className="flex gap-2">
                 {(["going", "maybe", "none"] as const).map((s) => {
-                  // myStatus는 going|maybe|null만 — "none"과 절대 일치하지 않아 미응답 시 어떤 버튼도 강조 안 됨.
+                  // myStatus는 going|maybe|none|null — 응답 안 한 사람은 null이라 세 버튼 다 강조 안 됨.
                   const active = rsvp.myStatus === s;
                   const label = s === "going" ? "🙌 가요" : s === "maybe" ? "🤔 아마도" : "🙅 안 가요";
                   return (
@@ -567,10 +570,11 @@ export default function MeetingDetailPage({ params }: PageProps) {
                   );
                 })}
               </div>
-              {/* 가요/아마도 아바타 줄 — 라벨 없이 하나만 두면 지금 누른 버튼에 따라
+              {/* 가요/아마도/안가요 아바타 줄 — 라벨 없이 하나만 두면 지금 누른 버튼에 따라
                   바뀌는 목록처럼 오해할 수 있어 각 줄에 라벨을 붙여 구분한다. */}
               <RsvpAvatarRow label="🙌 가요" count={rsvp.goingCount} people={rsvp.going} />
               <RsvpAvatarRow label="🤔 아마도" count={rsvp.maybeCount} people={rsvp.maybe} />
+              <RsvpAvatarRow label="🙅 안 가요" count={rsvp.noneCount} people={rsvp.none} />
               {rsvpErr && <p className="mt-2 text-xs text-red-500">{rsvpErr}</p>}
             </section>
           );
