@@ -61,11 +61,18 @@ export default function PeoplePage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <div className="mb-6">
-        <h1 className="mb-1.5 text-2xl font-extrabold text-ink">
-          <span className="gradient-text">멤버 둘러보기</span>
-        </h1>
-        <p className="text-sm text-ink-soft">우리 청년부 멤버들을 둘러보세요.</p>
+      <div className="mb-6 flex items-end justify-between gap-3">
+        <div>
+          <h1 className="mb-1.5 text-2xl font-extrabold text-ink">
+            <span className="gradient-text">멤버 둘러보기</span>
+          </h1>
+          <p className="text-sm text-ink-soft">우리 청년부 멤버들을 둘러보세요.</p>
+        </div>
+        {items && items.length > 0 && (
+          <span className="glass-soft shrink-0 rounded-full px-3 py-1 text-xs font-semibold text-ink-soft">
+            총 {items.length}명
+          </span>
+        )}
       </div>
 
       {loading ? (
