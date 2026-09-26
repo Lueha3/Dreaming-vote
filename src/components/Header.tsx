@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { RoleBadge } from "@/components/RoleBadge";
 import { NotificationBell } from "@/components/NotificationBell";
+import { ShowreelButton } from "@/components/ShowreelButton";
 import { canManage, displayRoles, type Role } from "@/lib/roles";
 import { triggerHaptic } from "@/lib/haptics";
 import { FEATURES } from "@/lib/features";
@@ -120,6 +121,7 @@ export function Header() {
           )}
           {/* 알림 벨 — 로그인 상태에서만 자체 렌더(비로그인은 null). menuRef 밖에 둬서
               벨 클릭이 햄버거 메뉴의 '외부 클릭'으로 인식돼 메뉴가 닫히게 한다(상호 배타). */}
+          <ShowreelButton />
           <NotificationBell />
           <div className="relative" ref={menuRef}>
           <button
