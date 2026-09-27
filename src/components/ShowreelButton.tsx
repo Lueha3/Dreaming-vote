@@ -6,6 +6,8 @@ import { triggerHaptic } from "@/lib/haptics";
 
 // 네이티브 컨트롤이 조작 없이 사라지는 시간과 맞춘 값 — 정확한 값을 알 수 없어 넉넉히 잡는다.
 const CONTROLS_FADE_MS = 3000;
+// 아래·양옆 스와이프로 닫기 — 이 거리(px) 이상 끌면 닫힘으로 인정한다.
+const DISMISS_DIST = 110;
 
 /**
  * 실제 뷰어 — open이 true가 될 때마다 새로 마운트되므로 chromeVisible이 항상 true로 시작한다
@@ -15,6 +17,7 @@ function ShowreelViewer({ onClose }: { onClose: () => void }) {
   const [chromeVisible, setChromeVisible] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const drag = useRef({ x: 0, y: 0, dragging: false });
 
   useEffect(() => {
     const v = videoRef.current;
@@ -45,6 +48,43 @@ function ShowreelViewer({ onClose }: { onClose: () => void }) {
     });
   }
 
+  // 아래·양옆으로 끌면 손가락을 따라오다 기준 거리를 넘기면 닫힌다(릴스식 스와이프 닫기).
+  // 탭(드래그 없음)은 여기서 손대지 않고 그대로 흘려보내 onClick(토글)이 처리하게 한다.
+  function onTouchStart(e: React.TouchEvent) {
+    const t = e.touches[0];
+    drag.current = { x: t.clientX, y: t.clientY, dragging: false };
+  }
+  function onTouchMove(e: React.TouchEvent) {
+    const t = e.touches[0];
+    const dx = t.clientX - drag.current.x;
+    const dy = t.clientY - drag.current.y;
+    if (!drag.current.dragging && Math.hypot(dx, dy) > 8) drag.current.dragging = true;
+    if (drag.current.dragging && videoRef.current) {
+      const dist = Math.hypot(dx, dy);
+      videoRef.current.style.transition = "none";
+      videoRef.current.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+      videoRef.current.style.opacity = String(Math.max(0.35, 1 - dist / 380));
+    }
+  }
+  function onTouchEnd(e: React.TouchEvent) {
+    const t = e.changedTouches[0];
+    const dx = t.clientX - drag.current.x;
+    const dy = t.clientY - drag.current.y;
+    const wasDragging = drag.current.dragging;
+    drag.current.dragging = false;
+    if (!wasDragging) return; // 탭 — 뒤따르는 click이 toggleChrome을 처리
+    if (Math.hypot(dx, dy) > DISMISS_DIST) {
+      e.preventDefault();
+      onClose();
+      return;
+    }
+    if (videoRef.current) {
+      videoRef.current.style.transition = "transform 0.25s ease, opacity 0.25s ease";
+      videoRef.current.style.transform = "translate3d(0,0,0)";
+      videoRef.current.style.opacity = "1";
+    }
+  }
+
   return createPortal(
     <div className="modal-fade-in fixed inset-0 z-[90] bg-black" onClick={onClose}>
       <video
@@ -57,6 +97,9 @@ function ShowreelViewer({ onClose }: { onClose: () => void }) {
           e.stopPropagation();
           toggleChrome();
         }}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
         className="absolute inset-0 h-full w-full object-cover"
       />
       {chromeVisible && (
