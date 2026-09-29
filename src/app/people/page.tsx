@@ -18,7 +18,7 @@ type Person = {
 
 /**
  * 멤버 둘러보기 — 승인 멤버만. v2에서는 정렬 탭(비슷한 성향·같은 꿈터·새가족 먼저)을 빼고
- * 단순 목록만 남겼다. 순서는 서버가 닉네임순으로 내려준다.
+ * 단순 목록만 남겼다. 순서는 서버가 이름 가나다순으로 내려준다.
  */
 export default function PeoplePage() {
   const [items, setItems] = useState<Person[] | null>(null);

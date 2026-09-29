@@ -18,7 +18,7 @@ function parseTraits(coreTraits: string | undefined | null): string[] {
  * 실명·전화 등 PII는 절대 포함하지 않는다. 성향은 Report.isPublic인 것만 노출.
  *
  * 정렬 탭(비슷한 성향·같은 꿈터·새가족 먼저)은 v2에서 뺐다 — 이 화면은 단순 목록만 한다.
- * 닉네임(집단-나이-이름) 순으로 내려주면 집단별로 자연히 묶인다.
+ * 이름(닉네임의 마지막 조각) 가나다순으로 내려준다.
  */
 export async function GET() {
   const user = await getAuthUser();
@@ -71,13 +71,13 @@ export async function GET() {
     };
   });
 
-  // 나이 오름차순(어린 나이 먼저) — 나이가 없는(승인 전·탈퇴) 행은 목록에 없지만,
-  // 방어적으로 맨 뒤로 보낸다. 나이가 같으면 닉네임 가나다순으로 묶는다.
+  // 이름 가나다순 — 닉네임이 "집단-나이-이름" 형식이라 통째로 정렬하면 집단·나이가 먼저 묶이므로,
+  // 마지막 하이픈 뒤의 이름 부분만 뽑아 비교한다(형식이 다른 닉네임은 전체를 이름으로 본다).
+  // 이름이 같으면 전체 닉네임으로 순서를 고정하고, 닉네임이 없는 행은 방어적으로 맨 뒤로 보낸다.
+  const nameOf = (nickname: string | null) => (nickname ? nickname.split("-").pop()! : "￿");
   items.sort((a, b) => {
-    if (a.age == null && b.age == null) return 0;
-    if (a.age == null) return 1;
-    if (b.age == null) return -1;
-    if (a.age !== b.age) return a.age - b.age;
+    const byName = nameOf(a.nickname).localeCompare(nameOf(b.nickname), "ko");
+    if (byName !== 0) return byName;
     return (a.nickname ?? "￿").localeCompare(b.nickname ?? "￿", "ko");
   });
 
