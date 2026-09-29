@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { PhotoViewer } from "@/components/PhotoViewer";
 
 export type CarouselImage = {
   url: string;
@@ -138,69 +138,15 @@ export function ClubImageCarousel({
         </div>
       )}
 
-      {/* 원본 전체화면 뷰어 — 클릭 한 번으로 진입, 스와이프/화살표로 계속 넘겨볼 수 있음.
-          portal로 body에 바로 붙여, 갤러리 모달(.modal-pop-in의 transform)에 갇히지 않고
-          항상 뷰포트 전체를 덮게 한다. */}
-      {zoomOpen &&
-        createPortal(
-          <div
-            className="modal-fade-in fixed inset-0 z-[80] flex items-center justify-center bg-black/95"
-            onClick={() => setZoomOpen(false)}
-          >
-            <div
-              onTouchStart={onTouchStart}
-              onTouchEnd={onTouchEnd}
-              className="relative flex h-full w-full items-center justify-center"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={images[current].url}
-                alt={images[current].caption || `카드 ${current + 1}`}
-                className="max-h-full max-w-full object-contain"
-                onClick={(e) => e.stopPropagation()}
-              />
-
-              <button
-                onClick={() => setZoomOpen(false)}
-                aria-label="닫기"
-                className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-xl text-white backdrop-blur-sm transition-colors hover:bg-white/25"
-              >
-                ✕
-              </button>
-
-              {images.length > 1 && (
-                <>
-                  <div className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
-                    {current + 1} / {images.length}
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      prev();
-                    }}
-                    disabled={current === 0}
-                    aria-label="이전 사진"
-                    className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-xl text-white backdrop-blur-sm transition-colors hover:bg-white/25 disabled:opacity-30"
-                  >
-                    ‹
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      next();
-                    }}
-                    disabled={current === images.length - 1}
-                    aria-label="다음 사진"
-                    className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-xl text-white backdrop-blur-sm transition-colors hover:bg-white/25 disabled:opacity-30"
-                  >
-                    ›
-                  </button>
-                </>
-              )}
-            </div>
-          </div>,
-          document.body,
-        )}
+      {/* 원본 전체화면 뷰어 — 클릭 한 번으로 진입. 스와이프로 넘기고, 위·아래로 끌면 닫힌다. */}
+      {zoomOpen && (
+        <PhotoViewer
+          images={images}
+          initialIndex={current}
+          onIndexChange={setCurrent}
+          onClose={() => setZoomOpen(false)}
+        />
+      )}
     </div>
   );
 }

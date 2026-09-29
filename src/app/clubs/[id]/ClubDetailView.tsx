@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { CLUB_CATEGORY_META } from "@/lib/clubCategories";
 import { ClubCategoryIcon } from "@/components/icons";
 import { ClubImageCarousel } from "@/components/ClubImageCarousel";
+import { PhotoViewer } from "@/components/PhotoViewer";
 import { ClubLineupBoard } from "@/components/ClubLineupBoard";
 import { ClubMeetingCalendar } from "@/components/ClubMeetingCalendar";
 import { RoleBadge } from "@/components/RoleBadge";
@@ -37,7 +38,8 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
   const { club, isOwner, isLoggedIn, membershipStatus } = data;
 
   const [scrolled, setScrolled] = useState(false);
-  const [galleryOpen, setGalleryOpen] = useState(false);
+  // 갤러리 뷰어가 열려 있으면 club.images 기준 인덱스(히어로가 0번이라 썸네일은 i+1), 닫혀 있으면 null.
+  const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
   const lineupRef = useRef<HTMLDivElement>(null);
 
   // 신청 폼 상태
@@ -446,7 +448,7 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
                   <button
                     key={i}
                     type="button"
-                    onClick={() => setGalleryOpen(true)}
+                    onClick={() => setGalleryIndex(i + 1)}
                     className="shrink-0 snap-start text-left transition-transform hover:scale-[1.02]"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -478,25 +480,9 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
         </div>
       </main>
 
-      {/* 갤러리 풀뷰 모달 */}
-      {galleryOpen && (
-        <div
-          className="modal-fade-in fixed inset-0 z-[60] flex items-center justify-center bg-ink/30 px-4 backdrop-blur-[2px]"
-          onClick={() => setGalleryOpen(false)}
-        >
-          <div className="modal-pop-in w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-2 flex justify-end">
-              <button
-                onClick={() => setGalleryOpen(false)}
-                aria-label="닫기"
-                className="glass-soft flex h-9 w-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:text-ink"
-              >
-                ✕
-              </button>
-            </div>
-            <ClubImageCarousel images={club.images} showCaption />
-          </div>
-        </div>
+      {/* 갤러리 — 썸네일을 누르면 곧바로 전체화면 뷰어 */}
+      {galleryIndex !== null && (
+        <PhotoViewer images={club.images} initialIndex={galleryIndex} onClose={() => setGalleryIndex(null)} />
       )}
 
       {/* ⑨ 하단 고정 CTA — 모바일 하단 탭바(64px) 위에 뜨도록 오프셋 */}

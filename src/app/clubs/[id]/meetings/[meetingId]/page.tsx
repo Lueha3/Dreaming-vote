@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ClubImageUploader, type ClubImageItem } from "@/components/ClubImageUploader";
-import { ClubImageCarousel } from "@/components/ClubImageCarousel";
+import { PhotoViewer } from "@/components/PhotoViewer";
 import { RoleBadge } from "@/components/RoleBadge";
 import { displayRoles, type Role } from "@/lib/roles";
 import { isEdited } from "@/lib/time";
@@ -764,39 +764,23 @@ export default function MeetingDetailPage({ params }: PageProps) {
         </section>
       </main>
 
-      {/* 갤러리 라이트박스 */}
-      {lightbox !== null && images[lightbox] && (
-        <div
-          className="modal-fade-in fixed inset-0 z-[60] flex items-center justify-center bg-ink/30 px-4 backdrop-blur-[2px]"
-          onClick={() => setLightbox(null)}
-        >
-          <div className="modal-pop-in w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-2 flex justify-between">
-              {images[lightbox].canDelete ? (
-                <button
-                  onClick={() => deleteImage(images[lightbox].id)}
-                  className="glass-soft rounded-full px-3 py-1.5 text-xs text-red-600 transition-colors hover:bg-red-50"
-                >
-                  사진 삭제
-                </button>
-              ) : (
-                <span />
-              )}
+      {/* 갤러리 — 썸네일을 누르면 곧바로 전체화면 뷰어 */}
+      {lightbox !== null && images.length > 0 && (
+        <PhotoViewer
+          images={images.map((im) => ({ url: im.url, caption: im.caption }))}
+          initialIndex={lightbox}
+          onClose={() => setLightbox(null)}
+          renderActions={(i) =>
+            images[i]?.canDelete ? (
               <button
-                onClick={() => setLightbox(null)}
-                aria-label="닫기"
-                className="glass-soft flex h-9 w-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:text-ink"
+                onClick={() => deleteImage(images[i].id)}
+                className="rounded-full bg-white/15 px-3.5 py-2 text-xs font-semibold text-red-300 backdrop-blur-sm transition-colors hover:bg-white/25"
               >
-                ✕
+                사진 삭제
               </button>
-            </div>
-            <ClubImageCarousel
-              images={images.map((im) => ({ url: im.url, caption: im.caption }))}
-              showCaption
-              initialIndex={lightbox}
-            />
-          </div>
-        </div>
+            ) : null
+          }
+        />
       )}
 
       {/* 모임 삭제 확인 */}
