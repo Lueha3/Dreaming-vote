@@ -108,7 +108,7 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
     // 개설자 본인
     if (isOwner) {
       return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-stretch gap-2">
           <Link
             href="/my/clubs"
             className="glass-card block flex-1 bg-white/80 px-5 py-3.5 text-center text-sm font-medium text-ink-soft transition-all hover:border-teal/40 hover:text-ink"
@@ -116,15 +116,12 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
             내가 개설한 동아리예요 · 신청 관리하기 →
           </Link>
           {!pending && (
-            <div className="flex shrink-0 flex-col items-center gap-1">
-              <Link
-                href="/prank"
-                className="glass-card bg-white/80 px-4 py-3.5 text-center text-sm font-medium text-gold-ink transition-all hover:border-gold/40"
-              >
-                📣 광고하기
-              </Link>
-              <span className="text-[10px] text-ink-faint/70">눌러보세요</span>
-            </div>
+            <Link
+              href="/prank"
+              className="glass-card flex shrink-0 items-center bg-white/80 px-4 py-3.5 text-center text-sm font-medium text-gold-ink transition-all hover:border-gold/40"
+            >
+              📣 광고하기
+            </Link>
           )}
         </div>
       );
@@ -155,20 +152,17 @@ export function ClubDetailView({ initialData }: { initialData: ClubDetailData })
     }
     if (status === "accepted") {
       return (
-        <div className="flex items-center gap-2">
-          <div className="flex-1 rounded-xl border border-teal/35 bg-teal/10 px-5 py-3.5 text-center text-sm font-medium text-teal-ink">
+        <div className="flex items-stretch gap-2">
+          <div className="flex flex-1 items-center justify-center rounded-xl border border-teal/35 bg-teal/10 px-5 py-3.5 text-center text-sm font-medium text-teal-ink">
             ✓ 함께하고 있는 동아리예요!
           </div>
           {!pending && (
-            <div className="flex shrink-0 flex-col items-center gap-1">
-              <Link
-                href="/prank"
-                className="rounded-xl border border-gold/40 bg-gold/10 px-4 py-3.5 text-center text-sm font-medium text-gold-ink transition-all hover:bg-gold/20"
-              >
-                📣 광고하기
-              </Link>
-              <span className="text-[10px] text-ink-faint/70">눌러보세요</span>
-            </div>
+            <Link
+              href="/prank"
+              className="flex shrink-0 items-center rounded-xl border border-gold/40 bg-gold/10 px-4 py-3.5 text-center text-sm font-medium text-gold-ink transition-all hover:bg-gold/20"
+            >
+              📣 광고하기
+            </Link>
           )}
         </div>
       );
