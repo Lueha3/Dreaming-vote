@@ -335,6 +335,10 @@ html.splash-go .splash-foot { animation-play-state: running; }
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+/* 사진 뷰어 등장 — fill-mode 없음: 끝난 뒤엔 인라인 opacity/배경(드래그·닫기 애니메이션)이 그대로 적용된다. */
+.photo-viewer-in {
+  animation: modalFadeIn 0.18s ease-out;
+}
 .modal-fade-in {
   animation: modalFadeIn 0.18s ease-out forwards;
 }
